@@ -3,14 +3,22 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --primary-button-background-color: #2563eb;
+  --primary-background-color: #DBEAFE;
+  --primary-text-color: #111827;
+  --secondary-text-color: #4B5563;
+  --tertiary-text-color: #6B7280;
+  --quaternary-text-color: #374151;
+  --danger-text-color: #991B1B;
+  --placeholder-text-color: #CCCCCC;
 }
-
-@theme inline {
+/* primary secondary tertiary quaternary */  
+/* @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
+} */
 
 @media (prefers-color-scheme: dark) {
   :root {
