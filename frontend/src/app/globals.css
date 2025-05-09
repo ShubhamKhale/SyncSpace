@@ -11,7 +11,12 @@
   --quaternary-text-color: #374151;
   --danger-text-color: #991B1B;
   --placeholder-text-color: #CCCCCC;
+  --sidebar-border-color: #E5E7EB;
+  --sidebar-option-background-color: #EFF6FF;
+  --sidebar-option-highlight-name-color: #1D4ED8;
+  --sidebar-option-name-color: #374151;
 }
+
 /* primary secondary tertiary quaternary */  
 /* @theme inline {
   --color-background: var(--background);

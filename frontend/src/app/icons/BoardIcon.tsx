@@ -1,24 +1,25 @@
 import React from "react";
 
-interface DashboardIconProps {
+interface BoardIconProps {
   width?: number | string;
   height?: number | string;
   className?: string;
   fill?: string;
 }
 
-const DashboardIcon: React.FC<DashboardIconProps> = ({
+const BoardIcon: React.FC<BoardIconProps> = ({
   width = 50,
   height = 50,
   className = "",
   fill = "#6B7280",
 }) => {
+  const viewbox = `0 0 ${width} ${height}`;
   return (
     <svg
       width={width}
       height={height}
       className={className}
-      viewBox="0 0 50 50"
+      viewBox={viewbox}
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
     >
@@ -27,4 +28,4 @@ const DashboardIcon: React.FC<DashboardIconProps> = ({
   );
 };
 
-export default DashboardIcon;
+export default BoardIcon;

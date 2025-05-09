@@ -1,0 +1,13 @@
+src
+|app
+    |components 
+    |dashboard
+    |icons
+    |pages/api/auth/[...nextauth].ts
+    |signin
+    |singup
+    favicon.ico 
+    globals.css
+    layout.tsx 
+    page.tsx 
+    

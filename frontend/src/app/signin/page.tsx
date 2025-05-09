@@ -1,14 +1,20 @@
+'use client';
 import React from "react";
 import AppLogo from "../icons/AppLogo";
 import GoogleIcon from "../icons/GoogleIcon";
 import GithubIcon from "../icons/GithubIcon";
+import { signIn, signOut } from "next-auth/react";
 
 const Page = () => {
+
+  // const { data: session } = useSession();
+  // console.log("session", session);
+  // {session?.user?.name}
   return (
     <div className="grid h-screen pt-3 py-12 bg-[var(--primary-background-color)] place-items-center">
         <div className="flex items-center space-x-3">
           <p className="text-2xl font-bold text-[var(--primary-button-background-color)]">
-            SyncSpace
+            SyncSpace 
           </p>
           <AppLogo />
         </div>
@@ -22,12 +28,13 @@ const Page = () => {
           </span>
         </p>
 
+        <button onClick={() => signOut()}>Sign out</button>
       <div className="mt-3 px-10 py-10 flex flex-col rounded-lg bg-white">
-        <div className="rounded-md hover:cursor-pointer py-2 space-x-3 flex items-center justify-center border border-[#D1D5DB]">
+        <div onClick={() => signIn("google", { callbackUrl: "/dashboard" })} className="rounded-md hover:cursor-pointer py-2 space-x-3 flex items-center justify-center border border-[#D1D5DB]">
           <GoogleIcon width={20} height={20}/>
           <p className="ml-2 font-medium text-sm">Continue with Google</p>
-        </div>    
-        <div className="mt-5 rounded-md hover:cursor-pointer py-2 space-x-3 flex items-center justify-center border border-[#D1D5DB]">
+        </div>        
+        <div onClick={() => signIn("github")} className="mt-5 rounded-md hover:cursor-pointer py-2 space-x-3 flex items-center justify-center border border-[#D1D5DB]">
           <GithubIcon width={20} height={20}/>
           <p className="ml-2 font-medium text-sm">Continue with Github</p>
         </div>    
