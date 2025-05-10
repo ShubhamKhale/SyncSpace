@@ -3,12 +3,12 @@ import React from "react";
 import AppLogo from "../icons/AppLogo";
 import GoogleIcon from "../icons/GoogleIcon";
 import GithubIcon from "../icons/GithubIcon";
-import { signIn, signOut } from "next-auth/react";
+import { signIn, signOut, useSession } from "next-auth/react";
 
 const Page = () => {
 
-  // const { data: session } = useSession();
-  // console.log("session", session);
+  const { data: session } = useSession();
+  console.log("session", session);
   // {session?.user?.name}
   return (
     <div className="grid h-screen pt-3 py-12 bg-[var(--primary-background-color)] place-items-center">
