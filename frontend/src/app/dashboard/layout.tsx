@@ -79,4 +79,4 @@ export default function DashboardLayout({
       <main className="p-6 bg-white overflow-y-auto">{children}</main>
     </div>
   );
-}
+}    
