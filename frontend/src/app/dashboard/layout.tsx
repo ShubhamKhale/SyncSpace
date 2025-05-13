@@ -1,3 +1,4 @@
+import Link from "next/link";
 import AppLogo from "../icons/AppLogo";
 import BoardIcon from "../icons/BoardIcon";
 import DashboardIcon from "../icons/DashboardIcon";
@@ -30,40 +31,48 @@ export default function DashboardLayout({
           </div>
 
           <div className="mt-8 space-y-3">
-            <div className="py-3 px-4 mx-2 cursor-pointer flex items-center space-x-3 bg-[var(--sidebar-option-background-color)] rounded-md">
-              <DashboardIcon width={20} height={20} fill="#3B82F6" />
-              <p className="font-medium text-[var(--sidebar-option-highlight-name-color)]">
-                Dashboard
-              </p>   
-            </div>
-            <div className="py-3 px-4 mx-2 cursor-pointer flex items-center space-x-3 hover:bg-[var(--sidebar-option-background-color)] text-[var(--sidebar-option-name-color)] hover:text-[var(--sidebar-option-highlight-name-color)] rounded-md">
-              <BoardIcon width={20} height={20} />
-              <p className="font-medium ">Boards</p>    
-            </div>
-            <div className="py-3 px-4 mx-2 cursor-pointer flex items-center space-x-3 hover:bg-[var(--sidebar-option-background-color)] text-[var(--sidebar-option-name-color)] hover:text-[var(--sidebar-option-highlight-name-color)] rounded-md">
-              <HistoryIcon width={20} height={20} />
-              <p className="font-medium">
-                History
-              </p>
-            </div>
-            <div className="py-3 px-4 mx-2 cursor-pointer flex items-center space-x-3 hover:bg-[var(--sidebar-option-background-color)] text-[var(--sidebar-option-name-color)] hover:text-[var(--sidebar-option-highlight-name-color)] rounded-md">
-              <NotificationsIcon width={20} height={20} />
-              <p className="font-medium">
-                Notifications
-              </p>
-            </div>
-            <div className="py-3 px-4 mx-2 cursor-pointer flex items-center space-x-3 hover:bg-[var(--sidebar-option-background-color)] text-[var(--sidebar-option-name-color)] hover:text-[var(--sidebar-option-highlight-name-color)] rounded-md">
-              <SettingsIcon width={20} height={20} />
-              <p className="font-medium">
-                Settings
-              </p>
-            </div>
-            <div className="py-3 px-4 mx-2 cursor-pointer flex items-center space-x-3 hover:bg-[var(--sidebar-option-background-color)] text-[var(--sidebar-option-name-color)] hover:text-[var(--sidebar-option-highlight-name-color)] rounded-md">
-              <ProfileIcon width={20} height={20} />
-              <p className="font-medium">
-                Profile
-              </p>
-            </div>
+            <Link href="/dashboard">
+              <div className="py-3 px-4 mx-2 cursor-pointer flex items-center space-x-3 bg-[var(--sidebar-option-background-color)] rounded-md">
+                <DashboardIcon width={20} height={20} fill="#3B82F6" />
+                <p className="font-medium text-[var(--sidebar-option-highlight-name-color)]">
+                  Dashboard
+                </p>
+              </div>
+            </Link>
+            <Link href="/dashboard/boards">
+              <div className="py-3 px-4 mx-2 cursor-pointer flex items-center space-x-3 hover:bg-[var(--sidebar-option-background-color)] text-[var(--sidebar-option-name-color)] hover:text-[var(--sidebar-option-highlight-name-color)] rounded-md">
+                <BoardIcon width={20} height={20} />
+                <p className="font-medium ">Boards</p>
+              </div>
+            </Link>
+
+            <Link href="/dashboard/history">
+              <div className="py-3 px-4 mx-2 cursor-pointer flex items-center space-x-3 hover:bg-[var(--sidebar-option-background-color)] text-[var(--sidebar-option-name-color)] hover:text-[var(--sidebar-option-highlight-name-color)] rounded-md">
+                <HistoryIcon width={20} height={20} />
+                <p className="font-medium">History</p>
+              </div>
+            </Link>
+
+            <Link href="/dashboard/notifications">
+              <div className="py-3 px-4 mx-2 cursor-pointer flex items-center space-x-3 hover:bg-[var(--sidebar-option-background-color)] text-[var(--sidebar-option-name-color)] hover:text-[var(--sidebar-option-highlight-name-color)] rounded-md">
+                <NotificationsIcon width={20} height={20} />
+                <p className="font-medium">Notifications</p>
+              </div>
+            </Link>
+
+            <Link href="/dashboard/settings">
+              <div className="py-3 px-4 mx-2 cursor-pointer flex items-center space-x-3 hover:bg-[var(--sidebar-option-background-color)] text-[var(--sidebar-option-name-color)] hover:text-[var(--sidebar-option-highlight-name-color)] rounded-md">
+                <SettingsIcon width={20} height={20} />
+                <p className="font-medium">Settings</p>
+              </div>
+            </Link>
+
+            <Link href="/dashboard/profile">
+              <div className="py-3 px-4 mx-2 cursor-pointer flex items-center space-x-3 hover:bg-[var(--sidebar-option-background-color)] text-[var(--sidebar-option-name-color)] hover:text-[var(--sidebar-option-highlight-name-color)] rounded-md">
+                <ProfileIcon width={20} height={20} />
+                <p className="font-medium">Profile</p>
+              </div>
+            </Link>
           </div>
         </div>
         <div className="px-3 py-4 flex items-center space-x-5 border-t border-t-[var(--sidebar-border-color)]">
@@ -79,4 +88,4 @@ export default function DashboardLayout({
       <main className=" overflow-y-auto scrollbar-hide">{children}</main>
     </div>
   );
-}    
+}
