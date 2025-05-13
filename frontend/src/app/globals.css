@@ -9,6 +9,7 @@
   --secondary-text-color: #4B5563;
   --tertiary-text-color: #6B7280;
   --quaternary-text-color: #374151;
+  --fifth-text-color: #2563eb;
   --danger-text-color: #991B1B;
   --placeholder-text-color: #CCCCCC;
   --sidebar-border-color: #E5E7EB;
@@ -37,3 +38,12 @@
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 } */
+
+/* Hide scrollbar but allow scrolling */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
