@@ -1,13 +1,13 @@
 import React from "react";
 
-interface PlusIconProps {
+interface MarkIconProps {
   width?: number | string;
   height?: number | string;
   className?: string;
   fill?: string;
 }
 
-const PlusIcon: React.FC<PlusIconProps> = ({
+const MarkIcon: React.FC<MarkIconProps> = ({
   width = 50,
   height = 50,
   className = "",
@@ -24,15 +24,12 @@ const PlusIcon: React.FC<PlusIconProps> = ({
       xmlns="http://www.w3.org/2000/svg"
     >
       <path
-        d="M4.03613 8H13.3695"
-        stroke="white"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
+        d="M0 12C0 5.37258 5.37258 0 12 0C18.6274 0 24 5.37258 24 12C24 18.6274 18.6274 24 12 24C5.37258 24 0 18.6274 0 12Z"
+        fill="#DBEAFE"
       />
       <path
-        d="M8.70312 3.33398V12.6673"
-        stroke="white"
+        d="M17.3332 8L9.99984 15.3333L6.6665 12"
+        stroke="#2563EB"
         strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -41,4 +38,4 @@ const PlusIcon: React.FC<PlusIconProps> = ({
   );
 };
 
-export default PlusIcon;
+export default MarkIcon;

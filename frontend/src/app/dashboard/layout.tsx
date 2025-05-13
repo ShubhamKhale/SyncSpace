@@ -76,7 +76,7 @@ export default function DashboardLayout({
           </div>
         </div>
       </aside>
-      <main className="p-6 bg-white overflow-y-auto">{children}</main>
+      <main className=" overflow-y-auto scrollbar-hide">{children}</main>
     </div>
   );
 }    
