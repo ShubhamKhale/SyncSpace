@@ -13,12 +13,13 @@ const PresenceAwarenessIcon: React.FC<PresenceAwarenessIconProps> = ({
   className = "",
   fill = "#2563EB",
 }) => {
+  const viewbox = `0 0 ${width} ${height}`;
   return (
     <svg
       width={width}
       height={height}
       className={className}
-      viewBox="0 0 50 50"
+      viewBox={viewbox}
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
     >
