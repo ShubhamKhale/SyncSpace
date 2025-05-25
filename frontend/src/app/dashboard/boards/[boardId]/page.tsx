@@ -10,7 +10,7 @@ const page = () => {
           Product Roadmap
         </p>
         <button className="w-fit flex items-center justify-center space-x-3 rounded-md hover:cursor-pointer  px-4 py-2 bg-[var(--primary-button-background-color)] text-white text-center">
-          <PlusIcon width={24} height={24} className="mt-1" />
+          <PlusIcon width={24} height={24} className="mt-2" />
           <p>Add Task</p>
         </button>
       </div>

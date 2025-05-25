@@ -83,12 +83,6 @@ const ShortTaskCard: React.FC<ShortTaskCardProps> = ({
     text: "#6B21A8",
   };
 
-//   const formattedDate = new Date(dueDate * 1000).toLocaleDateString("en-US", {
-//   day: "2-digit",
-//   month: "short",
-//   year: "numeric",
-// });
-
 const dateObj = new Date(dueDate * 1000);
 const formattedDate = `${dateObj.getDate()} ${dateObj.toLocaleString("default", { month: "short" })} ${dateObj.getFullYear()}`;
 
@@ -100,12 +94,12 @@ const formattedDate = `${dateObj.getDate()} ${dateObj.toLocaleString("default", 
       </p>
       <p className="text-base text-[var(--sixth-text-color)]">{description}</p>
       <div className="mt-2 flex items-center">
-        <CalendarIcon width={20} height={20} />
+        <CalendarIcon width={20} height={20} className="hover:cursor-pointer" />
         {/* <p className="ml-2 text-[var(--tertiary-text-color)]">{dueDate}</p> */}
-        <p className="ml-2 text-[var(--tertiary-text-color)]">{formattedDate}</p>
-
+        <p className="ml-2 text-[var(--tertiary-text-color)] hover:cursor-pointer">{formattedDate}</p>
+   
         <div
-          className="ml-4 px-4 py-2 text-base rounded-3xl"
+          className="ml-4 px-4 py-2 text-base rounded-3xl hover:cursor-pointer"
           style={{ backgroundColor: bg, color: text }}
         >
           {priority}
@@ -113,16 +107,16 @@ const formattedDate = `${dateObj.getDate()} ${dateObj.toLocaleString("default", 
       </div>
       <div className="mt-2 flex items-center justify-between">
         <div
-          className="px-4 py-2 inline-flex items-center space-x-2 rounded-3xl"
+          className="px-4 py-2 inline-flex items-center space-x-2 rounded-3xl hover:cursor-pointer"
           style={{ backgroundColor: tagStyle.bg }}
         >
           <TagIcon width={16} height={16} fill={tagStyle.fill} />
           <p style={{ color: tagStyle.text }}>{tag}</p>
         </div>
-        <div className="bg-[#D1D5DB] text-[#4B5563] w-10 h-10 flex items-center justify-center rounded-full">
+        <div className="bg-[#D1D5DB] text-[#4B5563] hover:cursor-pointer w-10 h-10 flex items-center justify-center rounded-full">
           {assigneeInitial}
         </div>
-      </div>
+      </div>   
     </div>
   );
 };   
