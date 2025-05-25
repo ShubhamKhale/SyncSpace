@@ -5,11 +5,14 @@
   --foreground: #171717;
   --primary-button-background-color: #2563eb;
   --primary-background-color: #DBEAFE;
+  --secondary-background-color: #6B7280;
+  --tertiary-background-color: #F3F4F6;
   --primary-text-color: #111827;
   --secondary-text-color: #4B5563;
   --tertiary-text-color: #6B7280;
   --quaternary-text-color: #374151;
   --fifth-text-color: #2563eb;
+  --sixth-text-color: #1F2937;
   --danger-text-color: #991B1B;
   --placeholder-text-color: #CCCCCC;
   --sidebar-border-color: #E5E7EB;

@@ -14,7 +14,7 @@ interface GridBoardProps {
 const GridBoard: React.FC<GridBoardProps> = ({ imageSrc, title, lastUpdated, presenceCount }) => {
   return (
     <div className="rounded-lg shadow border-2 border-[var(--sidebar-border-color)] hover:cursor-pointer">
-      <Image className="rounded-t-lg" src={imageSrc} alt={title}  width={500} height={500} />
+      <Image className="rounded-t-lg w-full" src={imageSrc} alt={title}  width={500} height={500} />
       <div className="pt-4 pb-5 px-3">
         <p className="text-[var(--primary-text-color)] text-sm font-medium">{title}</p>
         <div className="mt-3 flex items-center justify-between">

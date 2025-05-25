@@ -170,11 +170,11 @@ const Boards = () => {
       </div>
 
       {/* board's view in list mode */}
-      <div className="mt-6 pb-6 overflow-y-auto scrollbar-hide flex flex-col gap-6 flex-1 pr-2">
+      {/* <div className="mt-6 pb-6 overflow-y-auto scrollbar-hide flex flex-col gap-6 flex-1 pr-2">
         <div>
               
         </div>
-      </div>
+      </div> */}
 
 
 
