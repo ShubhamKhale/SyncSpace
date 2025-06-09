@@ -4,10 +4,12 @@ export type Task = {
   id: string;
   title: string;
   description: string;
+  startDate: number;
   dueDate: number;
   priority: "Urgent" | "High" | "Normal" | "Low";
   tag: string;
   assigneeInitial: string;
+  assigneeName: string;
 };
 
 export type TaskList = {
@@ -35,19 +37,23 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
           id: "e139d14f-2462-4749-9653-53b00e153e67",
           title: "Define app architecture",
           description: "Plan the structure and technologies to use.",
+          startDate: 1747734996,
           dueDate: 1748182948,
           priority: "High",
           tag: "Planning",
           assigneeInitial: "A",
+          assigneeName: "Avery",
         },
         {
           id: "b7f223c3-7bec-475d-9846-87b9b39f6feb",
           title: "Write user personas",
           description: "Create detailed user profiles for design.",
+          startDate: 1747734996,
           dueDate: 1748280000,
           priority: "Normal",
           tag: "UX",
           assigneeInitial: "B",
+          assigneeName: "Bob",
         },
       ],
     },
@@ -58,19 +64,23 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
           id: "4d2da4f1-24d0-4163-996b-329225aa7f17",
           title: "Set up project repo",
           description: "Initialize GitHub repo and CI workflow.",
+          startDate: 1747734996,
           dueDate: 1748380000,
           priority: "Normal",
           tag: "DevOps",
           assigneeInitial: "S",
+          assigneeName: "Sam",
         },
         {
           id: "669c0724-2791-455b-9b22-f8467f34322c",
           title: "Build login screen",
           description: "Implement login UI with validation.",
+          startDate: 1747734996,
           dueDate: 1748480000,
           priority: "High",
           tag: "Frontend",
-          assigneeInitial: "D",
+          assigneeInitial: "D",   
+          assigneeName: "Dan",
         },
       ],
     },
@@ -88,12 +98,12 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     const fromTasks = [...lists[fromIndex].tasks];
     const toTasks = [...lists[toIndex].tasks];
 
-    const taskIndex = fromTasks.findIndex((t) => t.id === activeId); // ✅ FIXED
+    const taskIndex = fromTasks.findIndex((t) => t.id === activeId); 
     if (taskIndex === -1) return;
 
     const [task] = fromTasks.splice(taskIndex, 1);
 
-    const overIndex = toTasks.findIndex((t) => t.id === overId); // ✅ FIXED
+    const overIndex = toTasks.findIndex((t) => t.id === overId); 
     const insertIndex = overIndex === -1 ? toTasks.length : overIndex;
 
     toTasks.splice(insertIndex, 0, task);
@@ -105,3 +115,4 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
     set({ taskLists: updatedLists });
   },
 }));
+    

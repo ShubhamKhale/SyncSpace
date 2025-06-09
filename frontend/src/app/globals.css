@@ -1,8 +1,6 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
   --primary-button-background-color: #2563eb;
   --primary-background-color: #DBEAFE;
   --secondary-background-color: #6B7280;
@@ -18,7 +16,7 @@
   --sidebar-border-color: #E5E7EB;
   --sidebar-option-background-color: #EFF6FF;
   --sidebar-option-highlight-name-color: #1D4ED8;
-  --sidebar-option-name-color: #374151;
+  --sidebar-option-name-color: #374151;    
 }
 
 /* primary secondary tertiary quaternary */  
@@ -28,13 +26,6 @@
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 } */
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
 
 /* body {
   background: var(--background);

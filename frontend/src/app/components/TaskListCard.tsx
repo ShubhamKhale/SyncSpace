@@ -11,31 +11,28 @@ import {
 } from "@dnd-kit/sortable";
 import { useDroppable } from "@dnd-kit/core";
 import { useGlobalTaskStore } from "../store/globalTaskStore";
+import { motion, AnimatePresence } from "framer-motion";
+import TaskDetail from "./TaskDetail";
+import { Task } from "../store/useTaskStore";
 
-interface Task {
-  id: string;
-  title: string;
-  description: string;
-  dueDate: number;
-  priority: "Urgent" | "High" | "Normal" | "Low";
-  tag: string;
-  assigneeInitial: string;
-}
 
 interface TaskListCardProps {
   id: string;
   title: string;
-  tasks: Task[];
+  tasks: Task[];   
 }
 
 const TaskListCard: React.FC<TaskListCardProps> = ({ id, title, tasks }) => {
   const { setNodeRef } = useDroppable({ id });
 
-  const setSelectedTask = useGlobalTaskStore((state) => state.setSelectedTask); // ✅ Access setter
+  const setSelectedTask = useGlobalTaskStore((state) => state.setSelectedTask);
+  const selectedTask = useGlobalTaskStore((state) => state.selectedTask);
+  const setSelectedTaskListTitle = useGlobalTaskStore((state) => state.setSelectedTaskListTitle)
 
-  const handleTaskClick = (task: Task) => {
+  const handleTaskClick = (task: Task, taskListTitle: string) => {
+    setSelectedTaskListTitle(taskListTitle)
     setSelectedTask(task);
-  };
+  };   
 
   return (
     <div
@@ -53,31 +50,46 @@ const TaskListCard: React.FC<TaskListCardProps> = ({ id, title, tasks }) => {
 
       <SortableContext
         id={id}
-        items={tasks.map((task) => task.id)} // ✅ use unique id
+        items={tasks.map((task) => task.id)}
         strategy={verticalListSortingStrategy}
       >
         <div className="mt-4 space-y-3">
           {tasks.map((task) => (
-            <div
+            <ShortTaskCard
               key={task.id}
-              onClick={() => {
-                console.log("task clicked!!!!", task);
-                handleTaskClick(task);
-              }}   
-            >
-              <ShortTaskCard    
-                id={task.id}       
-                title={task.title}
-                description={task.description}
-                dueDate={task.dueDate}
-                priority={task.priority}
-                tag={task.tag}
-                assigneeInitial={task.assigneeInitial}
-              />
-            </div>
+              id={task.id}
+              title={task.title}
+              description={task.description}
+              dueDate={task.dueDate}
+              priority={task.priority}
+              tag={task.tag}
+              assigneeInitial={task.assigneeInitial}
+              onOpenDetail={() => {
+                handleTaskClick(task, title);
+              }}
+            />
           ))}
         </div>
       </SortableContext>
+
+      {/* <AnimatePresence>
+        <TaskDetail />
+      </AnimatePresence> */}
+
+      <AnimatePresence>
+        {selectedTask && (
+          <>
+            <motion.div
+              className="fixed inset-0 bg-black/30 z-40"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}   
+              onClick={() => setSelectedTask(null)}
+            />
+            <TaskDetail />
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
