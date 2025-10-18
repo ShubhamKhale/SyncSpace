@@ -1,0 +1,475 @@
+CircleNode.tsx 
+
+import React, { useState, useRef, useEffect } from "react";
+import { Handle, Position, NodeResizer, useReactFlow } from "@xyflow/react";
+
+export default function CircleNode({ id, data, selected, style }: any) {
+  const { setNodes } = useReactFlow();
+  const [editing, setEditing] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [inputValue, setInputValue] = useState(data.label || "");
+
+  useEffect(() => { if (editing) setInputValue(data.label || ""); }, [editing, data.label]);
+  useEffect(() => { if (editing) inputRef.current?.focus(); }, [editing]);
+
+  const handleDoubleClick = (e: React.MouseEvent) => { e.stopPropagation(); setEditing(true); };
+  const handleBlur = () => setEditing(false);
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => { if (e.key === "Enter") { e.preventDefault(); setEditing(false); } };
+  const handleInputChange = (value: string) => {
+    setInputValue(value);
+    setNodes((nds: any) => nds.map((node: any) => node.id === id ? { ...node, data: { ...node.data, label: value } } : node));
+  };
+
+  return (
+    <div style={{ width: "100%", height: "100%", position: "relative" }} onDoubleClick={handleDoubleClick}>
+      <NodeResizer minWidth={40} minHeight={40} isVisible={selected} color="#1890ff" />
+      <svg width="100%" height="100%" viewBox="0 0 80 80">
+        <circle cx={40} cy={40} r={36} fill={style?.background || "#fff"} stroke="#222" />
+      </svg>
+      <div style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>
+        {editing ? (
+          <input
+            ref={inputRef}
+            type="text"
+            value={inputValue}
+            onChange={e => handleInputChange(e.target.value)}
+            onBlur={handleBlur}
+            onKeyDown={handleKeyDown}
+            style={{ width: "90%", textAlign: "center", fontFamily: style?.fontFamily || "inherit", fontSize: style?.fontSize ? `${style.fontSize}px` : "inherit", fontWeight: style?.fontWeight || "normal", fontStyle: style?.fontStyle || "normal", textDecoration: style?.textDecoration || "none", pointerEvents: "auto", background: "transparent", border: "none" }}
+          />
+        ) : (
+          <span
+            style={{ width: "90%", textAlign: "center", fontFamily: style?.fontFamily || "inherit", fontSize: style?.fontSize ? `${style.fontSize}px` : "inherit", fontWeight: style?.fontWeight || "normal", fontStyle: style?.fontStyle || "normal", textDecoration: style?.textDecoration || "none", pointerEvents: "auto", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+          >
+            {inputValue || <span style={{ opacity: 0.2 }}>Double-click to edit</span>}
+          </span>
+        )}
+      </div>
+      <Handle type="target" position={Position.Top} id="t" />
+      <Handle type="target" position={Position.Right} id="r" />
+      <Handle type="target" position={Position.Bottom} id="b" />
+      <Handle type="target" position={Position.Left} id="l" />
+      <Handle type="source" position={Position.Top} id="s-t" />
+      <Handle type="source" position={Position.Right} id="s-r" />
+      <Handle type="source" position={Position.Bottom} id="s-b" />
+      <Handle type="source" position={Position.Left} id="s-l" />
+    </div>
+  );
+}
+
+
+RhombusNode.tsx
+
+import React, { useState, useRef, useEffect } from "react";
+import { Handle, Position, NodeResizer, useReactFlow } from "@xyflow/react";
+
+export default function RhombusNode({ id, data, selected, style }: any) {
+  const { setNodes } = useReactFlow();
+  const [editing, setEditing] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [inputValue, setInputValue] = useState(data.label || "");
+
+  useEffect(() => { if (editing) setInputValue(data.label || ""); }, [editing, data.label]);
+  useEffect(() => { if (editing) inputRef.current?.focus(); }, [editing]);
+
+  const handleDoubleClick = (e: React.MouseEvent) => { e.stopPropagation(); setEditing(true); };
+  const handleBlur = () => setEditing(false);
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => { if (e.key === "Enter") { e.preventDefault(); setEditing(false); } };
+  const handleInputChange = (value: string) => {
+    setInputValue(value);
+    setNodes((nds: any) => nds.map((node: any) => node.id === id ? { ...node, data: { ...node.data, label: value } } : node));
+  };
+
+  return (
+    <div style={{ width: "100%", height: "100%", position: "relative" }} onDoubleClick={handleDoubleClick}>
+      <NodeResizer minWidth={60} minHeight={40} isVisible={selected} color="#1890ff" />
+      <svg width="100%" height="100%" viewBox="0 0 100 80">
+        <polygon points="50,10 90,40 50,70 10,40" fill={style?.background || "#fff"} stroke="#222" />
+      </svg>
+      <div style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>
+        {editing ? (
+          <input
+            ref={inputRef}
+            type="text"
+            value={inputValue}
+            onChange={e => handleInputChange(e.target.value)}
+            onBlur={handleBlur}
+            onKeyDown={handleKeyDown}
+            style={{ width: "90%", textAlign: "center", fontFamily: style?.fontFamily || "inherit", fontSize: style?.fontSize ? `${style.fontSize}px` : "inherit", fontWeight: style?.fontWeight || "normal", fontStyle: style?.fontStyle || "normal", textDecoration: style?.textDecoration || "none", pointerEvents: "auto", background: "transparent", border: "none" }}
+          />
+        ) : (
+          <span
+            style={{ width: "90%", textAlign: "center", fontFamily: style?.fontFamily || "inherit", fontSize: style?.fontSize ? `${style.fontSize}px` : "inherit", fontWeight: style?.fontWeight || "normal", fontStyle: style?.fontStyle || "normal", textDecoration: style?.textDecoration || "none", pointerEvents: "auto", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+          >
+            {inputValue || <span style={{ opacity: 0.2 }}>Double-click to edit</span>}
+          </span>
+        )}
+      </div>
+      <Handle type="target" position={Position.Top} id="t" />
+      <Handle type="target" position={Position.Right} id="r" />
+      <Handle type="target" position={Position.Bottom} id="b" />
+      <Handle type="target" position={Position.Left} id="l" />
+      <Handle type="source" position={Position.Top} id="s-t" />
+      <Handle type="source" position={Position.Right} id="s-r" />
+      <Handle type="source" position={Position.Bottom} id="s-b" />
+      <Handle type="source" position={Position.Left} id="s-l" />
+    </div>
+  );
+}
+
+ParallelogramNode.tsx
+
+import React, { useState, useRef, useEffect } from "react";
+import { Handle, Position, NodeResizer, useReactFlow } from "@xyflow/react";
+
+export default function ParallelogramNode({ id, data, selected, style }: any) {
+  const { setNodes } = useReactFlow();
+  const [editing, setEditing] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [inputValue, setInputValue] = useState(data.label || "");
+
+  useEffect(() => { if (editing) setInputValue(data.label || ""); }, [editing, data.label]);
+  useEffect(() => { if (editing) inputRef.current?.focus(); }, [editing]);
+
+  const handleDoubleClick = (e: React.MouseEvent) => { e.stopPropagation(); setEditing(true); };
+  const handleBlur = () => setEditing(false);
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => { if (e.key === "Enter") { e.preventDefault(); setEditing(false); } };
+  const handleInputChange = (value: string) => {
+    setInputValue(value);
+    setNodes((nds: any) => nds.map((node: any) => node.id === id ? { ...node, data: { ...node.data, label: value } } : node));
+  };
+
+  return (
+    <div style={{ width: "100%", height: "100%", position: "relative" }} onDoubleClick={handleDoubleClick}>
+      <NodeResizer minWidth={60} minHeight={30} isVisible={selected} color="#1890ff" />
+      <svg width="100%" height="100%" viewBox="0 0 100 60">
+        <polygon points="20,10 90,10 70,50 0,50" fill={style?.background || "#fff"} stroke="#222" />
+      </svg>
+      <div style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>
+        {editing ? (
+          <input
+            ref={inputRef}
+            type="text"
+            value={inputValue}
+            onChange={e => handleInputChange(e.target.value)}
+            onBlur={handleBlur}
+            onKeyDown={handleKeyDown}
+            style={{ width: "90%", textAlign: "center", fontFamily: style?.fontFamily || "inherit", fontSize: style?.fontSize ? `${style.fontSize}px` : "inherit", fontWeight: style?.fontWeight || "normal", fontStyle: style?.fontStyle || "normal", textDecoration: style?.textDecoration || "none", pointerEvents: "auto", background: "transparent", border: "none" }}
+          />
+        ) : (
+          <span
+            style={{ width: "90%", textAlign: "center", fontFamily: style?.fontFamily || "inherit", fontSize: style?.fontSize ? `${style.fontSize}px` : "inherit", fontWeight: style?.fontWeight || "normal", fontStyle: style?.fontStyle || "normal", textDecoration: style?.textDecoration || "none", pointerEvents: "auto", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+          >
+            {inputValue || <span style={{ opacity: 0.2 }}>Double-click to edit</span>}
+          </span>
+        )}
+      </div>
+      <Handle type="target" position={Position.Top} id="t" />
+      <Handle type="target" position={Position.Right} id="r" />
+      <Handle type="target" position={Position.Bottom} id="b" />
+      <Handle type="target" position={Position.Left} id="l" />
+      <Handle type="source" position={Position.Top} id="s-t" />
+      <Handle type="source" position={Position.Right} id="s-r" />
+      <Handle type="source" position={Position.Bottom} id="s-b" />
+      <Handle type="source" position={Position.Left} id="s-l" />
+    </div>
+  );
+}
+
+OvalNode.tsx
+
+import React, { useState, useRef, useEffect } from "react";
+import { Handle, Position, NodeResizer, useReactFlow } from "@xyflow/react";
+
+export default function OvalNode({ id, data, selected, style }: any) {
+  const { setNodes } = useReactFlow();
+  const [editing, setEditing] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [inputValue, setInputValue] = useState(data.label || "");
+
+  useEffect(() => { if (editing) setInputValue(data.label || ""); }, [editing, data.label]);
+  useEffect(() => { if (editing) inputRef.current?.focus(); }, [editing]);
+
+  const handleDoubleClick = (e: React.MouseEvent) => { e.stopPropagation(); setEditing(true); };
+  const handleBlur = () => setEditing(false);
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => { if (e.key === "Enter") { e.preventDefault(); setEditing(false); } };
+  const handleInputChange = (value: string) => {
+    setInputValue(value);
+    setNodes((nds: any) => nds.map((node: any) => node.id === id ? { ...node, data: { ...node.data, label: value } } : node));
+  };
+
+  return (
+    <div style={{ width: "100%", height: "100%", position: "relative" }} onDoubleClick={handleDoubleClick}>
+      <NodeResizer minWidth={60} minHeight={30} isVisible={selected} color="#1890ff" />
+      <svg width="100%" height="100%" viewBox="0 0 100 60">
+        <ellipse cx={50} cy={30} rx={40} ry={25} fill={style?.background || "#fff"} stroke="#222" />
+      </svg>
+      <div style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>
+        {editing ? (
+          <input
+            ref={inputRef}
+            type="text"
+            value={inputValue}
+            onChange={e => handleInputChange(e.target.value)}
+            onBlur={handleBlur}
+            onKeyDown={handleKeyDown}
+            style={{ width: "90%", textAlign: "center", fontFamily: style?.fontFamily || "inherit", fontSize: style?.fontSize ? `${style.fontSize}px` : "inherit", fontWeight: style?.fontWeight || "normal", fontStyle: style?.fontStyle || "normal", textDecoration: style?.textDecoration || "none", pointerEvents: "auto", background: "transparent", border: "none" }}
+          />
+        ) : (
+          <span
+            style={{ width: "90%", textAlign: "center", fontFamily: style?.fontFamily || "inherit", fontSize: style?.fontSize ? `${style.fontSize}px` : "inherit", fontWeight: style?.fontWeight || "normal", fontStyle: style?.fontStyle || "normal", textDecoration: style?.textDecoration || "none", pointerEvents: "auto", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+          >
+            {inputValue || <span style={{ opacity: 0.2 }}>Double-click to edit</span>}
+          </span>
+        )}
+      </div>
+      <Handle type="target" position={Position.Top} id="t" />
+      <Handle type="target" position={Position.Right} id="r" />
+      <Handle type="target" position={Position.Bottom} id="b" />
+      <Handle type="target" position={Position.Left} id="l" />
+      <Handle type="source" position={Position.Top} id="s-t" />
+      <Handle type="source" position={Position.Right} id="s-r" />
+      <Handle type="source" position={Position.Bottom} id="s-b" />
+      <Handle type="source" position={Position.Left} id="s-l" />
+    </div>
+  );
+}
+
+SquareNode.tsx
+
+import React, { useState, useRef, useEffect } from "react";
+import { Handle, Position, NodeResizer, useReactFlow } from "@xyflow/react";
+
+export default function SquareNode({ id, data, selected, style }: any) {
+  const { setNodes } = useReactFlow();
+  const [editing, setEditing] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [inputValue, setInputValue] = useState(data.label || "");
+
+  useEffect(() => { if (editing) setInputValue(data.label || ""); }, [editing, data.label]);
+  useEffect(() => { if (editing) inputRef.current?.focus(); }, [editing]);
+
+  const handleDoubleClick = (e: React.MouseEvent) => { e.stopPropagation(); setEditing(true); };
+  const handleBlur = () => setEditing(false);
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => { if (e.key === "Enter") { e.preventDefault(); setEditing(false); } };
+  const handleInputChange = (value: string) => {
+    setInputValue(value);
+    setNodes((nds: any) => nds.map((node: any) => node.id === id ? { ...node, data: { ...node.data, label: value } } : node));
+  };
+
+  return (
+    <div style={{ width: "100%", height: "100%", position: "relative" }} onDoubleClick={handleDoubleClick}>
+      <NodeResizer minWidth={40} minHeight={40} isVisible={selected} color="#1890ff" />
+      <svg width="100%" height="100%" viewBox="0 0 80 80">
+        <rect x={10} y={10} width={60} height={60} fill={style?.background || "#fff"} stroke="#222" />
+      </svg>
+      <div style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>
+        {editing ? (
+          <input
+            ref={inputRef}
+            type="text"
+            value={inputValue}
+            onChange={e => handleInputChange(e.target.value)}
+            onBlur={handleBlur}
+            onKeyDown={handleKeyDown}
+            style={{ width: "90%", textAlign: "center", fontFamily: style?.fontFamily || "inherit", fontSize: style?.fontSize ? `${style.fontSize}px` : "inherit", fontWeight: style?.fontWeight || "normal", fontStyle: style?.fontStyle || "normal", textDecoration: style?.textDecoration || "none", pointerEvents: "auto", background: "transparent", border: "none" }}
+          />
+        ) : (
+          <span
+            style={{ width: "90%", textAlign: "center", fontFamily: style?.fontFamily || "inherit", fontSize: style?.fontSize ? `${style.fontSize}px` : "inherit", fontWeight: style?.fontWeight || "normal", fontStyle: style?.fontStyle || "normal", textDecoration: style?.textDecoration || "none", pointerEvents: "auto", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+          >
+            {inputValue || <span style={{ opacity: 0.2 }}>Double-click to edit</span>}
+          </span>
+        )}
+      </div>
+      <Handle type="target" position={Position.Top} id="t" />
+      <Handle type="target" position={Position.Right} id="r" />
+      <Handle type="target" position={Position.Bottom} id="b" />
+      <Handle type="target" position={Position.Left} id="l" />
+      <Handle type="source" position={Position.Top} id="s-t" />
+      <Handle type="source" position={Position.Right} id="s-r" />
+      <Handle type="source" position={Position.Bottom} id="s-b" />
+      <Handle type="source" position={Position.Left} id="s-l" />
+    </div>
+  );
+}
+
+TriangleNode.tsx
+
+import React, { useState, useRef, useEffect } from "react";
+import { Handle, Position, NodeResizer, useReactFlow } from "@xyflow/react";
+
+export default function TriangleNode({ id, data, selected, style }: any) {
+  const { setNodes } = useReactFlow();
+  const [editing, setEditing] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [inputValue, setInputValue] = useState(data.label || "");
+
+  useEffect(() => { if (editing) setInputValue(data.label || ""); }, [editing, data.label]);
+  useEffect(() => { if (editing) inputRef.current?.focus(); }, [editing]);
+
+  const handleDoubleClick = (e: React.MouseEvent) => { e.stopPropagation(); setEditing(true); };
+  const handleBlur = () => setEditing(false);
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => { if (e.key === "Enter") { e.preventDefault(); setEditing(false); } };
+  const handleInputChange = (value: string) => {
+    setInputValue(value);
+    setNodes((nds: any) => nds.map((node: any) => node.id === id ? { ...node, data: { ...node.data, label: value } } : node));
+  };
+
+  return (
+    <div style={{ width: "100%", height: "100%", position: "relative" }} onDoubleClick={handleDoubleClick}>
+      <NodeResizer minWidth={60} minHeight={40} isVisible={selected} color="#1890ff" />
+      <svg width="100%" height="100%" viewBox="0 0 100 80">
+        <polygon points="50,10 90,70 10,70" fill={style?.background || "#fff"} stroke="#222" />
+      </svg>
+      <div style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>
+        {editing ? (
+          <input
+            ref={inputRef}
+            type="text"
+            value={inputValue}
+            onChange={e => handleInputChange(e.target.value)}
+            onBlur={handleBlur}
+            onKeyDown={handleKeyDown}
+            style={{ width: "90%", textAlign: "center", fontFamily: style?.fontFamily || "inherit", fontSize: style?.fontSize ? `${style.fontSize}px` : "inherit", fontWeight: style?.fontWeight || "normal", fontStyle: style?.fontStyle || "normal", textDecoration: style?.textDecoration || "none", pointerEvents: "auto", background: "transparent", border: "none" }}
+          />
+        ) : (
+          <span
+            style={{ width: "90%", textAlign: "center", fontFamily: style?.fontFamily || "inherit", fontSize: style?.fontSize ? `${style.fontSize}px` : "inherit", fontWeight: style?.fontWeight || "normal", fontStyle: style?.fontStyle || "normal", textDecoration: style?.textDecoration || "none", pointerEvents: "auto", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+          >
+            {inputValue || <span style={{ opacity: 0.2 }}>Double-click to edit</span>}
+          </span>
+        )}
+      </div>
+      <Handle type="target" position={Position.Top} id="t" />
+      <Handle type="target" position={Position.Right} id="r" />
+      <Handle type="target" position={Position.Bottom} id="b" />
+      <Handle type="target" position={Position.Left} id="l" />
+      <Handle type="source" position={Position.Top} id="s-t" />
+      <Handle type="source" position={Position.Right} id="s-r" />
+      <Handle type="source" position={Position.Bottom} id="s-b" />
+      <Handle type="source" position={Position.Left} id="s-l" />
+    </div>
+  );
+}
+
+
+CylinderNode.tsx
+
+import React, { useState, useRef, useEffect } from "react";
+import { Handle, Position, NodeResizer, useReactFlow } from "@xyflow/react";
+
+export default function CylinderNode({ id, data, selected, style }: any) {
+  const { setNodes } = useReactFlow();
+  const [editing, setEditing] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [inputValue, setInputValue] = useState(data.label || "");
+
+  useEffect(() => { if (editing) setInputValue(data.label || ""); }, [editing, data.label]);
+  useEffect(() => { if (editing) inputRef.current?.focus(); }, [editing]);
+
+  const handleDoubleClick = (e: React.MouseEvent) => { e.stopPropagation(); setEditing(true); };
+  const handleBlur = () => setEditing(false);
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => { if (e.key === "Enter") { e.preventDefault(); setEditing(false); } };
+  const handleInputChange = (value: string) => {
+    setInputValue(value);
+    setNodes((nds: any) => nds.map((node: any) => node.id === id ? { ...node, data: { ...node.data, label: value } } : node));
+  };
+
+  return (
+    <div style={{ width: "100%", height: "100%", position: "relative" }} onDoubleClick={handleDoubleClick}>
+      <NodeResizer minWidth={60} minHeight={40} isVisible={selected} color="#1890ff" />
+      <svg width="100%" height="100%" viewBox="0 0 100 60">
+        <ellipse cx={50} cy={15} rx={40} ry={10} fill={style?.background || "#fff"} stroke="#222" />
+        <rect x={10} y={15} width={80} height={30} fill={style?.background || "#fff"} stroke="#222" />
+        <ellipse cx={50} cy={45} rx={40} ry={10} fill={style?.background || "#fff"} stroke="#222" />
+      </svg>
+      <div style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>
+        {editing ? (
+          <input
+            ref={inputRef}
+            type="text"
+            value={inputValue}
+            onChange={e => handleInputChange(e.target.value)}
+            onBlur={handleBlur}
+            onKeyDown={handleKeyDown}
+            style={{ width: "90%", textAlign: "center", fontFamily: style?.fontFamily || "inherit", fontSize: style?.fontSize ? `${style.fontSize}px` : "inherit", fontWeight: style?.fontWeight || "normal", fontStyle: style?.fontStyle || "normal", textDecoration: style?.textDecoration || "none", pointerEvents: "auto", background: "transparent", border: "none" }}
+          />
+        ) : (
+          <span
+            style={{ width: "90%", textAlign: "center", fontFamily: style?.fontFamily || "inherit", fontSize: style?.fontSize ? `${style.fontSize}px` : "inherit", fontWeight: style?.fontWeight || "normal", fontStyle: style?.fontStyle || "normal", textDecoration: style?.textDecoration || "none", pointerEvents: "auto", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+          >
+            {inputValue || <span style={{ opacity: 0.2 }}>Double-click to edit</span>}
+          </span>
+        )}
+      </div>
+      <Handle type="target" position={Position.Top} id="t" />
+      <Handle type="target" position={Position.Right} id="r" />
+      <Handle type="target" position={Position.Bottom} id="b" />
+      <Handle type="target" position={Position.Left} id="l" />
+      <Handle type="source" position={Position.Top} id="s-t" />
+      <Handle type="source" position={Position.Right} id="s-r" />
+      <Handle type="source" position={Position.Bottom} id="s-b" />
+      <Handle type="source" position={Position.Left} id="s-l" />
+    </div>
+  );
+}
+
+HexagonNode.tsx
+
+import React, { useState, useRef, useEffect } from "react";
+import { Handle, Position, NodeResizer, useReactFlow } from "@xyflow/react";
+
+export default function HexagonNode({ id, data, selected, style }: any) {
+  const { setNodes } = useReactFlow();
+  const [editing, setEditing] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [inputValue, setInputValue] = useState(data.label || "");
+
+  useEffect(() => { if (editing) setInputValue(data.label || ""); }, [editing, data.label]);
+  useEffect(() => { if (editing) inputRef.current?.focus(); }, [editing]);
+
+  const handleDoubleClick = (e: React.MouseEvent) => { e.stopPropagation(); setEditing(true); };
+  const handleBlur = () => setEditing(false);
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => { if (e.key === "Enter") { e.preventDefault(); setEditing(false); } };
+  const handleInputChange = (value: string) => {
+    setInputValue(value);
+    setNodes((nds: any) => nds.map((node: any) => node.id === id ? { ...node, data: { ...node.data, label: value } } : node));
+  };
+
+  return (
+    <div style={{ width: "100%", height: "100%", position: "relative" }} onDoubleClick={handleDoubleClick}>
+      <NodeResizer minWidth={60} minHeight={40} isVisible={selected} color="#1890ff" />
+      <svg width="100%" height="100%" viewBox="0 0 100 80">
+        <polygon points="50,10 85,30 85,60 50,80 15,60 15,30" fill={style?.background || "#fff"} stroke="#222" />
+      </svg>
+      <div style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>
+        {editing ? (
+          <input
+            ref={inputRef}
+            type="text"
+            value={inputValue}
+            onChange={e => handleInputChange(e.target.value)}
+            onBlur={handleBlur}
+            onKeyDown={handleKeyDown}
+            style={{ width: "90%", textAlign: "center", fontFamily: style?.fontFamily || "inherit", fontSize: style?.fontSize ? `${style.fontSize}px` : "inherit", fontWeight: style?.fontWeight || "normal", fontStyle: style?.fontStyle || "normal", textDecoration: style?.textDecoration || "none", pointerEvents: "auto", background: "transparent", border: "none" }}
+          />
+        ) : (
+          <span
+            style={{ width: "90%", textAlign: "center", fontFamily: style?.fontFamily || "inherit", fontSize: style?.fontSize ? `${style.fontSize}px` : "inherit", fontWeight: style?.fontWeight || "normal", fontStyle: style?.fontStyle || "normal", textDecoration: style?.textDecoration || "none", pointerEvents: "auto", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+          >
+            {inputValue || <span style={{ opacity: 0.2 }}>Double-click to edit</span>}
+          </span>
+        )}
+      </div>
+      <Handle type="target" position={Position.Top} id="t" />
+      <Handle type="target" position={Position.Right} id="r" />
+      <Handle type="target" position={Position.Bottom} id="b" />
+      <Handle type="target" position={Position.Left} id="l" />
+      <Handle type="source" position={Position.Top} id="s-t" />
+      <Handle type="source" position={Position.Right} id="s-r" />
+      <Handle type="source" position={Position.Bottom} id="s-b" />
+      <Handle type="source" position={Position.Left} id="s-l" />
+    </div>
+  );
+}
