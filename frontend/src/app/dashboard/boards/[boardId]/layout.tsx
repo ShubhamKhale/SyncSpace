@@ -64,7 +64,7 @@ export default function DashboardLayout({
         {/* Toggle Button (Left) */}
         <button
           onClick={() => setLeftCollapsed(!leftCollapsed)}
-          className="absolute top-3 -right-3 z-30 bg-white border border-gray-300 rounded-full shadow-sm p-1 hover:bg-gray-50 transition"
+          className="absolute top-3 -right-3 z-30 bg-white border border-gray-300 rounded-full shadow-sm p-1 hover:cursor-pointer hover:bg-gray-50 transition"
         >
           {leftCollapsed ? (
             <span className="text-gray-600 text-xs px-1">›</span>
@@ -95,7 +95,7 @@ export default function DashboardLayout({
         {/* Toggle Button (Right) */}
         <button
           onClick={() => setRightCollapsed(!rightCollapsed)}
-          className="absolute top-3 -left-3 z-30 bg-white border border-gray-300 rounded-full shadow-sm p-1 hover:bg-gray-50 transition"
+          className="absolute top-3 -left-3 z-30 bg-white border border-gray-300 rounded-full shadow-sm p-1 hover:cursor-pointer hover:bg-gray-50 transition"
         >
           {rightCollapsed ? (
             <span className="text-gray-600 text-xs px-1">‹</span>
