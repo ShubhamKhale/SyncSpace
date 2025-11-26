@@ -6,7 +6,7 @@ const GlobalTaskDetail = dynamic(() => import("@/app/components/GlobalTaskDetail
   ssr: false,
 });
 
-export default function BoardLayout({ children }: { children: React.ReactNode }) {
+export default function TasksLayout({ children }: { children: React.ReactNode }) {
   return (
     <div>
       {children}
@@ -14,4 +14,3 @@ export default function BoardLayout({ children }: { children: React.ReactNode })
     </div>
   );
 }
-   

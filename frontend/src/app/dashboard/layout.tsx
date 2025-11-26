@@ -56,7 +56,7 @@ export default function DashboardLayout({
 
   return (
     <div className="grid grid-cols-[280px_1fr] h-screen">
-      {!isBoardPage && (
+      {!isBoardPage &&  (
         <aside className="flex flex-col justify-between border border-[var(--sidebar-border-color)]">
           <div>
             <div className="flex p-4 items-center space-x-3 border-b border-b-[var(--sidebar-border-color)]">
