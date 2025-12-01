@@ -1,16 +1,20 @@
 import { type ShapeProps } from '.';
 import { generatePath } from './utils';
 
-function Hexagon({ width, height, ...svgAttributes }: ShapeProps) {
-  const skew = width * 0.1;
+function Hexagon({ width = 50, height = 50, ...svgAttributes }: ShapeProps) {
+
+  const w = Number(width) || 0;
+  const h = Number(height) || 0;
+
+  const skew = w * 0.1;
 
   const hexagonPath = generatePath([
-    [0, height / 2],
+    [0, h / 2],
     [skew, 0],
-    [width - skew, 0],
-    [width, height / 2],
-    [width - skew, height],
-    [skew, height],
+    [w - skew, 0],
+    [w, h / 2],
+    [w - skew, h],
+    [skew, h],
   ]);
 
   return <path d={hexagonPath} {...svgAttributes} />;

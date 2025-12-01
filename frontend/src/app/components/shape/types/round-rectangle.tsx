@@ -1,15 +1,19 @@
 import { type ShapeProps } from '.';
 
-function RoundRect({ width, height, ...svgAttributes }: ShapeProps) {
-  const rounding = Math.min(12, 0.2 * Math.min(width, height));
+function RoundRect({ width = 50, height = 50, ...svgAttributes }: ShapeProps) {
 
+  const w = Number(width) || 0;
+  const h = Number(height) || 0;
+
+  const minSide = Math.min(w, h);
+  const rounding = Number.isFinite(minSide) ? Math.min(12, 0.2 * minSide) : 0;
   return (
     <rect
       x={0}
       y={0}
       rx={rounding}
-      width={width}
-      height={height}
+      width={w}
+      height={h}
       {...svgAttributes}
     />
   );

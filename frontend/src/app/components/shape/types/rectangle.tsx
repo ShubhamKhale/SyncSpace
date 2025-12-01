@@ -1,7 +1,12 @@
-import { type ShapeProps } from '.';
+import { type ShapeProps } from ".";
 
-function Rectangle({ width, height, ...svgAttributes }: ShapeProps) {
-  return <rect x={0} y={0} width={width} height={height} {...svgAttributes} />;
+function Rectangle({ width = 50, height = 50, ...svgAttributes }: ShapeProps) {
+
+  const w = Number(width) || 0;
+  const h = Number(height) || 0;
+
+
+  return <rect x={0} y={0} width={w} height={h} {...svgAttributes} />;
 }
 
 export default Rectangle;

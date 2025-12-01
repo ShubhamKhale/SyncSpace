@@ -1,15 +1,19 @@
 import { type ShapeProps } from '.';
 import { generatePath } from './utils';
 
-function ArrowRectangle({ width, height, ...svgAttributes }: ShapeProps) {
-  const skew = width * 0.1;
+function ArrowRectangle({ width = 50, height = 50, ...svgAttributes }: ShapeProps) {
+
+   const w = Number(width) || 0;
+  const h = Number(height) || 0;
+
+  const skew = w * 0.1;
 
   const arrowRectanglePath = generatePath([
     [0, 0],
-    [width - skew, 0],
-    [width, height / 2],
-    [width - skew, height],
-    [0, height],
+    [w - skew, 0],
+    [w, h / 2],
+    [w - skew, h],
+    [0, h],
   ]);
 
   return <path d={arrowRectanglePath} {...svgAttributes} />;

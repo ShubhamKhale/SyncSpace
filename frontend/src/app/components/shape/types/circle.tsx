@@ -1,12 +1,16 @@
 import { type ShapeProps } from ".";
 
-function Circle({ width, height, ...svgAttributes }: ShapeProps) {
+function Circle({ width = 50, height = 50, ...svgAttributes }: ShapeProps) {
+
+   const w = Number(width) || 0;
+  const h = Number(height) || 0;
+  
   return (
     <ellipse
-      cx={width / 2}
-      cy={height / 2}
-      rx={width / 2}
-      ry={height / 2}
+      cx={w / 2}
+      cy={h / 2}
+      rx={w / 2}
+      ry={h / 2}
       {...svgAttributes}
     />
   );

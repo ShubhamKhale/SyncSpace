@@ -30,7 +30,7 @@ import dynamic from "next/dynamic";
 import { EditableEdge } from "./edges/EditableEdge";
 import EdgeToolbar from "./EdgeToolbar/EdgeToolbar";
 import { ConnectionLine } from "./edges/ConnectionLine";
-// import savedDiagramJson from "../json-diagrams/DiagramX.json";
+import savedDiagramJson from "../flow/json-diagrams/DiagramX.json";
 import { About } from "./About";
 import ShapeNode from "./nodes/ShapeNode";
 import { useDiagram } from "@/app/hooks/useDiagram";
@@ -113,11 +113,11 @@ const Flow = () => {
                 onPaneClick={diagram.onPaneClick}
                 nodeTypes={nodeTypes}
                 edgeTypes={edgeTypes}
-                // defaultNodes={savedDiagramJson.nodes}
-                // defaultEdges={savedDiagramJson.edges}
+                defaultNodes={savedDiagramJson.nodes}
+                defaultEdges={savedDiagramJson.edges}
                 defaultEdgeOptions={defaultEdgeOptions}
                 connectionLineType={ConnectionLineType.SmoothStep}
-                fitView
+                // fitView
                 connectionMode={ConnectionMode.Loose}
                 panOnScroll={true}
                 onDrop={diagram.onDrop}
