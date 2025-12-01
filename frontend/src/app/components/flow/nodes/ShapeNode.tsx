@@ -42,7 +42,7 @@ export default function ShapeNode({ data }: any) {
         <Shape width={nodeWidth} height={nodeHeight} fill={fill || "#4e9cff"} />
       </svg>
 
-      <Handle
+      {/* <Handle
         type="source"
         position={Position.Right}
         style={{
@@ -59,6 +59,58 @@ export default function ShapeNode({ data }: any) {
           width: 10,
           height: 10,
           left: -5,
+          background: "#fff",
+        }}
+      /> */}
+
+       {/* RIGHT - source */}
+      <Handle
+        type="source"
+        position={Position.Right}
+        style={{
+          width: 10,
+          height: 10,
+          right: -5,
+          top: nodeHeight / 2 - 5,
+          background: "#fff",
+        }}
+      />
+
+      {/* LEFT - target */}
+      <Handle
+        type="target"
+        position={Position.Left}
+        style={{
+          width: 10,
+          height: 10,
+          left: -5,
+          top: nodeHeight / 2 - 5,
+          background: "#fff",
+        }}
+      />
+
+      {/* TOP - target */}
+      <Handle
+        type="target"
+        position={Position.Top}
+        style={{
+          width: 10,
+          height: 10,
+          top: -5,
+          left: nodeWidth / 2,
+          background: "#fff",
+        }}
+      />
+
+      {/* BOTTOM - source */}
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        style={{
+          width: 10,
+          height: 10,
+          bottom: -5,
+          left: nodeWidth / 2,
           background: "#fff",
         }}
       />

@@ -101,6 +101,9 @@ const Flow = () => {
               : "bg-transparent hidden"
           }`}
         />
+        <ResizablePanel order={1} minSize={15} defaultSize={15}>
+          <Sidebar />
+        </ResizablePanel>
         <ResizablePanel order={2}>
           <PanelGroup direction="horizontal">
             <ResizablePanel minSize={30} order={1}>
@@ -142,9 +145,9 @@ const Flow = () => {
                   color="grey"
                   bgColor={themeHook.theme === "dark" ? "black" : "white"}
                 />
-                <Panel position="top-left">
+                {/* <Panel position="top-left">
                   <Sidebar />
-                </Panel>
+                </Panel> */}
                 {diagram.editingEdgeId ? (
                   <Panel position="top-center">
                     <EdgeToolbar
