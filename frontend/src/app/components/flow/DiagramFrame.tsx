@@ -51,8 +51,6 @@ const defaultEdgeOptions: DefaultEdgeOptions = {
   style: { strokeWidth: 2 },
 };
 
-
-
 const Flow = () => {
   const diagram = useDiagram();
   const { getSnapshotJson, takeSnapshot } = useUndoRedo();
@@ -85,10 +83,14 @@ const Flow = () => {
     "editable-edge": EditableEdgeWrapper,
   };
 
+  type CursorMode = "pan" | "select";
+
+  const [cursorMode, setCursorMode] = useState<CursorMode>("pan");
+ 
+
   return (
     <div className="w-full h-full flex flex-col">
-    
-    <FlowHeader diagram={diagram} />
+      <FlowHeader diagram={diagram} />
 
       <PanelGroup direction="horizontal">
         {isLeftSidebarOpen ? (
@@ -115,7 +117,9 @@ const Flow = () => {
           <PanelGroup direction="horizontal">
             <ResizablePanel minSize={30} order={1}>
               <ReactFlow
-                className={themeHook.theme || "light"}
+                className={`${themeHook.theme || "light"} ${
+                  cursorMode === "select" ? "cursor-default" : "cursor-grab"
+                }`}
                 onConnect={diagram.onConnect}
                 onConnectStart={diagram.onConnectStart}
                 connectionLineComponent={ConnectionLine}
@@ -129,14 +133,17 @@ const Flow = () => {
                 connectionLineType={ConnectionLineType.SmoothStep}
                 fitView
                 connectionMode={ConnectionMode.Loose}
-                panOnScroll={true}
+                panOnDrag={cursorMode === "pan"}
+                selectionOnDrag={cursorMode === "select"}
+                panOnScroll={cursorMode === "pan"}
+                zoomOnScroll={cursorMode === "pan"}
+                selectionKeyCode={cursorMode === "select" ? ["Shift"] : null}
                 onDrop={diagram.onDrop}
                 snapToGrid={false}
                 snapGrid={[10, 10]}
                 onDragOver={diagram.onDragOver}
                 zoomOnDoubleClick={false}
                 onNodesChange={diagram.onNodesChange}
-
                 onNodeDragStart={diagram.onNodeDragStart}
                 onSelectionDragStart={diagram.onSelectionDragStart}
                 onNodesDelete={diagram.onNodesDelete}
@@ -172,15 +179,42 @@ const Flow = () => {
                     toggleRightSidebar={toggleRightSidebar}
                     toggleLeftSidebar={toggleLeftSidebar}
                   />
+                  
                 </Panel>
-                <Controls className="" showInteractive={false}>
+                <Controls className="flex flex-col items-start" showInteractive={false}>
                   <ControlButton onClick={() => diagram.undo()} title="Undo">
                     <CornerUpLeft fillOpacity={0} />
                   </ControlButton>
                   <ControlButton onClick={() => diagram.redo()} title="Redo">
                     <CornerUpRight fillOpacity={0} />
                   </ControlButton>
+                  <div className="w-fit flex flex-col gap-1 bg-white dark:bg-black rounded-lg shadow-md p-0.5">
+                    <button
+                      onClick={() => setCursorMode("select")}
+                      title="Select (Arrow)"
+                      className={`p-2 rounded ${
+                        cursorMode === "select"
+                          ? "bg-blue-500 text-white"
+                          : "hover:bg-gray-200 dark:hover:bg-gray-700"
+                      }`}
+                    >
+                      🖱
+                    </button>
+
+                    <button
+                      onClick={() => setCursorMode("pan")}
+                      title="Pan (Hand)"
+                      className={`p-2 rounded ${
+                        cursorMode === "pan"
+                          ? "bg-blue-500 text-white"
+                          : "hover:bg-gray-200 dark:hover:bg-gray-700"
+                      }`}
+                    >
+                      ✋
+                    </button>
+                  </div>
                 </Controls>
+               
                 <MiniMap
                   zoomable
                   pannable

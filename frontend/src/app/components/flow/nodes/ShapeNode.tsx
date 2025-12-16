@@ -306,6 +306,7 @@ export default function ShapeNode({ data }: any) {
             padding: "4px",
             fontSize: "14px",
             textAlign: "center",
+            color: "#000"
           }}
         />
       ) : (
