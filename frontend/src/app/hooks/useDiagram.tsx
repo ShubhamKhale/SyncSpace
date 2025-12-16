@@ -9,6 +9,7 @@ import {
   addEdge,
   useReactFlow as useReactFlowHook,
   useStore,
+  applyNodeChanges,
 } from "@xyflow/react";
 import {
   DragEventHandler,
@@ -18,10 +19,6 @@ import {
   useState,
 } from "react";
 import useUndoRedo from "./useUndoRedo";
-// import { useAppStore } from "@/components/store";
-// import { DEFAULT_ALGORITHM } from "@/components/edges/EditableEdge/constants";
-// import { ControlPointData } from "@/components/edges/EditableEdge";
-// import { MarkerDefinition } from "@/components/edges/MarkerDefinition";
 import { debounce } from "lodash";
 import { useHelperLines } from "./useHelperLines";
 import { useAppStore } from "../components/flow/store";
@@ -53,24 +50,10 @@ export const useDiagram = () => {
     evt.dataTransfer.dropEffect = "move";
   };
   const [selectedNodeId, setSelectedNodeId] = useState<string>();
-
+  // main code pushed
   const selectAllNodes = () => {
     setNodes((nodes) => nodes.map((node) => ({ ...node, selected: true })));
     setEdges((edges) => edges.map((edge) => ({ ...edge, selected: true })));
-    /* setEdges((edges) =>
-      edges.map((edge) => {
-        //if (!isEditableEdge(edge)) return edge;
-
-        const points = (edge.data?.points as ControlPointData[]) ?? [];
-        const updatedPoints = points.map((point) => ({
-          ...point,
-          selected: true,
-        }));
-        const updatedData = { ...edge.data, points: updatedPoints };
-
-        return { ...edge, data: updatedData };
-      })
-    ); */
   };
 
   const deselectAll = () => {
@@ -144,7 +127,10 @@ export const useDiagram = () => {
       data: {
         type,
         color: "#3F8AE2",
+        text: "",
+        placeholder: true,
       },
+
       selected: true,
     };
 
@@ -153,15 +139,42 @@ export const useDiagram = () => {
     );
   };
 
+  // const onNodesChange = useCallback(
+  //   (changes: NodeChange[]) => {
+  //     const debouncedFunction = debounce(() => {
+  //       handleHelperLines(changes, getNodes());
+  //     }, 1); // 100ms delay
+
+  //     debouncedFunction();
+  //   },
+  //   [getNodes, handleHelperLines]
+  // );
+
   const onNodesChange = useCallback(
     (changes: NodeChange[]) => {
+      // 1️⃣ Apply node size/position changes
+      setNodes((nodes) => {
+        const updated = applyNodeChanges(changes, nodes);
+
+        // 2️⃣ Save width/height from NodeResizer into node.data
+        return updated.map((node) => ({
+          ...node,
+          data: {
+            ...node.data,
+            width: node.width,
+            height: node.height,
+          },
+        }));
+      });
+
+      // 3️⃣ Helper lines support
       const debouncedFunction = debounce(() => {
         handleHelperLines(changes, getNodes());
-      }, 1); // 100ms delay
+      }, 1);
 
       debouncedFunction();
     },
-    [getNodes, handleHelperLines]
+    [setNodes, getNodes, handleHelperLines]
   );
 
   // Inefficient method of dragging nodes

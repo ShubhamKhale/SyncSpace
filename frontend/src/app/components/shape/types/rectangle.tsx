@@ -1,6 +1,6 @@
 import { type ShapeProps } from ".";
 
-function Rectangle({ width = 50, height = 50, ...svgAttributes }: ShapeProps) {
+function Rectangle({ width = 180, height = 50, ...svgAttributes }: ShapeProps) {
 
   const w = Number(width) || 0;
   const h = Number(height) || 0;

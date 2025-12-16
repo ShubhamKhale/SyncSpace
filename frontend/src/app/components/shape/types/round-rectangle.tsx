@@ -1,6 +1,6 @@
 import { type ShapeProps } from '.';
 
-function RoundRect({ width = 50, height = 50, ...svgAttributes }: ShapeProps) {
+function RoundRect({ width = 80, height = 50, ...svgAttributes }: ShapeProps) {
 
   const w = Number(width) || 0;
   const h = Number(height) || 0;

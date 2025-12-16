@@ -1,3 +1,4 @@
+"use client";
 import {
   Background,
   ConnectionLineType,
@@ -39,6 +40,7 @@ import { useWindowSize } from "@/app/hooks/useWindowSize";
 import { useTheme } from "@/app/hooks/useTheme";
 import Sidebar from "./Sidebar/Sidebar";
 import { Menu } from "./Menu";
+import { FlowHeader } from "./FlowHeader/FlowHeader";
 
 const nodeTypes: NodeTypes = {
   shape: ShapeNode,
@@ -48,6 +50,8 @@ const defaultEdgeOptions: DefaultEdgeOptions = {
   type: "editable-edge",
   style: { strokeWidth: 2 },
 };
+
+
 
 const Flow = () => {
   const diagram = useDiagram();
@@ -82,7 +86,10 @@ const Flow = () => {
   };
 
   return (
-    <div className="w-full h-full">
+    <div className="w-full h-full flex flex-col">
+    
+    <FlowHeader diagram={diagram} />
+
       <PanelGroup direction="horizontal">
         {isLeftSidebarOpen ? (
           <ResizablePanel
@@ -101,7 +108,7 @@ const Flow = () => {
               : "bg-transparent hidden"
           }`}
         />
-        <ResizablePanel order={1} minSize={15} defaultSize={15}>
+        <ResizablePanel order={1} minSize={20} defaultSize={20}>
           <Sidebar />
         </ResizablePanel>
         <ResizablePanel order={2}>
@@ -120,7 +127,7 @@ const Flow = () => {
                 defaultEdges={savedDiagramJson.edges}
                 defaultEdgeOptions={defaultEdgeOptions}
                 connectionLineType={ConnectionLineType.SmoothStep}
-                // fitView
+                fitView
                 connectionMode={ConnectionMode.Loose}
                 panOnScroll={true}
                 onDrop={diagram.onDrop}
@@ -129,6 +136,7 @@ const Flow = () => {
                 onDragOver={diagram.onDragOver}
                 zoomOnDoubleClick={false}
                 onNodesChange={diagram.onNodesChange}
+
                 onNodeDragStart={diagram.onNodeDragStart}
                 onSelectionDragStart={diagram.onSelectionDragStart}
                 onNodesDelete={diagram.onNodesDelete}
