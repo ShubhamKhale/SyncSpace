@@ -13,6 +13,10 @@ import {
   Panel,
   EdgeTypes,
   EdgeProps,
+  StraightEdge,
+  StepEdge,
+  SmoothStepEdge,
+  BezierEdge,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import "./nodeStyles.css";
@@ -76,9 +80,18 @@ const Flow = () => {
     },
     [diagram]
   );
+  // const edgeTypes: EdgeTypes = {
+  //   "editable-edge": EditableEdgeWrapper,
+  // };
+
   const edgeTypes: EdgeTypes = {
-    "editable-edge": EditableEdgeWrapper,
-  };
+  straight: StraightEdge,
+  step: StepEdge,
+  smoothstep: SmoothStepEdge,
+  bezier: BezierEdge,
+  "editable-edge": EditableEdgeWrapper,
+};
+
 
   const defaultEdgeOptions: DefaultEdgeOptions = {
   type: "editable-edge",
