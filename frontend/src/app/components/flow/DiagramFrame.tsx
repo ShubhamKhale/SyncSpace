@@ -46,10 +46,7 @@ const nodeTypes: NodeTypes = {
   shape: ShapeNode,
 };
 
-const defaultEdgeOptions: DefaultEdgeOptions = {
-  type: "editable-edge",
-  style: { strokeWidth: 2 },
-};
+
 
 const Flow = () => {
   const diagram = useDiagram();
@@ -82,6 +79,13 @@ const Flow = () => {
   const edgeTypes: EdgeTypes = {
     "editable-edge": EditableEdgeWrapper,
   };
+
+  const defaultEdgeOptions: DefaultEdgeOptions = {
+  type: "editable-edge",
+  style: { strokeWidth: 2 },
+};
+
+
 
   type CursorMode = "pan" | "select";
 

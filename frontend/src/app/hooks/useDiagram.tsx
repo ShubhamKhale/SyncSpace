@@ -50,7 +50,7 @@ export const useDiagram = () => {
     evt.dataTransfer.dropEffect = "move";
   };
   const [selectedNodeId, setSelectedNodeId] = useState<string>();
-  // main code pushed
+
   const selectAllNodes = () => {
     setNodes((nodes) => nodes.map((node) => ({ ...node, selected: true })));
     setEdges((edges) => edges.map((edge) => ({ ...edge, selected: true })));
@@ -64,86 +64,85 @@ export const useDiagram = () => {
   const clipboardRef = useRef<{
     nodes: any[];
     edges: any[];
-  } | null >(null);
+  } | null>(null);
 
   const generatedId = () => window.crypto.randomUUID();
 
   const copySelection = useCallback(() => {
-  const nodes = getNodes().filter((n) => n.selected);
-  if (!nodes.length) return;
+    const nodes = getNodes().filter((n) => n.selected);
+    if (!nodes.length) return;
 
-  const nodeIds = new Set(nodes.map((n) => n.id));
+    const nodeIds = new Set(nodes.map((n) => n.id));
 
-  const edges = getEdges().filter(
-    (e) => nodeIds.has(e.source) && nodeIds.has(e.target)
-  );
+    const edges = getEdges().filter(
+      (e) => nodeIds.has(e.source) && nodeIds.has(e.target)
+    );
 
-  clipboardRef.current = {
-    nodes: JSON.parse(JSON.stringify(nodes)),
-    edges: JSON.parse(JSON.stringify(edges)),
-  };
-}, [getNodes, getEdges]);
-
-const pasteSelection = useCallback(() => {
-  if (!clipboardRef.current) return;
-
-  takeSnapshot();
-
-  const OFFSET = 40;
-  const idMap = new Map<string, string>();
-
-  const newNodes = clipboardRef.current.nodes.map((node) => {
-    const newId = generatedId();
-    idMap.set(node.id, newId);
-
-    return {
-      ...node,
-      id: newId,
-      position: {
-        x: node.position.x + OFFSET,
-        y: node.position.y + OFFSET,
-      },
-      selected: true,
+    clipboardRef.current = {
+      nodes: JSON.parse(JSON.stringify(nodes)),
+      edges: JSON.parse(JSON.stringify(edges)),
     };
-  });
+  }, [getNodes, getEdges]);
 
-  const newEdges = clipboardRef.current.edges.map((edge) => ({
-    ...edge,
-    id: generatedId(),
-    source: idMap.get(edge.source)!,
-    target: idMap.get(edge.target)!,
-    selected: true,
-  }));
+  const pasteSelection = useCallback(() => {
+    if (!clipboardRef.current) return;
 
-  setNodes((nodes) =>
-    nodes.map((n) => ({ ...n, selected: false })).concat(newNodes)
-  );
+    takeSnapshot();
 
-  setEdges((edges) =>
-    edges.map((e) => ({ ...e, selected: false })).concat(newEdges)
-  );
-}, [setNodes, setEdges, takeSnapshot]);
+    const OFFSET = 40;
+    const idMap = new Map<string, string>();
+
+    const newNodes = clipboardRef.current.nodes.map((node) => {
+      const newId = generatedId();
+      idMap.set(node.id, newId);
+
+      return {
+        ...node,
+        id: newId,
+        position: {
+          x: node.position.x + OFFSET,
+          y: node.position.y + OFFSET,
+        },
+        selected: true,
+      };
+    });
+
+    const newEdges = clipboardRef.current.edges.map((edge) => ({
+      ...edge,
+      id: generatedId(),
+      source: idMap.get(edge.source)!,
+      target: idMap.get(edge.target)!,
+      selected: true,
+    }));
+
+    setNodes((nodes) =>
+      nodes.map((n) => ({ ...n, selected: false })).concat(newNodes)
+    );
+
+    setEdges((edges) =>
+      edges.map((e) => ({ ...e, selected: false })).concat(newEdges)
+    );
+  }, [setNodes, setEdges, takeSnapshot]);
 
   useEffect(() => {
-  const onKeyDown = (event: KeyboardEvent) => {
-    const isCopy = (event.ctrlKey || event.metaKey) && event.key === "c";
-    const isPaste = (event.ctrlKey || event.metaKey) && event.key === "v";
+    const onKeyDown = (event: KeyboardEvent) => {
+      const isCopy = (event.ctrlKey || event.metaKey) && event.key === "c";
+      const isPaste = (event.ctrlKey || event.metaKey) && event.key === "v";
 
-    if (isCopy) {
-      event.preventDefault();
-      copySelection();
-    }
+      if (isCopy) {
+        event.preventDefault();
+        copySelection();
+      }
 
-    if (isPaste) {
-      event.preventDefault();
-      pasteSelection();
-    }
-  };
+      if (isPaste) {
+        event.preventDefault();
+        pasteSelection();
+      }
+    };
 
-  window.addEventListener("keydown", onKeyDown);
-  return () => window.removeEventListener("keydown", onKeyDown);
-}, [copySelection, pasteSelection]);
-
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [copySelection, pasteSelection]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -419,6 +418,25 @@ const pasteSelection = useCallback(() => {
     });
   };
 
+  const updateSelectedEdgesType = useCallback(
+  (type: "straight" | "step" | "smoothstep" | "bezier") => {
+    takeSnapshot();
+
+    setEdges((edges) =>
+      edges.map((edge) =>
+        edge.selected
+          ? {
+              ...edge,
+              type,
+            }
+          : edge
+      )
+    );
+  },
+  [setEdges, takeSnapshot]
+);
+
+
   return {
     onDragOver,
     onDrop,
@@ -451,5 +469,6 @@ const pasteSelection = useCallback(() => {
     useStore,
     deselectAll,
     uploadJson,
+    updateSelectedEdgesType,
   };
 };

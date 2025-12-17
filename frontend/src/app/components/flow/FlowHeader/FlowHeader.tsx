@@ -1,14 +1,21 @@
 "use client";
 
 import { useCallback } from "react";
-import { Bold, Italic, Underline, Share2, Lock, Link2, Copy } from "react-feather";
+import {
+  Bold,
+  Italic,
+  Underline,
+  Share2,
+  Lock,
+  Link2,
+  Copy,
+} from "react-feather";
 
 interface HeaderProps {
   diagram: any;
 }
 
 export const FlowHeader = ({ diagram }: HeaderProps) => {
-
   const applyNodeStyle = useCallback(
     (style: any) => {
       if (!diagram.selectedNodes?.length) return;
@@ -27,7 +34,6 @@ export const FlowHeader = ({ diagram }: HeaderProps) => {
 
   return (
     <div className="w-full border-b bg-white dark:bg-black px-3 py-2 flex items-center gap-3 text-sm">
-
       {/* FONT FAMILY */}
       <select className="border rounded px-2 py-1">
         <option>Inter</option>
@@ -71,7 +77,9 @@ export const FlowHeader = ({ diagram }: HeaderProps) => {
       {/* STROKE WIDTH */}
       <select
         className="border rounded px-2 py-1"
-        onChange={(e) => applyEdgeStyle({ strokeWidth: Number(e.target.value) })}
+        onChange={(e) =>
+          applyEdgeStyle({ strokeWidth: Number(e.target.value) })
+        }
       >
         <option value="1">1 px</option>
         <option value="2">2 px</option>
@@ -79,27 +87,39 @@ export const FlowHeader = ({ diagram }: HeaderProps) => {
       </select>
 
       {/* ARROW TYPE */}
+      {/* EDGE TYPE */}
       <select
         className="border rounded px-2 py-1"
-        onChange={(e) => applyEdgeStyle({ markerEnd: e.target.value })}
+        onChange={(e) =>
+          diagram.updateSelectedEdgesType(
+            e.target.value as "straight" | "step" | "smoothstep" | "bezier"
+          )
+        }
+        defaultValue="smoothstep"
       >
-        <option value="none">None</option>
-        <option value="arrow">→ Arrow</option>
-        <option value="double">↔ Double</option>
+        <option value="straight">Straight</option>
+        <option value="step">Step</option>
+        <option value="smoothstep">Smooth</option>
+        <option value="bezier">Bezier</option>
       </select>
 
       <div className="flex-grow"></div>
 
       {/* ACTION ICONS */}
-      <button><Link2 size={18} /></button>
-      <button><Copy size={18} /></button>
-      <button><Lock size={18} /></button>
+      <button>
+        <Link2 size={18} />
+      </button>
+      <button>
+        <Copy size={18} />
+      </button>
+      <button>
+        <Lock size={18} />
+      </button>
 
       {/* SHARE BUTTON */}
       <button className="ml-3 bg-blue-600 text-white px-4 py-1 rounded flex items-center gap-1">
         <Share2 size={16} /> Share
       </button>
-
     </div>
   );
 };
