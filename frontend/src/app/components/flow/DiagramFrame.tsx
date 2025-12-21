@@ -96,7 +96,7 @@ const Flow = () => {
 
 
   const defaultEdgeOptions: DefaultEdgeOptions = {
-  type: "arrow",
+  type: "editable-edge",
   style: { strokeWidth: 2 },
 };
 

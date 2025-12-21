@@ -124,6 +124,47 @@ export const useDiagram = () => {
     );
   }, [setNodes, setEdges, takeSnapshot]);
 
+  const updateSelectedNodesFontSize = useCallback(
+    (fontSize: number) => {
+      takeSnapshot();
+      setNodes((nodes) =>
+        nodes.map((node) =>
+          node.selected
+            ? {
+                ...node,
+                data: {
+                  ...node.data,
+                  fontSize,
+                },
+              }
+            : node
+        )
+      );
+    },
+    [setNodes, takeSnapshot]
+  );
+  
+  const updateSelectedNodesFontFamily = useCallback(
+    (fontFamily: string) => {
+      takeSnapshot();
+      setNodes((nodes) =>
+        nodes.map((node) =>
+          node.selected
+            ? {
+                ...node,
+                data: {
+                  ...node.data,
+                  fontFamily,
+                },
+              }
+            : node
+        )
+      );
+    },
+    [setNodes, takeSnapshot]
+  );
+  
+
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       const isCopy = (event.ctrlKey || event.metaKey) && event.key === "c";
@@ -436,6 +477,28 @@ export const useDiagram = () => {
   [setEdges, takeSnapshot]
 );
 
+const toggleNodeStyle = useCallback(
+  (key: string, onValue: any, offValue: any) => {
+    takeSnapshot();
+    setNodes((nodes) =>
+      nodes.map((node) =>
+        node.selected
+          ? {
+              ...node,
+              data: {
+                ...node.data,
+                [key]:
+                  node.data?.[key] === onValue ? offValue : onValue,
+              },
+            }
+          : node
+      )
+    );
+  },
+  [setNodes, takeSnapshot]
+);
+
+
 
   return {
     onDragOver,
@@ -470,5 +533,8 @@ export const useDiagram = () => {
     deselectAll,
     uploadJson,
     updateSelectedEdgesType,
+    updateSelectedNodesFontSize,
+    updateSelectedNodesFontFamily,
+    toggleNodeStyle,
   };
 };

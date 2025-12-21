@@ -194,7 +194,19 @@ import { ShapeComponents, ShapeType } from "@/app/components/shape/types";
 import { useEffect, useState } from "react";
 
 export default function ShapeNode({ data }: any) {
-  const { type, width, height, fill, text } = data;
+  const {
+    type,
+    width,
+    height,
+    fill,
+    text,
+    fontSize = 14,
+    fontFamily = "Inter, sans-serif",
+    fontWeight = "normal",
+    fontStyle = "normal",
+    textDecoration = "none",
+    color = "#000",
+  } = data;
   const Shape = ShapeComponents[type as ShapeType];
 
   const nodeWidth = width || 80;
@@ -229,16 +241,15 @@ export default function ShapeNode({ data }: any) {
   useEffect(() => {
     const handleDelete = (e: KeyboardEvent) => {
       if (!isSelected) return;
-  
-      if (e.key === "Delete" || e.key === "Backspace") {
+
+      if (e.key === "Delete") {
         setNodes((nodes) => nodes.filter((n) => n.id !== nodeId));
       }
     };
-  
+
     window.addEventListener("keydown", handleDelete);
     return () => window.removeEventListener("keydown", handleDelete);
   }, [isSelected, nodeId, setNodes]);
-  
 
   return (
     <div
@@ -264,8 +275,7 @@ export default function ShapeNode({ data }: any) {
             border: "none",
             cursor: "pointer",
           }}
-        >
-        </button>
+        ></button>
       )}
 
       {isSelected && (
@@ -291,44 +301,52 @@ export default function ShapeNode({ data }: any) {
       {/* Editable Text */}
       {isEditing ? (
         <textarea
-          autoFocus
-          value={localText}
-          onChange={(e) => setLocalText(e.target.value)}
-          onBlur={saveText}
-          style={{
-            position: "absolute",
-            width: nodeWidth - 10,
-            height: nodeHeight - 10,
-            resize: "none",
-            outline: "none",
-            border: "1px solid #ccc",
-            background: "white",
-            padding: "4px",
-            fontSize: "14px",
-            textAlign: "center",
-            color: "#000"
-          }}
-        />
+        autoFocus
+        value={localText}
+        onChange={(e) => setLocalText(e.target.value)}
+        onBlur={saveText}
+        style={{
+          position: "absolute",
+          width: nodeWidth - 10,
+          height: nodeHeight - 10,
+          resize: "none",
+          outline: "none",
+          border: "1px solid #ccc",
+          background: "white",
+          padding: "4px",
+          textAlign: "center",
+          fontSize,
+          fontFamily,
+          fontWeight,
+          fontStyle,
+          textDecoration,
+          color,
+        }}
+      />
+      
       ) : (
         <span
-          onDoubleClick={() => setIsEditing(true)}
-          style={{
-            position: "absolute",
-            width: nodeWidth,
-            padding: "5px",
-            textAlign: "center",
-            pointerEvents: "auto",
-            fontSize: "14px",
-            whiteSpace: "pre-wrap",
-            lineHeight: "1.2",
-            color: isPlaceholder ? "#868686" : "#000",
-            opacity: isPlaceholder ? 0.6 : 1,
-            fontStyle: isPlaceholder ? "italic" : "normal",
-            userSelect: "none",
-          }}
-        >
-          {isPlaceholder ? "Double-click to edit" : localText}
-        </span>
+  onDoubleClick={() => setIsEditing(true)}
+  style={{
+    position: "absolute",
+    width: nodeWidth,
+    padding: "5px",
+    textAlign: "center",
+    pointerEvents: "auto",
+    fontSize,
+    fontFamily,
+    fontWeight,
+    fontStyle,
+    textDecoration,
+    color,
+    whiteSpace: "pre-wrap",
+    lineHeight: "1.2",
+    opacity: isPlaceholder ? 0.6 : 1,
+    userSelect: "none",
+  }}
+>
+  {isPlaceholder ? "Double-click to edit" : localText}
+</span>
       )}
 
       {/* Handles */}

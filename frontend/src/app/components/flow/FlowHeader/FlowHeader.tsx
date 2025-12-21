@@ -34,29 +34,54 @@ export const FlowHeader = ({ diagram }: HeaderProps) => {
 
   return (
     <div className="w-full border-b bg-white dark:bg-black px-3 py-2 flex items-center gap-3 text-sm">
-      {/* FONT FAMILY */}
-      <select className="border rounded px-2 py-1">
-        <option>Inter</option>
-        <option>Roboto</option>
-        <option>Poppins</option>
-      </select>
+      <div className="flex gap-2 bg-white dark:bg-black p-2 rounded-lg shadow-md">
+        {/* Font Size */}
+        <select
+          onChange={(e) =>
+            diagram.updateSelectedNodesFontSize(Number(e.target.value))
+          }
+          className="border rounded px-2 py-1"
+        >
+          {[12, 14, 16, 18, 20, 24, 32, 36, 40, 44, 48, 52].map((size) => (
+            <option key={size} value={size}>
+              {size}px
+            </option>
+          ))}
+        </select>
 
-      {/* FONT SIZE */}
-      <select className="border rounded px-2 py-1">
-        <option>10 pt</option>
-        <option>12 pt</option>
-        <option>14 pt</option>
-        <option>16 pt</option>
-      </select>
+        {/* Font Family */}
+        <select
+          onChange={(e) =>
+            diagram.updateSelectedNodesFontFamily(e.target.value)
+          }
+          className="border rounded px-2 py-1"
+        >
+          <option value="Inter, sans-serif">Inter</option>
+          <option value="Arial, sans-serif">Arial</option>
+          <option value="Roboto, sans-serif">Roboto</option>
+          <option value="Georgia, serif">Georgia</option>
+          <option value="Courier New, monospace">Monospace</option>
+        </select>
+      </div>
 
       {/* TEXT STYLES */}
-      <button onClick={() => applyNodeStyle({ fontWeight: "bold" })}>
+      <button
+        onClick={() => diagram.toggleNodeStyle("fontWeight", "bold", "normal")}
+      >
         <Bold size={16} />
       </button>
-      <button onClick={() => applyNodeStyle({ fontStyle: "italic" })}>
+
+      <button
+        onClick={() => diagram.toggleNodeStyle("fontStyle", "italic", "normal")}
+      >
         <Italic size={16} />
       </button>
-      <button onClick={() => applyNodeStyle({ textDecoration: "underline" })}>
+
+      <button
+        onClick={() =>
+          diagram.toggleNodeStyle("textDecoration", "underline", "none")
+        }
+      >
         <Underline size={16} />
       </button>
 
@@ -92,16 +117,21 @@ export const FlowHeader = ({ diagram }: HeaderProps) => {
         className="border rounded px-2 py-1"
         onChange={(e) =>
           diagram.updateSelectedEdgesType(
-            e.target.value as "straight" | "step" | "smoothstep" | "bezier"  | "arrow"
+            e.target.value as
+              | "straight"
+              | "step"
+              | "smoothstep"
+              | "bezier"
+              | "arrow"
           )
         }
-        defaultValue="arrow"
+        defaultValue="smoothstep"
       >
         <option value="straight">Straight</option>
         <option value="step">Step</option>
         <option value="smoothstep">Smooth</option>
         <option value="bezier">Bezier</option>
-          <option value="arrow">Arrow</option>
+        <option value="arrow">Arrow</option>
       </select>
 
       <div className="flex-grow"></div>
