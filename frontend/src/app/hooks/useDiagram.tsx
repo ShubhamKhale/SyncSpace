@@ -281,7 +281,7 @@ export const useDiagram = () => {
       const edge = {
         ...connection,
         id: `${Date.now()}-${connection.source}-${connection.target}`,
-        type: "editable-edge",
+        type: "arrow",
         selected: true,
         animated: true,
         data: {
@@ -419,7 +419,7 @@ export const useDiagram = () => {
   };
 
   const updateSelectedEdgesType = useCallback(
-  (type: "straight" | "step" | "smoothstep" | "bezier") => {
+  (type: "straight" | "step" | "smoothstep" | "bezier" | "arrow") => {
     takeSnapshot();
 
     setEdges((edges) =>

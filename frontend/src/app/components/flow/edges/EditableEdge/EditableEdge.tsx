@@ -1,4 +1,4 @@
-import { RefObject, useCallback, useRef } from "react";
+import {  useCallback, useRef } from "react";
 import {
   EdgeLabelRenderer,
   useReactFlow,
@@ -57,11 +57,8 @@ export function EditableEdge({
   targetY,
   targetPosition,
   markerEnd,
-  markerStart,
   style,
   data = { points: [] },
-  useDiagram,
-  ...delegated
 }: EditableEdgeProps) {
   const { setEdges } = useReactFlow();
 

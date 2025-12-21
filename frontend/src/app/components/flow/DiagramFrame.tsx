@@ -45,6 +45,7 @@ import { useTheme } from "@/app/hooks/useTheme";
 import Sidebar from "./Sidebar/Sidebar";
 import { Menu } from "./Menu";
 import { FlowHeader } from "./FlowHeader/FlowHeader";
+import ArrowEdge from "./edges/ArrowEdge";
 
 const nodeTypes: NodeTypes = {
   shape: ShapeNode,
@@ -90,11 +91,12 @@ const Flow = () => {
   smoothstep: SmoothStepEdge,
   bezier: BezierEdge,
   "editable-edge": EditableEdgeWrapper,
+    arrow: ArrowEdge, 
 };
 
 
   const defaultEdgeOptions: DefaultEdgeOptions = {
-  type: "editable-edge",
+  type: "arrow",
   style: { strokeWidth: 2 },
 };
 

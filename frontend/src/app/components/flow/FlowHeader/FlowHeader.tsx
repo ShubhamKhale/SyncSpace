@@ -92,15 +92,16 @@ export const FlowHeader = ({ diagram }: HeaderProps) => {
         className="border rounded px-2 py-1"
         onChange={(e) =>
           diagram.updateSelectedEdgesType(
-            e.target.value as "straight" | "step" | "smoothstep" | "bezier"
+            e.target.value as "straight" | "step" | "smoothstep" | "bezier"  | "arrow"
           )
         }
-        defaultValue="smoothstep"
+        defaultValue="arrow"
       >
         <option value="straight">Straight</option>
         <option value="step">Step</option>
         <option value="smoothstep">Smooth</option>
         <option value="bezier">Bezier</option>
+          <option value="arrow">Arrow</option>
       </select>
 
       <div className="flex-grow"></div>
