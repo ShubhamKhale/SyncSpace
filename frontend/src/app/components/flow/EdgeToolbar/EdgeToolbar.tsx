@@ -324,7 +324,7 @@ function EdgeToolbar(props: EdgeToolbarProps) {
           value={edgeTitle as string}
           onChange={(e) => onUpdateEdgeTitle(e.target.value)}
           placeholder="Edge Title"
-          className="border bg-white dark:bg-black border-black rounded-md p-2 text-black dark:text-white"
+          className="border bg-white dark:bg-[#18181B] border-black rounded-md p-2 text-black dark:text-white"
         />
       </div>
     </div>

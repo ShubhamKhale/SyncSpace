@@ -130,7 +130,7 @@ const ShapeNode = ({ id, selected, data }: any) => {
       <div style={{ position: "relative" }}>
         <input
           className={`absolute bottom-full p-2 text-center w-full text-sm font-bold  ${
-            !data.title ? "bg-transparent" : "bg-white bg-opacity-10 backdrop-blur-sm rounded-md dark:bg-black"
+            !data.title ? "bg-transparent" : "bg-white bg-opacity-10 backdrop-blur-sm rounded-md dark:bg-[#18181B]"
           }`}
           value={data.title}
           onChange={(e) => onTitleChange(e.target.value)}
@@ -146,7 +146,7 @@ const ShapeNode = ({ id, selected, data }: any) => {
         />
         <TextareaAutosize
           className={`absolute resize-none top-full p-2 text-left w-full text-xs  ${
-            !data.description ? "bg-transparent" : "bg-white dark:bg-black bg-opacity-10 backdrop-blur-sm rounded-md"
+            !data.description ? "bg-transparent" : "bg-white dark:bg-[#18181B] bg-opacity-10 backdrop-blur-sm rounded-md"
           }`}
           value={data.description}
           onChange={(e) => onDescriptionChange(e.target.value)}

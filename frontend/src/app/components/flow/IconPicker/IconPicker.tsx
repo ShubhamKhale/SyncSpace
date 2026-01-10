@@ -99,7 +99,7 @@ const IconPicker = ({ value, onChange }: FontAwesomeIconPickerProps) => {
         <div className="iconPicker__popoverContainer">
           <div className="iconPicker__popoverHeader">
             <input
-              className="rounded-md pl-2 bg-white dark:bg-black dark:text-white"
+              className="rounded-md pl-2 bg-white dark:bg-[#18181B] dark:text-white"
               type="text"
               placeholder="Search"
               value={searchText}

@@ -143,7 +143,7 @@ export const useDiagram = () => {
     },
     [setNodes, takeSnapshot]
   );
-  
+
   const updateSelectedNodesFontFamily = useCallback(
     (fontFamily: string) => {
       takeSnapshot();
@@ -162,6 +162,69 @@ export const useDiagram = () => {
       );
     },
     [setNodes, takeSnapshot]
+  );
+
+  const updateSelectedNodesTextColor = useCallback(
+    (textColor: string | null) => {
+      takeSnapshot();
+
+      setNodes((nodes) =>
+        nodes.map((node) =>
+          node.selected
+            ? {
+                ...node,
+                data: {
+                  ...node.data,
+                  textColor, // null = default / inherit
+                },
+              }
+            : node
+        )
+      );
+    },
+    [setNodes, takeSnapshot]
+  );
+
+  const updateSelectedNodesFillColor = useCallback(
+    (fillColor: string | null) => {
+      takeSnapshot();
+
+      setNodes((nodes) =>
+        nodes.map((node) =>
+          node.selected
+            ? {
+                ...node,
+                data: {
+                  ...node.data,
+                  fillColor, // null = transparent
+                },
+              }
+            : node
+        )
+      );
+    },
+    [setNodes, takeSnapshot]
+  );
+
+  const updateSelectedEdgesStrokeWidth = useCallback(
+    (strokeWidth: number) => {
+      takeSnapshot();
+  
+      setEdges((edges) =>
+        edges.map((edge) =>
+          edge.selected
+            ? {
+                ...edge,
+                style: {
+                  ...edge.style,
+                  strokeWidth,
+                },
+              }
+            : edge
+        )
+      );
+    },
+    [setEdges, takeSnapshot]
   );
   
 
@@ -250,8 +313,10 @@ export const useDiagram = () => {
       style: { width: 100, height: 100 },
       data: {
         type,
-        color: "#3F8AE2",
+        color: "#000000",
         text: "",
+        textColor: "#000000",
+        fillColor: "#ffffff",
         placeholder: true,
       },
 
@@ -372,7 +437,9 @@ export const useDiagram = () => {
           style: { width: 100, height: 100 },
           data: {
             type: "rectangle",
-            color: "#3F8AE2",
+            color: "#000000",
+            textColor: "#000000",
+            fillColor: "#ffffff",
           },
           selected: true,
         };
@@ -460,45 +527,42 @@ export const useDiagram = () => {
   };
 
   const updateSelectedEdgesType = useCallback(
-  (type: "straight" | "step" | "smoothstep" | "bezier" | "arrow") => {
-    takeSnapshot();
+    (type: "straight" | "step" | "smoothstep" | "bezier" | "arrow") => {
+      takeSnapshot();
 
-    setEdges((edges) =>
-      edges.map((edge) =>
-        edge.selected
-          ? {
-              ...edge,
-              type,
-            }
-          : edge
-      )
-    );
-  },
-  [setEdges, takeSnapshot]
-);
+      setEdges((edges) =>
+        edges.map((edge) =>
+          edge.selected
+            ? {
+                ...edge,
+                type,
+              }
+            : edge
+        )
+      );
+    },
+    [setEdges, takeSnapshot]
+  );
 
-const toggleNodeStyle = useCallback(
-  (key: string, onValue: any, offValue: any) => {
-    takeSnapshot();
-    setNodes((nodes) =>
-      nodes.map((node) =>
-        node.selected
-          ? {
-              ...node,
-              data: {
-                ...node.data,
-                [key]:
-                  node.data?.[key] === onValue ? offValue : onValue,
-              },
-            }
-          : node
-      )
-    );
-  },
-  [setNodes, takeSnapshot]
-);
-
-
+  const toggleNodeStyle = useCallback(
+    (key: string, onValue: any, offValue: any) => {
+      takeSnapshot();
+      setNodes((nodes) =>
+        nodes.map((node) =>
+          node.selected
+            ? {
+                ...node,
+                data: {
+                  ...node.data,
+                  [key]: node.data?.[key] === onValue ? offValue : onValue,
+                },
+              }
+            : node
+        )
+      );
+    },
+    [setNodes, takeSnapshot]
+  );
 
   return {
     onDragOver,
@@ -535,6 +599,9 @@ const toggleNodeStyle = useCallback(
     updateSelectedEdgesType,
     updateSelectedNodesFontSize,
     updateSelectedNodesFontFamily,
+    updateSelectedNodesTextColor,
+    updateSelectedNodesFillColor,
+    updateSelectedEdgesStrokeWidth,
     toggleNodeStyle,
   };
 };

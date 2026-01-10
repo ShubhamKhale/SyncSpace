@@ -43,21 +43,20 @@ export const Menu = (props: MenuProps) => {
   };
   return (
     <div className="gap-0 cursor-pointer flex">
-      <AboutButton
+      {/* <AboutButton
         onClick={() => {
           props.toggleLeftSidebar();
         }}
-      />
-      <ThemeToggle
+      /> */}
+      {/* <ThemeToggle
         onClick={props.themeHook.darkModeToggle}
         isDarkMode={props.themeHook.theme === "dark"}
-      />
+      /> */}
       <DropdownMenu>
         <DropdownMenuTrigger className="flex flex-row gap-2 justify-center items-center p-1 pl-2 rounded-md hover:bg-slate-200 hover:dark:bg-slate-700 dark:bg-slate-800">
-          Menu
           <RiMenu3Fill />
         </DropdownMenuTrigger>
-        <DropdownMenuContent className="bg-white dark:bg-black text-black dark:text-white">
+        <DropdownMenuContent className="bg-white dark:bg-[#18181B] text-black dark:text-white">
           <DropdownMenuLabel className="w-full justify-start">
             <button
               onClick={() => {

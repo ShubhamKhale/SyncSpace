@@ -43,15 +43,17 @@ import useUndoRedo from "@/app/hooks/useUndoRedo";
 import { useWindowSize } from "@/app/hooks/useWindowSize";
 import { useTheme } from "@/app/hooks/useTheme";
 import Sidebar from "./Sidebar/Sidebar";
-import { Menu } from "./Menu";
+// import { Menu } from "./Menu";
 import { FlowHeader } from "./FlowHeader/FlowHeader";
 import ArrowEdge from "./edges/ArrowEdge";
+import SelectIcon from "@/app/icons/SelectIcon";
+import PanIcon from "@/app/icons/PanIcon";
+// import SelectIcon from "@/app/icons/SelectIcon";
+// import PanIcon from "@/app/icons/PanIcon";
 
 const nodeTypes: NodeTypes = {
   shape: ShapeNode,
 };
-
-
 
 const Flow = () => {
   const diagram = useDiagram();
@@ -86,36 +88,41 @@ const Flow = () => {
   // };
 
   const edgeTypes: EdgeTypes = {
-  straight: StraightEdge,
-  step: StepEdge,
-  smoothstep: SmoothStepEdge,
-  bezier: BezierEdge,
-  "editable-edge": EditableEdgeWrapper,
-    arrow: ArrowEdge, 
-};
-
+    straight: StraightEdge,
+    step: StepEdge,
+    smoothstep: SmoothStepEdge,
+    bezier: BezierEdge,
+    "editable-edge": EditableEdgeWrapper,
+    arrow: ArrowEdge,
+  };
 
   const defaultEdgeOptions: DefaultEdgeOptions = {
-  type: "editable-edge",
-  style: { strokeWidth: 2 },
-};
-
-
+    type: "editable-edge",
+    style: { strokeWidth: 2 },
+  };
 
   type CursorMode = "pan" | "select";
 
   const [cursorMode, setCursorMode] = useState<CursorMode>("pan");
- 
+  const isSelectActive = cursorMode === "select";
+  const isPanActive = cursorMode === "pan";
 
   return (
     <div className="w-full h-full flex flex-col">
-      <FlowHeader diagram={diagram} />
+
+      <FlowHeader
+        diagram={diagram}
+        themeHook={themeHook}
+        isRightSidebarOpen={isRightSidebarOpen}
+        toggleRightSidebar={toggleRightSidebar}
+        toggleLeftSidebar={toggleLeftSidebar}
+      />
 
       <PanelGroup direction="horizontal">
         {isLeftSidebarOpen ? (
           <ResizablePanel
             order={1}
-            className="bg-white dark:bg-black"
+            className="bg-white dark:bg-[#18181B]"
             defaultSize={getDefaultSize(width)}
             minSize={getDefaultSize(width)}
           >
@@ -177,7 +184,7 @@ const Flow = () => {
               >
                 <Background
                   color="grey"
-                  bgColor={themeHook.theme === "dark" ? "black" : "white"}
+                  bgColor={themeHook.theme === "dark" ? "#18181B" : "white"}
                 />
                 {/* <Panel position="top-left">
                   <Sidebar />
@@ -190,7 +197,7 @@ const Flow = () => {
                     />
                   </Panel>
                 ) : null}
-                <Panel position="top-right">
+                {/* <Panel position="top-right">
                   <Menu
                     themeHook={themeHook}
                     diagram={diagram}
@@ -198,42 +205,33 @@ const Flow = () => {
                     toggleRightSidebar={toggleRightSidebar}
                     toggleLeftSidebar={toggleLeftSidebar}
                   />
-                  
-                </Panel>
-                <Controls className="flex flex-col items-start" showInteractive={false}>
+                </Panel> */}
+                <Controls className="flex items-start" showInteractive={false}>
                   <ControlButton onClick={() => diagram.undo()} title="Undo">
                     <CornerUpLeft fillOpacity={0} />
                   </ControlButton>
                   <ControlButton onClick={() => diagram.redo()} title="Redo">
                     <CornerUpRight fillOpacity={0} />
                   </ControlButton>
-                  <div className="w-fit flex flex-col gap-1 bg-white dark:bg-black rounded-lg shadow-md p-0.5">
+                  <div className="w-fit flex flex-col">
                     <button
                       onClick={() => setCursorMode("select")}
-                      title="Select (Arrow)"
-                      className={`p-2 rounded ${
-                        cursorMode === "select"
-                          ? "bg-blue-500 text-white"
-                          : "hover:bg-gray-200 dark:hover:bg-gray-700"
-                      }`}
+                      className=" hover:cursor-pointer"
                     >
-                      🖱
+                      <SelectIcon
+                        fill={isSelectActive ? "#3B82F6" : "#A1A1AA"}
+                      />
                     </button>
 
                     <button
                       onClick={() => setCursorMode("pan")}
-                      title="Pan (Hand)"
-                      className={`p-2 rounded ${
-                        cursorMode === "pan"
-                          ? "bg-blue-500 text-white"
-                          : "hover:bg-gray-200 dark:hover:bg-gray-700"
-                      }`}
+                      className="hover:cursor-pointer border-t border-t-[#5b5b5b]"
                     >
-                      ✋
+                      <PanIcon fill={isPanActive ? "#3B82F6" : "#A1A1AA"} />
                     </button>
                   </div>
                 </Controls>
-               
+
                 <MiniMap
                   zoomable
                   pannable
