@@ -23,20 +23,21 @@ export default function ShapeNode({ data }: any) {
   //   color = "#000",
   // } = data;
   const {
-  type,
-  width,
-  height,
-  text,
-  fontSize = 14,
-  fontFamily = "Inter, sans-serif",
-  fontWeight = "normal",
-  fontStyle = "normal",
-  textDecoration = "none",
+    type,
+    width,
+    height,
+    text,
+    fontSize = 14,
+    fontFamily = "Inter, sans-serif",
+    fontWeight = "normal",
+    fontStyle = "normal",
+    textDecoration = "none",
 
-  // NEW
-  textColor = "#000000",
-  fillColor = "#ffffff",
-} = data;
+    // NEW
+    textColor = "#000000",
+    fillColor = "#ffffff",
+    strokeWidth = 2,
+  } = data;
 
   const Shape = ShapeComponents[type as ShapeType];
 
@@ -121,64 +122,62 @@ export default function ShapeNode({ data }: any) {
       {/* Shape */}
       <svg width={nodeWidth} height={nodeHeight}>
         <Shape
-  width={nodeWidth}
-  height={nodeHeight}
-  fill={fillColor ?? "transparent"}
-  stroke="black"
-  strokeWidth={2}
-/>
-
+          width={nodeWidth}
+          height={nodeHeight}
+          fill={fillColor ?? "transparent"}
+          stroke="black"
+          strokeWidth={strokeWidth}
+        />
       </svg>
 
       {/* Editable Text */}
       {isEditing ? (
         <textarea
-        autoFocus
-        value={localText}
-        onChange={(e) => setLocalText(e.target.value)}
-        onBlur={saveText}
-        style={{
-          position: "absolute",
-          width: nodeWidth - 10,
-          height: nodeHeight - 10,
-          resize: "none",
-          outline: "none",
-          border: "1px solid #ccc",
-          background: "white",
-          padding: "4px",
-          textAlign: "center",
-          fontSize,
-          fontFamily,
-          fontWeight,
-          fontStyle,
-          textDecoration,
-          color: textColor,
-        }}
-      />
-      
+          autoFocus
+          value={localText}
+          onChange={(e) => setLocalText(e.target.value)}
+          onBlur={saveText}
+          style={{
+            position: "absolute",
+            width: nodeWidth - 10,
+            height: nodeHeight - 10,
+            resize: "none",
+            outline: "none",
+            border: "1px solid #ccc",
+            background: "white",
+            padding: "4px",
+            textAlign: "center",
+            fontSize,
+            fontFamily,
+            fontWeight,
+            fontStyle,
+            textDecoration,
+            color: textColor,
+          }}
+        />
       ) : (
         <span
-  onDoubleClick={() => setIsEditing(true)}
-  style={{
-    position: "absolute",
-    width: nodeWidth,
-    padding: "5px",
-    textAlign: "center",
-    pointerEvents: "auto",
-    fontSize,
-    fontFamily,
-    fontWeight,
-    fontStyle,
-    textDecoration,
-    color: textColor,
-    whiteSpace: "pre-wrap",
-    lineHeight: "1.2",
-    opacity: isPlaceholder ? 0.6 : 1,
-    userSelect: "none",
-  }}
->
-  {isPlaceholder ? "Double-click to edit" : localText}
-</span>
+          onDoubleClick={() => setIsEditing(true)}
+          style={{
+            position: "absolute",
+            width: nodeWidth,
+            padding: "5px",
+            textAlign: "center",
+            pointerEvents: "auto",
+            fontSize,
+            fontFamily,
+            fontWeight,
+            fontStyle,
+            textDecoration,
+            color: textColor,
+            whiteSpace: "pre-wrap",
+            lineHeight: "1.2",
+            opacity: isPlaceholder ? 0.6 : 1,
+            userSelect: "none",
+          }}
+        >
+          {isPlaceholder ? "Double-click to edit" : localText}
+        </span>
       )}
 
       {/* Handles */}

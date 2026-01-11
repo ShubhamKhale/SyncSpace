@@ -41,6 +41,19 @@ export const FlowHeader = ({
     [diagram]
   );
 
+  const applyStrokeWidth = useCallback(
+    (width: number) => {
+      if (diagram.selectedNodes?.length) {
+        diagram.updateSelectedNodesStrokeWidth(width);
+      }
+
+      if (diagram.selectedEdges?.length) {
+        diagram.updateSelectedEdgesStrokeWidth(width);
+      }
+    },
+    [diagram]
+  );
+
   const sharedUsersFromBackend = [
     {
       id: "u_101",
@@ -202,10 +215,9 @@ export const FlowHeader = ({
             {[1, 2, 3, 4, 6].map((width) => (
               <button
                 key={width}
-                onClick={() => diagram.updateSelectedEdgesStrokeWidth(width)}
+                onClick={() => applyStrokeWidth(width)}
                 className="px-3 py-2 hover:bg-[#2A2A30] flex items-center gap-2"
               >
-                {/* Preview line */}
                 <span
                   className="flex-1 bg-white rounded"
                   style={{ height: `${width}px` }}

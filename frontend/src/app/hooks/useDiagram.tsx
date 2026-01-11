@@ -175,7 +175,7 @@ export const useDiagram = () => {
                 ...node,
                 data: {
                   ...node.data,
-                  textColor, // null = default / inherit
+                  textColor, 
                 },
               }
             : node
@@ -196,7 +196,7 @@ export const useDiagram = () => {
                 ...node,
                 data: {
                   ...node.data,
-                  fillColor, // null = transparent
+                  fillColor, 
                 },
               }
             : node
@@ -226,6 +226,28 @@ export const useDiagram = () => {
     },
     [setEdges, takeSnapshot]
   );
+
+  const updateSelectedNodesStrokeWidth = useCallback(
+    (strokeWidth: number) => {
+      takeSnapshot();
+  
+      setNodes((nodes) =>
+        nodes.map((node) =>
+          node.selected
+            ? {
+                ...node,
+                data: {
+                  ...node.data,
+                  strokeWidth,
+                },
+              }
+            : node
+        )
+      );
+    },
+    [setNodes, takeSnapshot]
+  );
+  
   
 
   useEffect(() => {
@@ -261,29 +283,6 @@ export const useDiagram = () => {
     };
   }, []);
 
-  /*   useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
-    if (selectedNodeId) {
-      const selectedNode = getNode(selectedNodeId);
-      if (selectedNode) {
-        timeoutId = setTimeout(() => {
-          setNodes((nodes) =>
-            nodes.map((node) =>
-              node.id === selectedNodeId ? { ...node, selected: true } : node
-            )
-          );
-        }, 0);
-      }
-    }
-
-    // Clean up the timeout when the component unmounts or when selectedNodeId changes
-    return () => {
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
-    };
-  }, [getNode, selectedNodeId, setNodes]); */
-
   const uploadJson = (jsonString: string) => {
     const diagramData = JSON.parse(jsonString);
     if (diagramData.nodes && diagramData.edges) {
@@ -296,14 +295,11 @@ export const useDiagram = () => {
     }
   };
 
-  // this function is called when a node from the sidebar is dropped onto the react flow pane
   const onDrop: DragEventHandler<HTMLDivElement> = (evt) => {
     takeSnapshot();
     evt.preventDefault();
     const type = evt.dataTransfer.getData("application/reactflow");
 
-    // this will convert the pixel position of the node to the react flow coordinate system
-    // so that a node is added at the correct position even when viewport is translated and/or zoomed in
     const position = screenToFlowPosition({ x: evt.clientX, y: evt.clientY });
 
     const newNode = {
@@ -328,24 +324,11 @@ export const useDiagram = () => {
     );
   };
 
-  // const onNodesChange = useCallback(
-  //   (changes: NodeChange[]) => {
-  //     const debouncedFunction = debounce(() => {
-  //       handleHelperLines(changes, getNodes());
-  //     }, 1); // 100ms delay
-
-  //     debouncedFunction();
-  //   },
-  //   [getNodes, handleHelperLines]
-  // );
-
   const onNodesChange = useCallback(
     (changes: NodeChange[]) => {
-      // 1️⃣ Apply node size/position changes
       setNodes((nodes) => {
         const updated = applyNodeChanges(changes, nodes);
 
-        // 2️⃣ Save width/height from NodeResizer into node.data
         return updated.map((node) => ({
           ...node,
           data: {
@@ -356,7 +339,6 @@ export const useDiagram = () => {
         }));
       });
 
-      // 3️⃣ Helper lines support
       const debouncedFunction = debounce(() => {
         handleHelperLines(changes, getNodes());
       }, 1);
@@ -365,20 +347,6 @@ export const useDiagram = () => {
     },
     [setNodes, getNodes, handleHelperLines]
   );
-
-  // Inefficient method of dragging nodes
-  /*   const onNodesChange = useCallback(
-    (changes: NodeChange[]) => {
-      const debouncedFunction = debounce(() => {
-        setNodes((nodes) =>
-          applyNodeChanges(handleHelperLines(changes, nodes), nodes)
-        );
-      }, 1); // 100ms delay
-
-      debouncedFunction();
-    },
-    [setNodes, handleHelperLines]
-  ); */
 
   const onConnect: OnConnect = useCallback(
     (connection) => {
@@ -448,12 +416,6 @@ export const useDiagram = () => {
           nodes.map((n) => ({ ...n, selected: false })).concat([{ ...newNode }])
         );
 
-        /* const newEdge = {
-          id: `${connectingNodeId.current}-${newNode.id}`,
-          source: connectingNodeId.current,
-          target: newNode.id,
-          animated: true,
-        }; */
         const { connectionLinePath } = useAppStore.getState();
 
         const edge = {
@@ -602,6 +564,7 @@ export const useDiagram = () => {
     updateSelectedNodesTextColor,
     updateSelectedNodesFillColor,
     updateSelectedEdgesStrokeWidth,
+    updateSelectedNodesStrokeWidth,
     toggleNodeStyle,
   };
 };
