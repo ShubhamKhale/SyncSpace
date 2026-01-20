@@ -44,6 +44,9 @@ import ArrowRectangle from "./arrow-rectangle";
 import Cylinder from "./cylinder";
 import Triangle from "./triangle";
 import Parallelogram from "./parallelogram";
+import Bubble from "./bubble";
+import Star from "./star";
+import RightArrow from "./RightArrow";
 
 // -------------------------------------------------------------
 // Shape registry
@@ -58,6 +61,9 @@ export const ShapeComponents = {
   cylinder: Cylinder,
   triangle: Triangle,
   parallelogram: Parallelogram,
+  bubble: Bubble,
+  star: Star,
+  "right-arrow": RightArrow,
 };
 
 
