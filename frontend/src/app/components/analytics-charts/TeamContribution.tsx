@@ -20,8 +20,8 @@ const data = [
 
 export default function TeamContribution() {
   return (
-    <div className="bg-white w-full h-68 space-y-3 p-4 rounded-lg shadow-md">
-      <h2 className="text-sm font-semibold">Team Contribution by Phase</h2>
+    <div className="bg-white dark:bg-slate-800 w-full h-48 sm:h-56 md:h-68 space-y-3 p-4 rounded-lg shadow-md">
+      <h2 className="text-sm font-semibold dark:text-slate-100">Team Contribution by Phase</h2>
       <div className="w-full h-[100%] py-3">
         <ResponsiveContainer width="100%" height="100%">
           <RadarChart cx="50%" cy="50%" outerRadius="70%" data={data}>

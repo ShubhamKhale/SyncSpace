@@ -12,7 +12,7 @@ function Shape({ type, width, height, ...svgAttributes }: ShapeComponentProps) {
     : 0;
 
   // we subtract the strokeWidth to make sure the shape is not cut off
-  // this is done because svg doesn't support stroke inset (https://stackoverflow.com/questions/7241393/can-you-control-how-an-svgs-stroke-width-is-drawn)
+  // this is done because svg doesn't support stroke inset (https://stackoverflow.com/questions/7241393/can-you-control-how-an-svgs-strokeWidth-is-drawn)
   const innerWidth = width - 2 * strokeWidth;
   const innerHeight = height - 2 * strokeWidth;
 

@@ -60,7 +60,7 @@ const HistoryPage = () => {
   }, []);
 
   return (
-    <div className="bg-gray-100 h-screen pt-5 pl-6 pr-8 pb-8">
+    <div className="bg-gray-100 dark:bg-slate-900 h-screen pt-5 px-4 md:px-6 pb-8">
       <p className="text-[var(--primary-text-color)] font-semibold text-xl">
         Activity History
       </p>
@@ -74,7 +74,7 @@ const HistoryPage = () => {
                   <HistoryIcon width={20} height={20} fill="#3B82F6" />
                 </div>
                 {index !== activityLogs.length - 1 && (
-                  <span className="absolute top-full h-full w-1 bg-gray-300"></span>
+                  <span className="absolute top-full h-full w-1 bg-gray-300 dark:bg-slate-600"></span>
                 )}
               </div>
     

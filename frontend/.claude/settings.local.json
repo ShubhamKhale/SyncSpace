@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -roh text-[a-zA-Z0-9-]* 'd:\\\\Modern Web Projects\\\\syncspace\\\\SyncSpace\\\\frontend\\\\src\\\\app' --include=*.tsx)",
+      "Bash(grep -roh border-[a-zA-Z0-9-]* 'd:\\\\Modern Web Projects\\\\syncspace\\\\SyncSpace\\\\frontend\\\\src\\\\app' --include=*.tsx)"
+    ]
+  }
+}

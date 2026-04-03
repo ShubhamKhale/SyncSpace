@@ -1,116 +1,222 @@
 "use client";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import ProfileIcon from "../icons/ProfileIcon";
-import { HistoryIcon, TagIcon } from "lucide-react";
+import { HistoryIcon, Moon, Pencil, Sun, TagIcon } from "lucide-react";
 import BoardActivityIcon from "../icons/BoardActivity";
+import { EditableText } from "./EditableText";
+import { useBoardStore } from "@/app/store/useBoardStore";
+import { useEditMode } from "@/app/hooks/useEditMode";
+import { useTheme } from "@/app/hooks/useTheme";
+import { BoardSidebarSkeleton } from "./Skeleton";
+import EditBoardModal from "./EditBoardModal";
 
 const BoardSidebar: React.FC = () => {
+  const { board, loading, saveStates, updateBoardTitle, updateBoardDescription, updateBoardDetails } =
+    useBoardStore();
+  const permissions = useEditMode("owner"); // Replace "owner" with actual user role
+  const { theme, darkModeToggle } = useTheme();
+  const [showEditModal, setShowEditModal] = useState(false);
+  const isSaving = saveStates["details"] === "loading";
+
+  useEffect(() => {
+    if (!board) {
+      useBoardStore.setState({
+        board: {
+          id: "board-1",
+          title: "Product Launch Q4",
+          description: "Manage design, development, and documentation resources",
+          owner: "Sarah Miller",
+          createdAt: "2023-08-15",
+          updatedAt: "2023-08-20",
+          tags: [
+            { label: "User Testing",      color: "#DBEAFE", textColor: "#1D4ED8" },
+            { label: "Market Analysis",   color: "#FED7AA", textColor: "#C2410C" },
+            { label: "Feasibility Study", color: "#EDE9FE", textColor: "#6D28D9" },
+          ],
+          status: "active",
+          coverColor: "#2563EB",
+        },
+        loading: false,
+      });
+    }
+  }, [board]);
+
+  if (loading || !board) return <BoardSidebarSkeleton />;
+
   return (
-    <aside className="flex flex-col  justify-between w-68 h-screen border-r border-gray-200 bg-white">
+    <aside className="flex flex-col justify-between w-full h-screen border-r border-slate-300 dark:border-slate-700 bg-[#F8FAFC] dark:bg-slate-800">
       {/* Top Section */}
-      <div>
+      <div className="overflow-y-auto scrollbar-hide">
         {/* Board Details */}
-        <div className="px-5 py-6 text-[#6B7280]">
-          <p className="text-sm font-semibold mb-3">BOARD DETAILS</p>
-          <ul className="text-sm space-y-2">
+        <div className="px-5 py-4">
+          {/* Board Details header with edit trigger */}
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs font-semibold tracking-wider text-slate-500 dark:text-slate-400 uppercase">
+              Board Details
+            </p>
+            {permissions.canEditBoardMetadata && (
+              <button
+                onClick={() => setShowEditModal(true)}
+                title="Edit board details"
+                className="text-slate-400 hover:text-slate-600 hover:cursor-pointer transition"
+              >
+                <Pencil size={14} />
+              </button>
+            )}
+          </div>
+
+          {/* Editable Board Title */}
+          <div className="mb-3">
+            <EditableText
+              value={board.title}
+              onSave={updateBoardTitle}
+              placeholder="Enter board title"
+              className="text-base font-semibold text-slate-900 dark:text-slate-100"
+              saveState={saveStates.title}
+              disabled={!permissions.canEditBoardMetadata}
+            />
+          </div>
+
+          {/* Editable Board Description */}
+          <div className="mb-5">
+            <EditableText
+              value={board.description}
+              onSave={updateBoardDescription}
+              placeholder="Add board description"
+              className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed"
+              multiline
+              saveState={saveStates.description}
+              disabled={!permissions.canEditBoardMetadata}
+            />
+          </div>
+
+          {/* Meta list */}
+          <ul className="text-sm space-y-2 text-slate-600 dark:text-slate-300">
             <li className="flex items-center space-x-2">
               <ProfileIcon width="16" height="16" />
-              <p>Owner: Sarah Miller</p>
+              <p>Owner: <span className="text-slate-800 dark:text-slate-100 font-medium">{board.owner}</span></p>
             </li>
             <li className="flex items-center space-x-2">
               <HistoryIcon width="16" height="16" />
-              <p>Created: 2023-08-15</p>
+              <p>Created: <span className="text-slate-800 dark:text-slate-100">{board.createdAt}</span></p>
             </li>
             <li className="flex items-center space-x-2">
               <HistoryIcon width="16" height="16" />
-              <p>Updated: 2023-08-20</p>
+              <p>Updated: <span className="text-slate-800 dark:text-slate-100">{board.updatedAt}</span></p>
             </li>
-            <div className="grid grid-cols-2 items-center gap-2">
-              <div
-                className="px-4 py-2 inline-flex items-center text-xs space-x-2 rounded-3xl hover:cursor-pointer"
-                style={{ backgroundColor: "#E0F2FE" }}
-              >
-                <TagIcon width={16} height={16} fill="#0284C7" />
-                <p style={{ color: "#0284C7" }}>User Testing</p>
+
+            {/* Tags */}
+            {board.tags.length > 0 && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 items-start gap-2 pt-1">
+                {board.tags.map((tag) => (
+                  <div
+                    key={tag.label}
+                    className="px-3 py-1.5 inline-flex items-center text-xs space-x-1.5 rounded-full border"
+                    style={{
+                      backgroundColor: tag.color,
+                      color: tag.textColor,
+                      borderColor: tag.textColor + "33",
+                    }}
+                  >
+                    <TagIcon width={11} height={11} fill={tag.textColor} />
+                    <p className="font-medium truncate">{tag.label}</p>
+                  </div>
+                ))}
               </div>
-              <div
-                className="px-4 py-2 inline-flex items-center text-xs space-x-2 rounded-3xl hover:cursor-pointer"
-                style={{ backgroundColor: "#FFEDD5" }}
-              >
-                <TagIcon width={16} height={16} fill="#EA580C" />
-                <p style={{ color: "#EA580C" }}>Market Analysis</p>
-              </div>
-              <div
-                className="px-4 py-2 inline-flex items-center text-xs space-x-2 rounded-3xl hover:cursor-pointer"
-                style={{ backgroundColor: "#EDE9FE" }}
-              >
-                <TagIcon width={16} height={16} fill="#7C3AED" />
-                <p style={{ color: "#7C3AED" }}>Feasibility Study</p>
-              </div>
-            </div>
+            )}
           </ul>
 
           {/* Board Health */}
-          <div className="mt-8">
-            <p className="text-sm font-medium text-[#6B7280] mb-2">
-              BOARD HEALTH
+          <div className="mt-7">
+            <p className="text-xs font-semibold tracking-wider text-slate-500 dark:text-slate-400 uppercase mb-3">
+              Board Health
             </p>
-            <ul className="text-sm space-y-3 p-4">
-              <li className="flex items-center space-x-3">
-                <div className="w-3 h-3 bg-[#EAB308] rounded-full"></div>
-                <p className="font-medium text-black">warning</p>
-              </li>
-              <li className="flex items-center justify-between">
-                <p className="text-[#6B7280]">Overdue tasks</p>
-                <p className="text-[#374151]">3</p>
-              </li>
-              <li className="flex items-center justify-between">
-                <p className="text-[#6B7280]">Bottlenecks</p>
-                <p className="text-[#374151]">1</p>
-              </li>
-              <li className="flex items-center justify-between">
-                <p className="text-[#6B7280]">At risk</p>
-                <p className="text-[#374151]">2</p>
-              </li>
-            </ul>
+            <div className="bg-white dark:bg-slate-700 rounded-lg border border-slate-200 dark:border-slate-600 px-4 py-3 shadow-sm">
+              <ul className="text-sm space-y-2.5">
+                <li className="flex items-center space-x-2">
+                  <div className="w-2.5 h-2.5 bg-amber-400 rounded-full ring-2 ring-amber-200"></div>
+                  <p className="font-semibold text-slate-800 dark:text-slate-100">Warning</p>
+                </li>
+                <li className="flex items-center justify-between">
+                  <p className="text-slate-500 dark:text-slate-400">Overdue tasks</p>
+                  <span className="text-sm font-semibold text-slate-800 dark:text-slate-100 bg-slate-100 dark:bg-slate-600 px-2 py-0.5 rounded">3</span>
+                </li>
+                <li className="flex items-center justify-between">
+                  <p className="text-slate-500 dark:text-slate-400">Bottlenecks</p>
+                  <span className="text-sm font-semibold text-slate-800 dark:text-slate-100 bg-slate-100 dark:bg-slate-600 px-2 py-0.5 rounded">1</span>
+                </li>
+                <li className="flex items-center justify-between">
+                  <p className="text-slate-500 dark:text-slate-400">At risk</p>
+                  <span className="text-sm font-semibold text-slate-800 dark:text-slate-100 bg-slate-100 dark:bg-slate-600 px-2 py-0.5 rounded">2</span>
+                </li>
+              </ul>
+            </div>
           </div>
 
-          <div className="mt-8">
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-medium text-[#6B7280] mb-2">
-                RECENT ACTIVITY
+          {/* Recent Activity */}
+          <div className="mt-7">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-xs font-semibold tracking-wider text-slate-500 dark:text-slate-400 uppercase">
+                Recent Activity
               </p>
               <BoardActivityIcon />
             </div>
-            <div className="space-y-2">
-              <div className="pl-6 text-sm space-y-1 border-l-2 border-l-[#E5E7EB]">
-                <div className="flex items-center space-x-3">
-                  <p className="text-[#1F2937] font-medium">Alex Kim</p>
-                  <p className="text-[#4B5563]">added a new task</p>
+            <div className="space-y-3">
+              <div className="pl-4 text-sm space-y-0.5 border-l-2 border-slate-300 dark:border-slate-600">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="text-slate-900 dark:text-slate-100 font-medium">Alex Kim</p>
+                  <p className="text-slate-600 dark:text-slate-300">added a new task</p>
                 </div>
-                <p className="text-[#9CA3AF]">10 min ago</p>
+                <p className="text-slate-400 text-xs">10 min ago</p>
               </div>
-              <div className="pl-6 text-sm space-y-1 border-l-2 border-l-[#E5E7EB]">
-                <div className="flex items-center space-x-3">
-                  <p className="text-[#1F2937] font-medium">Sarah Miller</p>
-                  <p className="text-[#4B5563]">commented on a task</p>
+              <div className="pl-4 text-sm space-y-0.5 border-l-2 border-slate-300 dark:border-slate-600">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="text-slate-900 dark:text-slate-100 font-medium">Sarah Miller</p>
+                  <p className="text-slate-600 dark:text-slate-300">commented on a task</p>
                 </div>
-                <p className="text-[#9CA3AF]">2 hours ago</p>
+                <p className="text-slate-400 text-xs">2 hours ago</p>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="px-5 py-4 flex items-center space-x-4 border-t border-gray-200">
-        <div className="flex items-center justify-center w-10 h-10 rounded-full bg-gray-100 text-gray-800 font-semibold">
-          N
+      {/* Bottom user bar */}
+      <div className="px-5 py-4 flex items-center justify-between border-t border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
+        <div className="flex items-center space-x-3">
+          <div className="flex items-center justify-center w-9 h-9 rounded-full bg-slate-200 text-slate-700 font-semibold text-sm">
+            N
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 truncate">Nick Jones</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 truncate">nick@example.com</p>
+          </div>
         </div>
-        <div>
-          <p className="text-sm font-medium text-gray-800">Nick Jones</p>
-          <p className="text-xs text-gray-500">nick@example.com</p>
-        </div>
+        <button
+          onClick={darkModeToggle}
+          className="p-2 rounded-md text-slate-500 hover:text-slate-700 hover:bg-slate-200 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-700 transition"
+          title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+        >
+          {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+        </button>
       </div>
+
+      {/* Edit Board Modal */}
+      {showEditModal && (
+        <EditBoardModal
+          initialTitle={board.title}
+          initialDescription={board.description}
+          initialTags={board.tags}
+          initialStatus={board.status}
+          initialCoverColor={board.coverColor}
+          isSaving={isSaving}
+          onSave={async (details) => {
+            await updateBoardDetails(details);
+            setShowEditModal(false);
+          }}
+          onClose={() => setShowEditModal(false)}
+        />
+      )}
     </aside>
   );
 };

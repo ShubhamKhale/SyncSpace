@@ -22,8 +22,8 @@ const data = [
 
 export default function TaskCompletionTrend() {
   return (
-    <div className="bg-white w-full h-68 space-y-3 p-4 rounded-lg shadow-md">
-      <h2 className="text-sm font-semibold">Task Completion Trend</h2>
+    <div className="bg-white dark:bg-slate-800 w-full h-48 sm:h-56 md:h-68 space-y-3 p-4 rounded-lg shadow-md">
+      <h2 className="text-sm font-semibold dark:text-slate-100">Task Completion Trend</h2>
       <div className="w-full h-[100%] py-3">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data}>

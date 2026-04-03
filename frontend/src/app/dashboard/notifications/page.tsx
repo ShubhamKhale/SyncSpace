@@ -40,7 +40,7 @@ const NotificationsPage = () => {
   }, []);
 
   return (
-    <div className="bg-gray-100 h-screen pt-5 pl-6 pr-8 pb-8">
+    <div className="bg-gray-100 dark:bg-slate-900 h-screen pt-5 px-4 md:px-6 pb-8">
       <div className="flex items-center justify-between">
         <p className="text-[var(--primary-text-color)] font-semibold text-xl">
           Notifications
@@ -50,7 +50,7 @@ const NotificationsPage = () => {
         </p>
       </div>
 
-      <div className="rounded-lg mt-5 mr-40  shadow">
+      <div className="rounded-lg mt-5 shadow bg-white dark:bg-slate-800 max-w-3xl">
         {notificationsLogs?.map((notification, index) => (
           <div
             key={index}

@@ -4,11 +4,15 @@ import GridIcon from "@/app/icons/GridIcon";
 import ListIcon from "@/app/icons/ListIcon";
 import PlusIcon from "@/app/icons/PlusIcon";
 import SearchIcon from "@/app/icons/SearchBarIcon";
+import Link from "next/link";
 import React, { useState } from "react";
+import AddBoardModal from "@/app/dashboard/boards/AddBoardModal";
+import ListBoard from "@/app/components/ListBoard";
 
 const Boards = () => {
   const boards = [
     {
+      boardId: "da8a8f7a-d362-4e73-8872-19854be1d5ef",
       boardTitle: "Product Roadmap",
       boardDescription:
         "Plan, prioritize, and visualize product development goals.",
@@ -18,6 +22,7 @@ const Boards = () => {
       lastUpdated: 1747129001,
     },
     {
+      boardId: "eff45e38-6c15-477d-90b6-17f954d5b1eb",
       boardTitle: "Marketing Campaign",
       boardDescription:
         "Coordinate tasks and assets for upcoming marketing initiatives.",
@@ -27,6 +32,7 @@ const Boards = () => {
       lastUpdated: 1747129055,
     },
     {
+      boardId: "c7f2a8b1-2c4d-4e5f-8a9b-1c2d3e4f5a6b",
       boardTitle: "Website Redesign",
       boardDescription:
         "Track progress of new layouts, content, and user flows.",
@@ -36,6 +42,7 @@ const Boards = () => {
       lastUpdated: 1747129123,
     },
     {
+      boardId: "a1b2c3d4-e5f6-7890-abcd-1234567890ef",
       boardTitle: "Q3 Planning",
       boardDescription: "Set strategic goals and resource allocations for Q3.",
       boardImage:
@@ -44,6 +51,7 @@ const Boards = () => {
       lastUpdated: 1747129188,
     },
     {
+      boardId: "f9e8d7c6-b5a4-3210-9fed-cba987654321",
       boardTitle: "User Research",
       boardDescription:
         "Analyze feedback and research to improve UX and features.",
@@ -53,6 +61,7 @@ const Boards = () => {
       lastUpdated: 1747129250,
     },
     {
+      boardId: "12345678-90ab-cdef-1234-567890abcdef",
       boardTitle: "Team Retrospective",
       boardDescription:
         "Reflect on wins, challenges, and improvements from the last sprint.",
@@ -63,77 +72,34 @@ const Boards = () => {
     },
   ];
 
-  // return (
-  //   <div className="px-12 pt-4 bg-gray-100">
-  //     <div className="">
-  //       <div className=" flex items-center justify-between">
-  //         <p className="font-semibold text-xl text-[var(--primary-text-color)]">
-  //           My Boards
-  //         </p>
-  //         <button className="w-fit flex items-center justify-center space-x-3 rounded-md hover:cursor-pointer  px-4 py-2 bg-[var(--primary-button-background-color)] text-white text-center">
-  //           <PlusIcon width={20} height={20} className="mt-1" />
-  //           <p>New Board</p>
-  //         </button>
-  //       </div>
-
-  //       <div className="mt-6 flex items-center justify-between space-x-20">
-  //         <div className="p-3 w-full flex items-center rounded-md border-2 border-[var(--sidebar-border-color)] text-[#9CA3AF]">
-  //           <SearchIcon width={20} height={20} />
-  //           <input
-  //             placeholder="Search boards..."
-  //             className="ml-4 text-lg text-[var(--primary-text-color)] placeholder:text-[#CCCCCC] outline-none"
-  //           />
-  //         </div>
-
-  //         <div className="inline-flex items-center space-x-6">
-  //           <p className="text-lg text-[var(--tertiary-text-color)]">View:</p>
-  //           <div className="flex items-center space-x-4">
-  //             <div className="p-3 bg-[#E5E7EB] rounded-md hover:cursor-pointer">
-  //               <GridIcon width={20} height={20} />
-  //             </div>
-  //             <div className="p-3 hover:cursor-pointer">
-  //               <ListIcon width={20} height={20} />
-  //             </div>
-  //           </div>
-  //         </div>
-  //       </div>
-  //     </div>
-
-  //     <div className="mt-6 pb-6 grid grid-cols-2 gap-5">
-  //       {boards?.map((board, index) => (
-  //         <GridBoard
-  //           key={index}
-  //           imageSrc={board?.boardImage}
-  //           title={board?.boardTitle}
-  //           lastUpdated={board?.lastUpdated}
-  //           presenceCount={board?.boardMembersCount}
-  //         />
-  //       ))}
-  //     </div>
-  //   </div>
-  // );
-
-  const [isGridView, setIsGridView] = useState(true); 
+  const [isGridView, setIsGridView] = useState(true);
+  const [showAddBoard, setShowAddBoard] = useState(false);
 
   const handleToggleView = (view: "grid" | "list") => {
     setIsGridView(view === "grid");
   };
 
   return (
-    <div className="h-screen px-12 pt-4 bg-gray-100 overflow-hidden flex flex-col">
-      <div className="sticky top-0 z-10 bg-gray-100 pb-4">
+    <div className="h-screen px-4 md:px-8 lg:px-12 pt-4 bg-slate-100 dark:bg-slate-900 overflow-hidden flex flex-col">
+      <div className="sticky top-0 z-10 bg-slate-100 dark:bg-slate-900 pb-4">
         <div className="flex items-center justify-between">
           <p className="font-semibold text-xl text-[var(--primary-text-color)]">
             My Boards
           </p>
-          <button className="w-fit flex items-center justify-center space-x-3 rounded-md hover:cursor-pointer  px-4 py-2 bg-[var(--primary-button-background-color)] text-white text-center">
+          <button
+            onClick={() => setShowAddBoard(true)}
+            className="w-fit flex items-center justify-center space-x-3 rounded-md hover:cursor-pointer  px-4 py-2 bg-[var(--primary-button-background-color)] text-white text-center"
+          >
             <PlusIcon width={20} height={20} className="mt-1" />
             <p>New Board</p>
           </button>
+          {showAddBoard && (
+            <AddBoardModal onClose={() => setShowAddBoard(false)} />
+          )}
         </div>
 
-        <div className="mt-6 flex items-center justify-between space-x-20">
-          <div className="p-3 w-full flex items-center rounded-md border-2 border-[var(--sidebar-border-color)] text-[#9CA3AF] bg-white">
+        <div className="mt-4 md:mt-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="p-3 w-full sm:flex-1 flex items-center rounded-md border-2 border-[var(--sidebar-border-color)] text-[#9CA3AF] bg-white dark:bg-slate-800 dark:text-slate-400">
             <SearchIcon width={20} height={20} />
             <input
               placeholder="Search boards..."
@@ -143,42 +109,72 @@ const Boards = () => {
 
           <div className="inline-flex items-center space-x-6">
             <p className="text-lg text-[var(--tertiary-text-color)]">View:</p>
-            <div className="flex items-center rounded-md border-2 border-[var(--sidebar-border-color)]">
-              <div onClick={() => handleToggleView("grid")} className={`p-3 rounded-md hover:cursor-pointer transition-all duration-300 ${isGridView ? "bg-[#bbd9ff]" : ""}`}>
-                <GridIcon width={20} height={20} fill={isGridView ? "#2563eb" : undefined}/>
+            <div className="flex items-center rounded-md border-2 border-[var(--sidebar-border-color)] dark:border-slate-700">
+              <div
+                onClick={() => handleToggleView("grid")}
+                className={`p-3 rounded-md hover:cursor-pointer transition-all duration-300 ${isGridView ? "bg-[#bbd9ff]" : ""}`}
+              >
+                <GridIcon
+                  width={20}
+                  height={20}
+                  fill={isGridView ? "#2563eb" : undefined}
+                />
               </div>
 
-              <div onClick={() => handleToggleView("list")} className={`p-3 rounded-md hover:cursor-pointer transition-all duration-300 ${!isGridView ? "bg-[#bbd9ff]" : ""}`}>
-                <ListIcon width={20} height={20} fill={!isGridView ? "#2563eb" : undefined}/>
+              <div
+                onClick={() => handleToggleView("list")}
+                className={`p-3 rounded-md hover:cursor-pointer transition-all duration-300 ${!isGridView ? "bg-[#bbd9ff]" : ""}`}
+              >
+                <ListIcon
+                  width={20}
+                  height={20}
+                  fill={!isGridView ? "#2563eb" : undefined}
+                />
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* board's view in grid mode  */}
-      <div className="mt-6 pb-6 overflow-y-auto scrollbar-hide grid grid-cols-2 gap-6 flex-1 pr-2">
-        {boards?.map((board, index) => (
-          <GridBoard
-            key={index}
-            imageSrc={board?.boardImage}
-            title={board?.boardTitle}
-            lastUpdated={board?.lastUpdated}
-            presenceCount={board?.boardMembersCount}
-          />
-        ))}
-      </div>
-
-      {/* board's view in list mode */}
-      {/* <div className="mt-6 pb-6 overflow-y-auto scrollbar-hide flex flex-col gap-6 flex-1 pr-2">
-        <div>
-              
+      {isGridView ? (
+        /* board's view in grid mode */
+        <div className="mt-6 pb-6 overflow-y-auto scrollbar-hide grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6 flex-1 pr-2">
+          {boards?.map((board, index) => (
+            <Link
+              key={board.boardId}
+              href={`/dashboard/boards/${board.boardTitle.toLowerCase().replace(/\s+/g, "-")}`}
+              className="cursor-pointer"
+            >
+              <GridBoard
+                key={index}
+                imageSrc={board?.boardImage}
+                title={board?.boardTitle}
+                lastUpdated={board?.lastUpdated}
+                presenceCount={board?.boardMembersCount}
+              />
+            </Link>
+          ))}
         </div>
-      </div> */}
-
-
-
-
+      ) : (
+        /* board's view in list mode */
+        <div className="mt-6 pb-6 overflow-y-auto scrollbar-hide flex flex-col gap-3 flex-1 pr-2">
+          {boards?.map((board) => (
+            <Link
+              key={board.boardId}
+              href={`/dashboard/boards/${board.boardTitle.toLowerCase().replace(/\s+/g, "-")}`}
+              className="cursor-pointer"
+            >
+              <ListBoard
+                imageSrc={board?.boardImage}
+                title={board?.boardTitle}
+                description={board?.boardDescription}
+                lastUpdated={board?.lastUpdated}
+                presenceCount={board?.boardMembersCount}
+              />
+            </Link>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

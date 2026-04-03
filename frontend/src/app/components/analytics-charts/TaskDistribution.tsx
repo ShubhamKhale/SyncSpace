@@ -13,8 +13,8 @@ const COLORS = ["#6366F1", "#22C55E", "#FACC15", "#EF4444", "#3B82F6"];
 
 export default function TaskDistribution() {
   return (
-    <div className="bg-white w-full h-68 space-y-3 p-4 rounded-lg shadow-md">
-      <h2 className="text-sm font-semibold">Task Distribution by Category</h2>
+    <div className="bg-white dark:bg-slate-800 w-full h-48 sm:h-56 md:h-68 space-y-3 p-4 rounded-lg shadow-md">
+      <h2 className="text-sm font-semibold dark:text-slate-100">Task Distribution by Category</h2>
       <div className="w-full h-[100%] py-3">
       <ResponsiveContainer width="100%" height="100%">
       <PieChart>

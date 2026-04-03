@@ -1,6 +1,5 @@
 import { RiMenu3Fill } from "react-icons/ri";
-import AboutButton from "./Downloads/AboutButton";
-import ThemeToggle from "./Downloads/ThemeToggle";
+// import ThemeToggle from "./Downloads/ThemeToggle";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,6 +17,7 @@ import { useRef } from "react";
 import DownloadGifButton from "./Downloads/DownloadGif";
 import { useTheme } from "@/app/hooks/useTheme";
 import { useDiagram } from "@/app/hooks/useDiagram";
+import { MenuIcon } from "lucide-react";
 
 interface MenuProps {
   themeHook: ReturnType<typeof useTheme>;
@@ -43,29 +43,25 @@ export const Menu = (props: MenuProps) => {
   };
   return (
     <div className="gap-0 cursor-pointer flex">
-      <AboutButton
-        onClick={() => {
-          props.toggleLeftSidebar();
-        }}
-      />
-      <ThemeToggle
+      {/* About toggle (left sidebar) — uncommented */}
+      {/* <ThemeToggle
         onClick={props.themeHook.darkModeToggle}
         isDarkMode={props.themeHook.theme === "dark"}
-      />
+      /> */}
       <DropdownMenu>
-        <DropdownMenuTrigger className="flex flex-row gap-2 justify-center items-center p-1 pl-2 rounded-md hover:bg-slate-200 hover:dark:bg-slate-700 dark:bg-slate-800">
-          Menu
-          <RiMenu3Fill />
+        <DropdownMenuTrigger className="flex flex-row gap-2 justify-center items-center p-1 rounded-md hover:bg-slate-200 hover:dark:bg-slate-700 hover:cursor-pointer dark:bg-slate-800">
+          {/* <RiMenu3Fill /> */}
+          <MenuIcon size={20} className="text-gray-400" />
         </DropdownMenuTrigger>
         <DropdownMenuContent className="bg-white dark:bg-black text-black dark:text-white">
           <DropdownMenuLabel className="w-full justify-start">
             <button
               onClick={() => {
                 props.diagram.deselectAll();
+                props.diagram.saveToLocalStorage();
                 toast({
-                  title: "Save successful!",
-                  description:
-                    "The latest changes to your DiagramX have been saved. You can download them as an image or Json file.",
+                  title: "Saved!",
+                  description: "Diagram saved to browser. Download as PNG, SVG or JSON for a permanent copy.",
                 });
               }}
               className="w-full font-normal dark:text-white dark:hover:bg-slate-800 hover:bg-gray-200 rounded-md p-1 flex flex-row gap-1 justify-between items-center"
@@ -97,6 +93,14 @@ export const Menu = (props: MenuProps) => {
             >
               {props.isRightSidebarOpen ? "Hide" : "Show"} Json
               <VscJson />
+            </button>
+          </DropdownMenuItem>
+          <DropdownMenuItem>
+            <button
+              onClick={() => props.toggleLeftSidebar()}
+              className="w-full dark:text-white dark:hover:bg-slate-800 hover:bg-gray-200 rounded-md p-1 flex flex-row gap-1 justify-between items-center"
+            >
+              About SyncFlow
             </button>
           </DropdownMenuItem>
         </DropdownMenuContent>

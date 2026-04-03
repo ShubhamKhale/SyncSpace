@@ -202,41 +202,41 @@ const tasks = [
 
 export default function DashboardHome() {
   return (
-    <div className="px-12 pt-4 pb-6 bg-gray-100">
+    <div className="px-4 md:px-8 lg:px-12 pt-4 pb-6 bg-gray-100 dark:bg-slate-900">
       <div className="flex items-center justify-between">
         <p className="font-semibold text-xl text-[var(--primary-text-colo)]">
           My Dashboard
         </p>
       </div>
 
-      <div className="mt-4 grid grid-cols-4 gap-x-4">
-        <div className="bg-white px-4 pt-4 pb-6 inline-flex items-start justify-between rounded-lg shadow-md">
+      <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-white dark:bg-slate-800 px-4 pt-4 pb-6 inline-flex items-start justify-between rounded-lg shadow-md">
           <div className="space-y-4">
-            <p className="text-[#6B7280] text-base">Total Boards</p>
-            <p className="text-black text-xl font-semibold">8</p>
+            <p className="text-[#6B7280] dark:text-slate-400 text-base">Total Boards</p>
+            <p className="text-black dark:text-slate-100 text-xl font-semibold">8</p>
           </div>
           <TaskBoardIcon />
         </div>
-        <div className="bg-white px-4 pt-4 pb-6 inline-flex items-start justify-between rounded-lg shadow-md">
+        <div className="bg-white dark:bg-slate-800 px-4 pt-4 pb-6 inline-flex items-start justify-between rounded-lg shadow-md">
           <div className="space-y-4">
-            <p className="text-[#6B7280] text-base">Team Members</p>
-            <p className="text-black text-xl font-semibold">12</p>
+            <p className="text-[#6B7280] dark:text-slate-400 text-base">Team Members</p>
+            <p className="text-black dark:text-slate-100 text-xl font-semibold">12</p>
           </div>
           <TeamMembersIcon />
         </div>
-        <div className="bg-white px-4 pt-4 pb-6 inline-flex items-start justify-between rounded-lg shadow-md">
+        <div className="bg-white dark:bg-slate-800 px-4 pt-4 pb-6 inline-flex items-start justify-between rounded-lg shadow-md">
           <div className="space-y-4">
-            <p className="text-[#6B7280] text-base">Completed Tasks</p>
-            <p className="text-black text-xl font-semibold">24</p>
+            <p className="text-[#6B7280] dark:text-slate-400 text-base">Completed Tasks</p>
+            <p className="text-black dark:text-slate-100 text-xl font-semibold">24</p>
           </div>
           <div>
             <CompletedTasksIcon />
           </div>
         </div>
-        <div className="bg-white px-4 pt-4 pb-6 inline-flex items-start justify-between rounded-lg shadow-md">
+        <div className="bg-white dark:bg-slate-800 px-4 pt-4 pb-6 inline-flex items-start justify-between rounded-lg shadow-md">
           <div className="space-y-4">
-            <p className="text-[#6B7280] text-base">Tasks Due Soon</p>
-            <p className="text-black text-xl font-semibold">7</p>
+            <p className="text-[#6B7280] dark:text-slate-400 text-base">Tasks Due Soon</p>
+            <p className="text-black dark:text-slate-100 text-xl font-semibold">7</p>
           </div>
           <div>
             <TasksDueSoonIcon />
@@ -244,17 +244,17 @@ export default function DashboardHome() {
         </div>
       </div>
 
-      <div className="mt-6 grid grid-cols-2 gap-4">
+      <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
         <TaskCompletionTrend />
         <TaskDistribution />
         <BoardActivity />
         <TeamContribution />
       </div>
 
-      <div className="mt-4 grid grid-cols-3 gap-4">
-        <div className="p-5 space-y-6 h-fit bg-white rounded-lg">
+      <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="p-5 space-y-6 h-fit bg-white dark:bg-slate-800 rounded-lg">
           <div className="flex items-center justify-between">
-            <p className="font-semibold text-base">Recent Boards</p>
+            <p className="font-semibold text-base dark:text-slate-100">Recent Boards</p>
             <Link href={"/dashboard/boards"}>
               <p className="text-xs text-[#2563EB]">View all</p>
             </Link>
@@ -273,24 +273,24 @@ export default function DashboardHome() {
                   height={48}
                 />
                 <div>
-                  <p className="font-medium text-sm">{project.title}</p>
+                  <p className="font-medium text-sm dark:text-slate-100">{project.title}</p>
                   <div className="inline-flex items-center space-x-3">
-                    <p className="text-[10px] text-[#6B7280]">Last updated</p>
-                    <p className="text-[10px] text-[#6B7280]">
+                    <p className="text-[10px] text-[#6B7280] dark:text-slate-400">Last updated</p>
+                    <p className="text-[10px] text-[#6B7280] dark:text-slate-400">
                       {project.lastUpdated}
                     </p>
                   </div>
                 </div>
-                <div className="px-3 py-2 text-[10px] bg-[#E5E7EB] rounded-full hover:cursor-pointer">
+                <div className="px-3 py-2 text-[10px] bg-[#E5E7EB] dark:bg-slate-700 dark:text-slate-200 rounded-full hover:cursor-pointer">
                   {project.members} members
                 </div>
               </div>
             ))}
           </div>
         </div>
-        <div className="p-5 space-y-6 h-fit bg-white rounded-lg">
+        <div className="p-5 space-y-6 h-fit bg-white dark:bg-slate-800 rounded-lg">
           <div className="flex items-center justify-between">
-            <p className="font-semibold text-base">Recent Activity</p>
+            <p className="font-semibold text-base dark:text-slate-100">Recent Activity</p>
             <p className="text-xs text-[#2563EB]">View all</p>
           </div>
           <div className="space-y-4">
@@ -298,9 +298,9 @@ export default function DashboardHome() {
               <div key={index} className="flex items-start justify-between">
                 <HistoryIcon width={32} height={32} fill="#3B82F6" />
                 <div className="space-y-2">
-                  <p className="font-medium text-sm">
+                  <p className="font-medium text-sm dark:text-slate-100">
                     {activity.user}{" "}
-                    <span className="text-[#4B5563] text-sm">
+                    <span className="text-[#4B5563] dark:text-slate-400 text-sm">
                       {activity.action}
                     </span>{" "}
                     <span className="text-[#2563EB] text-sm">
@@ -308,24 +308,24 @@ export default function DashboardHome() {
                     </span>
                   </p>
                 </div>
-                <p className="text-sm text-[#6B7280]">{activity.time}</p>
+                <p className="text-sm text-[#6B7280] dark:text-slate-400">{activity.time}</p>
               </div>
             ))}
           </div>
         </div>
-        <div className="p-5 space-y-6 bg-white rounded-lg">
+        <div className="p-5 space-y-6 bg-white dark:bg-slate-800 rounded-lg">
           <div className="flex items-center justify-between">
-            <p className="font-semibold text-base">Upcoming Tasks</p>
+            <p className="font-semibold text-base dark:text-slate-100">Upcoming Tasks</p>
             <p className="text-xs text-[#2563EB]">View all</p>
           </div>
           <div className="mt-3 space-y-4">
             {tasks.slice(0, 2).map((task, index) => (
               <div key={index} className="p-3 flex justify-between items-start">
                 <div className="inline-flex flex-col space-y-2">
-                  <p className="font-medium text-sm">{task.title}</p>
+                  <p className="font-medium text-sm dark:text-slate-100">{task.title}</p>
                   <div className="inline-flex items-center space-x-4">
                     <CalendarIcon width={20} height={20} />
-                    <p className="text-[#6B7280] text-xs">{task.date}</p>
+                    <p className="text-[#6B7280] dark:text-slate-400 text-xs">{task.date}</p>
                     <p>{task.project}</p>
                   </div>
                   <div

@@ -164,9 +164,9 @@ export function ControlPoint({
       cx={x}
       cy={y}
       r={active ? 4 : 3}
-      strokeOpacity={active ? 1 : 0.3}
-      stroke={color}
-      fill={active ? color : "white"}
+      strokeOpacity={active ? 1 : 0.5}
+      stroke="#1a1a1a"
+      fill={active ? "#1a1a1a" : "white"}
       style={{ pointerEvents: "all" }}
       onContextMenu={(e) => {
         e.preventDefault();

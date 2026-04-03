@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Read|Grep",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>{const p=JSON.parse(d);const f=p.tool_input.file_path||p.tool_input.path||'';if(f.match(/\\.env\\.local$/)){console.log(JSON.stringify({continue:false,stopReason:'Blocked: .env.local is protected and cannot be accessed.'}))}});\"",
+            "statusMessage": "Checking file access permissions..."
+          }
+        ]
+      }
+    ]
+  }
+}

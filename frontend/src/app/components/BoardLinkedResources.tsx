@@ -1,158 +1,145 @@
-import React from "react";
-// import { FiExternalLink } from "react-icons/fi";
-import { FileText, X } from "lucide-react";
+"use client";
+
+import React, { useEffect, useState } from "react";
+import { FileText, Pencil } from "lucide-react";
 import ExternalLinkIcon from "../icons/ExternalLinkIcon";
+import { useLinkedResourcesStore } from "@/app/store/useLinkedResourcesStore";
+import { LinkedResourcesSkeleton } from "./Skeleton";
+import EditLinkedResourcesModal from "./EditLinkedResourcesModal";
 
 const BoardLinkedResources: React.FC = () => {
-  const boardDescription =
-    "This board is used to manage design, development, and documentation resources across the project lifecycle.";
+  const { loading, documentationLinks, links, setData, saveLinkedResources } =
+    useLinkedResourcesStore();
 
-  const documentationLinks = [
-    {
-      title: "Project Overview",
-      url: "https://docs.google.com/document/d/12345",
-      description: "High-level goals, timelines, and project milestones.",
-    },
-    {
-      title: "Technical Specification",
-      url: "https://docs.google.com/document/d/67890",
-      description: "Detailed technical architecture and API references.",
-    },
-    {
-      title: "Team Roles & Responsibilities",
-      url: "https://docs.google.com/document/d/11223",
-      description: "List of team members and their assigned tasks.",
-    },
-  ];
+  const [showModal, setShowModal] = useState(false);
+  const [isSaving, setIsSaving]   = useState(false);
 
-  const links = [
-    {
-      title: "UI Design Mockups",
-      url: "https://figma.com/file/123",
-      icon: "Fi",
-      color: "bg-black",
-    },
-    {
-      title: "Backend Repository",
-      url: "https://github.com/company/project",
-      icon: "GH",
-      color: "bg-gray-800",
-    },
-    {
-      title: "Product Requirements",
-      url: "https://notion.so/product-requirements",
-      icon: "N",
-      color: "bg-white text-black border border-gray-300",
-    },
-    {
-      title: "Meeting Notes",
-      url: "https://docs.google.com/document/123",
-      icon: "GD",
-      color: "bg-blue-500",
-    },
-  ];
+  useEffect(() => {
+    setData(
+      "This board is used to manage design, development, and documentation resources across the project lifecycle.",
+      [
+        { title: "Project Overview",            url: "https://docs.google.com/document/d/12345", description: "High-level goals, timelines, and project milestones." },
+        { title: "Technical Specification",     url: "https://docs.google.com/document/d/67890", description: "Detailed technical architecture and API references." },
+        { title: "Team Roles & Responsibilities", url: "https://docs.google.com/document/d/11223", description: "List of team members and their assigned tasks." },
+      ],
+      [
+        { title: "UI Design Mockups",    url: "https://figma.com/file/123",               icon: "Fi", color: "bg-black" },
+        { title: "Backend Repository",   url: "https://github.com/company/project",       icon: "GH", color: "bg-gray-800" },
+        { title: "Product Requirements", url: "https://notion.so/product-requirements",   icon: "N",  color: "bg-white text-black border border-gray-300" },
+        { title: "Meeting Notes",        url: "https://docs.google.com/document/123",     icon: "GD", color: "bg-blue-500" },
+      ]
+    );
+  }, [setData]);
+
+  if (loading) return <LinkedResourcesSkeleton />;
 
   return (
-    <div className="w-76 space-y-3 border-l border-gray-200 p-4">
-      <div>
-        <h2 className="text-sm font-semibold text-[#6B7280] mb-3">
-          BOARD DESCRIPTION
-        </h2>
-        <p className="text-sm text-gray-500 mt-1 leading-snug">
-          {boardDescription}
-        </p>
-      </div>
+    <div className="w-full h-full flex flex-col border-l border-slate-300 dark:border-slate-700 bg-[#F8FAFC] dark:bg-slate-800 overflow-y-auto scrollbar-hide">
+      <div className="px-4 py-5 space-y-6">
 
-      {/*Board Documentation Section */}
-      <div className="">
-        <p className="text-sm font-medium text-[#6B7280] mb-3">
-          BOARD DOCUMENTATION
-        </p>
-        <ul className="space-y-3 text-sm">
-          {documentationLinks.map((doc) => (
-            <li
-              key={doc.title}
-              className="flex items-start justify-between rounded-lg hover:bg-gray-50 transition"
+        {/* ── Board Documentation ─────────────────────────────────────── */}
+        <section>
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs font-semibold tracking-wider text-slate-500 dark:text-slate-400 uppercase">
+              Board Documentation
+            </p>
+            <button
+              onClick={() => setShowModal(true)}
+              title="Edit linked resources"
+              className="text-slate-400 hover:text-slate-600 hover:cursor-pointer transition"
             >
-              <div className="flex items-start space-x-3">
-                <div className="w-8 h-8 flex items-center justify-center bg-blue-50 text-blue-600 rounded-md">
-                  <FileText size={16} />
+              <Pencil size={14} />
+            </button>
+          </div>
+
+          <ul className="space-y-2 text-sm">
+            {documentationLinks.map((doc, idx) => (
+              <li key={idx} className="flex items-start space-x-2 rounded-lg p-2 hover:bg-slate-200 dark:hover:bg-slate-700 transition">
+                <div className="w-8 h-8 flex-shrink-0 flex items-center justify-center bg-blue-100 text-blue-600 rounded-md border border-blue-200">
+                  <FileText size={15} />
                 </div>
-                <div className="text-wrap">
-                  <p className="font-medium text-gray-800">{doc.title}</p>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">{doc.title}</p>
                   <a
                     href={doc.url}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-xs text-wrap text-blue-600 hover:underline"
+                    className="text-xs text-blue-600 dark:text-blue-400 hover:underline break-all"
                   >
                     {doc.url}
                   </a>
-                  <p className="text-xs text-gray-500 mt-0.5">
-                    {doc.description}
-                  </p>
+                  {doc.description && (
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{doc.description}</p>
+                  )}
                 </div>
-              </div>
-              {/* <button className="text-gray-400 hover:text-blue-500 transition">
-                <ExternalLinkIcon width={13} height={13} />
-              </button> */}
-            </li>
-          ))}
-        </ul>
+              </li>
+            ))}
+
+            {documentationLinks.length === 0 && (
+              <p className="text-xs text-slate-400 italic px-2">No documentation links yet.</p>
+            )}
+          </ul>
+        </section>
+
+        {/* Divider */}
+        <div className="border-t border-slate-300 dark:border-slate-700" />
+
+        {/* ── Linked Resources ────────────────────────────────────────── */}
+        <section>
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs font-semibold tracking-wider text-slate-500 dark:text-slate-400 uppercase">
+              Linked Resources
+            </p>
+          </div>
+
+          <ul className="space-y-1">
+            {links.map((link, idx) => (
+              <li key={idx} className="flex items-center justify-between rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 px-2 py-2 transition">
+                <div className="flex items-center space-x-3 min-w-0">
+                  <div className={`flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-md text-white text-xs font-bold ${link.color}`}>
+                    {link.icon}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">{link.title}</p>
+                    <a
+                      href={link.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-xs text-blue-600 dark:text-blue-400 truncate block max-w-[100px] md:max-w-[140px]"
+                    >
+                      {link.url}
+                    </a>
+                  </div>
+                </div>
+                <a href={link.url} target="_blank" rel="noreferrer" className="shrink-0 hover:cursor-pointer ml-2">
+                  <ExternalLinkIcon className="text-slate-400 hover:text-blue-600 transition" />
+                </a>
+              </li>
+            ))}
+
+            {links.length === 0 && (
+              <p className="text-xs text-slate-400 italic px-2">No resource links yet.</p>
+            )}
+          </ul>
+        </section>
+
       </div>
 
-      <div>
-        <h2 className="text-sm font-semibold text-[#6B7280] mb-3">
-          LINKED RESOURCES
-        </h2>
-
-        <ul className="space-y-3">
-          {links.map((link) => (
-            <li
-              key={link.title}
-              className="flex items-start justify-between rounded-lg hover:bg-gray-50 p-2"
-            >
-              <div className="flex items-center space-x-3">
-                {/* Icon */}
-                <div
-                  className={`flex items-center justify-center w-8 h-8 rounded-md text-white text-xs font-bold ${link.color}`}
-                >
-                  {link.icon}
-                </div>
-
-                {/* Title + URL */}
-                <div>
-                  <p className="text-sm font-medium text-gray-800">
-                    {link.title}
-                  </p>
-                  <a
-                    href={link.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-xs text-blue-600 truncate block max-w-[160px]"
-                  >
-                    {link.url}
-                  </a>
-                </div>
-
-                <button className="hover:cursor-pointer">
-                  {/* <FiExternalLink size={15} /> */}
-                  <ExternalLinkIcon className="hover:text-red-500" />
-                </button>
-              </div>
-
-              {/* Action icons */}
-              <div className="flex items-center space-x-1 text-gray-400">
-                <button className="hover:cursor-pointer hover:text-red-500">
-                  <X size={15} />
-                </button>
-              </div>
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      
+      {/* Edit Modal */}
+      {showModal && (
+        <EditLinkedResourcesModal
+          initialDocs={documentationLinks}
+          initialLinks={links}
+          isSaving={isSaving}
+          onSave={async (docs, updatedLinks) => {
+            setIsSaving(true);
+            await saveLinkedResources(docs, updatedLinks);
+            setIsSaving(false);
+            setShowModal(false);
+          }}
+          onClose={() => setShowModal(false)}
+        />
+      )}
     </div>
   );
 };

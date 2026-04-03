@@ -189,12 +189,15 @@ import {
   NodeResizer,
   useNodeId,
   useReactFlow,
+  useStore,
 } from "@xyflow/react";
 import { ShapeComponents, ShapeType } from "@/app/components/shape/types";
 import { useEffect, useState } from "react";
+import { Lock, Unlock } from "lucide-react";
 
 export default function ShapeNode({ data }: any) {
-  const { type, width, height, fill, text } = data;
+  const { type, width, height, fill, text, textAlign, listType, checkedItems, fontFamily, fontSize, fontWeight, fontStyle: dataFontStyle, textDecoration, color: textColor } = data;
+  const locked = !!data.locked;
   const Shape = ShapeComponents[type as ShapeType];
 
   const nodeWidth = width || 80;
@@ -204,11 +207,22 @@ export default function ShapeNode({ data }: any) {
   const { getNodes, setNodes } = useReactFlow();
 
   const isSelected = getNodes()?.find((n) => n.id === nodeId)?.selected;
+  const isConnecting = useStore((s) => !!s.connectionStartHandle);
 
   // Editable text state
   const [isEditing, setIsEditing] = useState(false);
   const [localText, setLocalText] = useState(text || "");
   const isPlaceholder = !localText.trim();
+
+  // Sync localText if the node's text data changes externally (e.g. undo/redo)
+  useEffect(() => {
+    if (!isEditing) setLocalText(text || "");
+  }, [text, isEditing]);
+
+  // Exit editing mode immediately if node gets locked while editing
+  useEffect(() => {
+    if (locked && isEditing) setIsEditing(false);
+  }, [locked]);
 
   // Save actual text, empty allowed
   const saveText = () => {
@@ -224,6 +238,37 @@ export default function ShapeNode({ data }: any) {
 
   const deleteNode = () => {
     setNodes((nodes) => nodes.filter((n) => n.id !== nodeId));
+  };
+
+  const toggleLock = () => {
+    setNodes((nds) =>
+      nds.map((n) => {
+        if (n.id !== nodeId) return n;
+        const nextLocked = !n.data.locked;
+        return {
+          ...n,
+          draggable: !nextLocked,
+          deletable: !nextLocked,
+          data: {
+            ...n.data,
+            locked: nextLocked,
+            lockedPosition: nextLocked ? { x: n.position.x, y: n.position.y } : undefined,
+          },
+        };
+      })
+    );
+  };
+
+  const toggleChecklistItem = (index: number) => {
+    setNodes((nodes) =>
+      nodes.map((node) => {
+        if (node.id !== nodeId) return node;
+        const current = (node.data.checkedItems as boolean[]) || [];
+        const updated = [...current];
+        updated[index] = !updated[index];
+        return { ...node, data: { ...node.data, checkedItems: updated } };
+      })
+    );
   };
 
   useEffect(() => {
@@ -249,7 +294,7 @@ export default function ShapeNode({ data }: any) {
       }}
       className="flex items-center justify-center overflow-visible"
     >
-      {isSelected && (
+      {isSelected && !locked && (
         <button
           onClick={deleteNode}
           style={{
@@ -269,6 +314,36 @@ export default function ShapeNode({ data }: any) {
       )}
 
       {isSelected && (
+        <button
+          onClick={toggleLock}
+          title={locked ? "Unlock node" : "Lock node"}
+          style={{
+            position: "absolute",
+            top: -15,
+            left: -18,
+            background: locked ? "#f59e0b" : "#6b7280",
+            color: "white",
+            borderRadius: "50%",
+            width: 15,
+            height: 15,
+            border: "none",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          {locked ? <Lock size={8} /> : <Unlock size={8} />}
+        </button>
+      )}
+
+      {locked && (
+        <div style={{ position: "absolute", top: 4, left: 4, pointerEvents: "none", opacity: 0.55 }}>
+          <Lock size={10} color="#f59e0b" />
+        </div>
+      )}
+
+      {isSelected && !locked && (
         <NodeResizer
           minWidth={40}
           minHeight={40}
@@ -283,13 +358,13 @@ export default function ShapeNode({ data }: any) {
           width={nodeWidth}
           height={nodeHeight}
           fill={fill || "#ffffff"}
-          stroke="black"
+          stroke={fill && fill !== "#ffffff" ? fill : "black"}
           strokeWidth={2}
         />
       </svg>
 
       {/* Editable Text */}
-      {isEditing ? (
+      {isEditing && !locked ? (
         <textarea
           autoFocus
           value={localText}
@@ -301,33 +376,69 @@ export default function ShapeNode({ data }: any) {
             height: nodeHeight - 10,
             resize: "none",
             outline: "none",
-            border: "1px solid #ccc",
-            background: "white",
+            border: `1px solid ${fill || "#ccc"}`,
+            background: fill || "white",
             padding: "4px",
-            fontSize: "14px",
-            textAlign: "center",
-            color: "#000"
+            fontSize: fontSize || "14px",
+            fontFamily: fontFamily || "inherit",
+            fontWeight: fontWeight || "normal",
+            fontStyle: dataFontStyle || "normal",
+            textDecoration: textDecoration || "none",
+            textAlign: (textAlign as any) || "center",
+            color: textColor || "#000",
           }}
         />
       ) : (
         <span
-          onDoubleClick={() => setIsEditing(true)}
+          onDoubleClick={() => { if (!locked) setIsEditing(true); }}
           style={{
             position: "absolute",
-            width: nodeWidth,
+            width: nodeWidth - 10,
+            height: nodeHeight - 10,
             padding: "5px",
-            textAlign: "center",
+            textAlign: (textAlign as any) || "center",
             pointerEvents: "auto",
-            fontSize: "14px",
+            fontSize: fontSize || "14px",
+            fontFamily: fontFamily || "inherit",
+            fontWeight: fontWeight || "normal",
+            fontStyle: isPlaceholder ? "italic" : (dataFontStyle || "normal"),
+            textDecoration: textDecoration || "none",
+            color: isPlaceholder ? "#868686" : (textColor || "#000"),
             whiteSpace: "pre-wrap",
-            lineHeight: "1.2",
-            color: isPlaceholder ? "#868686" : "#000",
+            wordBreak: "break-word",
+            overflowWrap: "break-word",
+            overflow: "hidden",
+            lineHeight: "1.4",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: textAlign === "left" ? "flex-start" : textAlign === "right" ? "flex-end" : "center",
+            justifyContent: "center",
             opacity: isPlaceholder ? 0.6 : 1,
-            fontStyle: isPlaceholder ? "italic" : "normal",
             userSelect: "none",
           }}
         >
-          {isPlaceholder ? "Double-click to edit" : localText}
+          {isPlaceholder ? "Double-click to edit" : (
+            listType
+              ? localText.split("\n").filter(Boolean).map((line: string, i: number) => (
+                  <div key={i} style={{ display: "flex", gap: 4, width: "100%", textAlign: (textAlign as any) || "left", alignItems: "flex-start" }}>
+                    {listType === "checklist" ? (
+                      <span
+                        style={{ flexShrink: 0, cursor: "pointer", userSelect: "none", lineHeight: "1.4" }}
+                        onClick={(e) => { e.stopPropagation(); toggleChecklistItem(i); }}
+                        onDoubleClick={(e) => e.stopPropagation()}
+                      >
+                        {(checkedItems as boolean[])?.[i] ? "☑" : "☐"}
+                      </span>
+                    ) : (
+                      <span style={{ flexShrink: 0, lineHeight: "1.4" }}>
+                        {listType === "bullet" ? "•" : `${i + 1}.`}
+                      </span>
+                    )}
+                    <span style={{ textDecoration: listType === "checklist" && (checkedItems as boolean[])?.[i] ? "line-through" : "none", opacity: listType === "checklist" && (checkedItems as boolean[])?.[i] ? 0.5 : 1 }}>{line}</span>
+                  </div>
+                ))
+              : localText
+          )}
         </span>
       )}
 
@@ -336,6 +447,7 @@ export default function ShapeNode({ data }: any) {
         id="right-source"
         type="source"
         position={Position.Right}
+        className={`node-handle${isConnecting ? " node-handle--connecting" : ""}${isSelected ? " node-handle--selected" : ""}`}
         style={{
           width: 10,
           height: 10,
@@ -348,6 +460,7 @@ export default function ShapeNode({ data }: any) {
         id="right-target"
         type="target"
         position={Position.Right}
+        className={`node-handle${isConnecting ? " node-handle--connecting" : ""}${isSelected ? " node-handle--selected" : ""}`}
         style={{
           width: 10,
           height: 10,
@@ -361,6 +474,7 @@ export default function ShapeNode({ data }: any) {
         id="left-source"
         type="source"
         position={Position.Left}
+        className={`node-handle${isConnecting ? " node-handle--connecting" : ""}${isSelected ? " node-handle--selected" : ""}`}
         style={{
           width: 10,
           height: 10,
@@ -373,6 +487,7 @@ export default function ShapeNode({ data }: any) {
         id="left-target"
         type="target"
         position={Position.Left}
+        className={`node-handle${isConnecting ? " node-handle--connecting" : ""}${isSelected ? " node-handle--selected" : ""}`}
         style={{
           width: 10,
           height: 10,
@@ -386,6 +501,7 @@ export default function ShapeNode({ data }: any) {
         id="top-source"
         type="source"
         position={Position.Top}
+        className={`node-handle${isConnecting ? " node-handle--connecting" : ""}${isSelected ? " node-handle--selected" : ""}`}
         style={{
           width: 10,
           height: 10,
@@ -398,6 +514,7 @@ export default function ShapeNode({ data }: any) {
         id="top-target"
         type="target"
         position={Position.Top}
+        className={`node-handle${isConnecting ? " node-handle--connecting" : ""}${isSelected ? " node-handle--selected" : ""}`}
         style={{
           width: 10,
           height: 10,
@@ -411,6 +528,7 @@ export default function ShapeNode({ data }: any) {
         id="bottom-source"
         type="source"
         position={Position.Bottom}
+        className={`node-handle${isConnecting ? " node-handle--connecting" : ""}${isSelected ? " node-handle--selected" : ""}`}
         style={{
           width: 10,
           height: 10,
@@ -423,6 +541,7 @@ export default function ShapeNode({ data }: any) {
         id="bottom-target"
         type="target"
         position={Position.Bottom}
+        className={`node-handle${isConnecting ? " node-handle--connecting" : ""}${isSelected ? " node-handle--selected" : ""}`}
         style={{
           width: 10,
           height: 10,

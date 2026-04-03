@@ -1,5 +1,7 @@
 import {
   Edge,
+  EdgeChange,
+  Node,
   NodeChange,
   OnConnect,
   OnEdgesDelete,
@@ -10,7 +12,9 @@ import {
   useReactFlow as useReactFlowHook,
   useStore,
   applyNodeChanges,
+  applyEdgeChanges,
 } from "@xyflow/react";
+import { shallow } from "zustand/shallow";
 import {
   DragEventHandler,
   useCallback,
@@ -26,6 +30,8 @@ import { DEFAULT_ALGORITHM } from "../components/flow/edges/EditableEdge/constan
 import { ControlPointData } from "../components/flow/edges/EditableEdge";
 import { MarkerDefinition } from "../components/flow/edges/MarkerDefinition";
 
+const SAVE_KEY = "syncspace-diagram";
+
 export const useDiagram = () => {
   const useReactFlow = useReactFlowHook;
   const {
@@ -35,16 +41,30 @@ export const useDiagram = () => {
     getEdges,
     getEdge,
     getNodes,
+    fitView,
   } = useReactFlow();
-  const { undo, redo, canUndo, canRedo, takeSnapshot } = useUndoRedo();
+  const { undo, redo, canUndo, canRedo, takeSnapshot, getSnapshotJson } = useUndoRedo();
   const [editingEdgeId, setEditingEdgeId] = useState<string | null>(null);
   const connectingNodeId = useRef(null);
+  const selectedNodes = useStore((state) => state.nodes.filter((n) => n.selected), shallow);
+  const selectedEdges = useStore((state) => state.edges.filter((e) => e.selected), shallow);
   const {
     HelperLines,
     handleHelperLines,
     helperLineHorizontal,
     helperLineVertical,
   } = useHelperLines();
+
+  // Diagram title — persisted in localStorage
+  const [diagramTitle, setDiagramTitle] = useState<string>(() => {
+    if (typeof window === "undefined") return "Untitled Diagram";
+    const saved = localStorage.getItem(SAVE_KEY);
+    if (saved) {
+      try { return JSON.parse(saved).title || "Untitled Diagram"; } catch {}
+    }
+    return "Untitled Diagram";
+  });
+
   const onDragOver: DragEventHandler<HTMLDivElement> = (evt) => {
     evt.preventDefault();
     evt.dataTransfer.dropEffect = "move";
@@ -60,6 +80,60 @@ export const useDiagram = () => {
     setNodes((nodes) => nodes.map((node) => ({ ...node, selected: false })));
     setEdges((edges) => edges.map((edge) => ({ ...edge, selected: false })));
   };
+
+  // ── Save to localStorage ───────────────────────────────────
+  const saveToLocalStorage = useCallback(() => {
+    try {
+      const snapshot = getSnapshotJson();
+      const data = JSON.parse(snapshot);
+      data.title = diagramTitle;
+      localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+    } catch (e) {
+      console.error("Failed to save diagram", e);
+    }
+  }, [getSnapshotJson, diagramTitle]);
+
+  // ── Zoom to fit selection ──────────────────────────────────
+  const fitToSelection = useCallback(() => {
+    const selected = getNodes().filter((n) => n.selected);
+    if (!selected.length) {
+      fitView({ padding: 0.2, duration: 300 });
+      return;
+    }
+    fitView({ nodes: selected, padding: 0.2, duration: 300 });
+  }, [getNodes, fitView]);
+
+  const fitToNode = useCallback(
+    (node: Node) => {
+      fitView({ nodes: [node], padding: 0.2, duration: 500 });
+    },
+    [fitView]
+  );
+
+  // ── Group selected nodes ───────────────────────────────────
+  const groupSelectedNodes = useCallback(() => {
+    const selected = getNodes().filter((n) => n.selected && n.type !== "group");
+    if (selected.length < 2) return;
+    takeSnapshot();
+
+    const PAD = 24;
+    const minX = Math.min(...selected.map((n) => n.position.x)) - PAD;
+    const minY = Math.min(...selected.map((n) => n.position.y)) - PAD;
+    const maxX = Math.max(...selected.map((n) => n.position.x + ((n.measured?.width as number) || 100))) + PAD;
+    const maxY = Math.max(...selected.map((n) => n.position.y + ((n.measured?.height as number) || 100))) + PAD;
+
+    const groupNode = {
+      id: window.crypto.randomUUID(),
+      type: "group",
+      position: { x: minX, y: minY },
+      style: { width: maxX - minX, height: maxY - minY },
+      data: { label: "Group" },
+      selectable: true,
+      selected: false,
+    };
+
+    setNodes((nodes) => [groupNode, ...nodes.map((n) => ({ ...n, selected: false }))]);
+  }, [getNodes, setNodes, takeSnapshot]);
 
   const clipboardRef = useRef<{
     nodes: any[];
@@ -124,25 +198,167 @@ export const useDiagram = () => {
     );
   }, [setNodes, setEdges, takeSnapshot]);
 
+  const updateNodesStyle = useCallback(
+    (style: Record<string, any>) => {
+      // Live check via getNodes() — never stale, avoids wasted snapshots
+      const hasTarget = getNodes().some((n) => n.selected && !n.data?.locked);
+      if (!hasTarget) return;
+      takeSnapshot();
+      const { backgroundColor, ...rest } = style;
+      const dataUpdate: Record<string, any> = { ...rest };
+      if (backgroundColor !== undefined) dataUpdate.fill = backgroundColor;
+      setNodes((nodes) =>
+        nodes.map((node) => {
+          if (!node.selected || node.data?.locked) return node;
+          // StickyNote uses `data.color` for background, not `data.fill`
+          if (node.type === "sticky-note" && dataUpdate.fill !== undefined) {
+            const { fill, ...stickyRest } = dataUpdate;
+            return { ...node, data: { ...node.data, ...stickyRest, color: fill } };
+          }
+          return { ...node, data: { ...node.data, ...dataUpdate } };
+        })
+      );
+    },
+    [getNodes, setNodes, takeSnapshot]
+  );
+
+  const toggleNodeLock = useCallback((nodeId: string) => {
+    takeSnapshot();
+    setNodes(nds => nds.map(n => {
+      if (n.id !== nodeId) return n;
+      const locked = !n.data.locked;
+      return {
+        ...n,
+        draggable: !locked,
+        deletable: !locked,
+        data: {
+          ...n.data,
+          locked,
+          // Snapshot the position when locking so we can restore it on any change
+          lockedPosition: locked ? { x: n.position.x, y: n.position.y } : undefined,
+        },
+      };
+    }));
+  }, [setNodes, takeSnapshot]);
+
+  const updateEdgesStyle = useCallback(
+    (style: Record<string, any>) => {
+      const hasTarget = getEdges().some((e) => e.selected && !(e.data as any)?.locked);
+      if (!hasTarget) return;
+      takeSnapshot();
+      setEdges((edges) =>
+        edges.map((edge) =>
+          edge.selected && !(edge.data as any)?.locked
+            ? { ...edge, style: { ...edge.style, ...style } }
+            : edge
+        )
+      );
+    },
+    [getEdges, setEdges, takeSnapshot]
+  );
+
+  const toggleSelectionLock = useCallback(() => {
+    takeSnapshot();
+    const currentNodes = getNodes();
+    const currentEdges = getEdges();
+    const selNodes = currentNodes.filter((n) => n.selected);
+    const selEdges = currentEdges.filter((e) => e.selected);
+    if (!selNodes.length && !selEdges.length) return;
+
+    const shouldLock =
+      selNodes.some((n) => !n.data?.locked) ||
+      selEdges.some((e) => !(e.data as any)?.locked);
+
+    setNodes((nds) =>
+      nds.map((n) => {
+        if (!n.selected) return n;
+        return {
+          ...n,
+          draggable: !shouldLock,
+          deletable: !shouldLock,
+          data: {
+            ...n.data,
+            locked: shouldLock,
+            lockedPosition: shouldLock ? { x: n.position.x, y: n.position.y } : undefined,
+          },
+        };
+      })
+    );
+
+    setEdges((eds) =>
+      eds.map((e) => {
+        if (!e.selected) return e;
+        return {
+          ...e,
+          deletable: !shouldLock,
+          data: { ...(e.data as object), locked: shouldLock },
+        };
+      })
+    );
+
+    if (shouldLock) {
+      setEditingEdgeId((current) =>
+        selEdges.some((e) => e.id === current) ? null : current
+      );
+    }
+  }, [getNodes, getEdges, setNodes, setEdges, takeSnapshot, setEditingEdgeId]);
+
+  // ── Keyboard shortcuts ─────────────────────────────────────
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
+      const tag = (event.target as HTMLElement)?.tagName;
+      const isInput = tag === "INPUT" || tag === "TEXTAREA";
+
       const isCopy = (event.ctrlKey || event.metaKey) && event.key === "c";
       const isPaste = (event.ctrlKey || event.metaKey) && event.key === "v";
 
-      if (isCopy) {
-        event.preventDefault();
-        copySelection();
+      if (isCopy) { event.preventDefault(); copySelection(); }
+      if (isPaste) { event.preventDefault(); pasteSelection(); }
+
+      // Ctrl+B/I/U = toggle bold/italic/underline on selected nodes (skip when typing in input)
+      if (!isInput && (event.ctrlKey || event.metaKey)) {
+        if (event.key === "b") {
+          event.preventDefault();
+          const nodes = getNodes().filter((n) => n.selected);
+          if (nodes.length) {
+            const isBold = nodes[0].data?.fontWeight === "bold";
+            updateNodesStyle({ fontWeight: isBold ? "normal" : "bold" });
+          }
+        }
+        if (event.key === "i") {
+          event.preventDefault();
+          const nodes = getNodes().filter((n) => n.selected);
+          if (nodes.length) {
+            const isItalic = nodes[0].data?.fontStyle === "italic";
+            updateNodesStyle({ fontStyle: isItalic ? "normal" : "italic" });
+          }
+        }
+        if (event.key === "u") {
+          event.preventDefault();
+          const nodes = getNodes().filter((n) => n.selected);
+          if (nodes.length) {
+            const isUnderline = nodes[0].data?.textDecoration === "underline";
+            updateNodesStyle({ textDecoration: isUnderline ? "none" : "underline" });
+          }
+        }
       }
 
-      if (isPaste) {
+      // G = group selection (skip when typing)
+      if (!isInput && event.key === "g" && !event.ctrlKey && !event.metaKey) {
         event.preventDefault();
-        pasteSelection();
+        groupSelectedNodes();
+      }
+
+      // Shift+F = zoom to fit selection
+      if (event.shiftKey && event.key === "F") {
+        event.preventDefault();
+        fitToSelection();
       }
     };
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [copySelection, pasteSelection]);
+  }, [copySelection, pasteSelection, groupSelectedNodes, fitToSelection, updateNodesStyle, getNodes]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -157,34 +373,12 @@ export const useDiagram = () => {
     };
   }, []);
 
-  /*   useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
-    if (selectedNodeId) {
-      const selectedNode = getNode(selectedNodeId);
-      if (selectedNode) {
-        timeoutId = setTimeout(() => {
-          setNodes((nodes) =>
-            nodes.map((node) =>
-              node.id === selectedNodeId ? { ...node, selected: true } : node
-            )
-          );
-        }, 0);
-      }
-    }
-
-    // Clean up the timeout when the component unmounts or when selectedNodeId changes
-    return () => {
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
-    };
-  }, [getNode, selectedNodeId, setNodes]); */
-
   const uploadJson = (jsonString: string) => {
     const diagramData = JSON.parse(jsonString);
     if (diagramData.nodes && diagramData.edges) {
       setNodes(diagramData.nodes);
       setEdges(diagramData.edges);
+      if (diagramData.title) setDiagramTitle(diagramData.title);
     } else {
       console.error(
         'Invalid JSON format. Expected an object with "nodes" and "edges" arrays.'
@@ -194,26 +388,118 @@ export const useDiagram = () => {
 
   // this function is called when a node from the sidebar is dropped onto the react flow pane
   const onDrop: DragEventHandler<HTMLDivElement> = (evt) => {
-    takeSnapshot();
     evt.preventDefault();
+
+    // Handle image files dropped from filesystem
+    const files = evt.dataTransfer.files;
+    if (files.length > 0) {
+      const imageFiles = Array.from(files).filter((f) =>
+        f.type.startsWith("image/")
+      );
+      if (imageFiles.length > 0) {
+        takeSnapshot();
+        const position = screenToFlowPosition({
+          x: evt.clientX,
+          y: evt.clientY,
+        });
+        imageFiles.forEach((file, index) => {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const src = e.target?.result as string;
+            const img = new window.Image();
+            img.onload = () => {
+              const aspectRatio = img.naturalWidth / img.naturalHeight;
+              const nodeWidth = Math.min(300, img.naturalWidth);
+              const nodeHeight = nodeWidth / aspectRatio;
+              const newNode = {
+                id: `${Date.now()}-img-${index}`,
+                type: "image" as const,
+                position: {
+                  x: position.x + index * 20,
+                  y: position.y + index * 20,
+                },
+                style: { width: nodeWidth, height: nodeHeight },
+                data: { src, width: nodeWidth, height: nodeHeight, aspectRatio },
+                selected: true,
+              };
+              setNodes((nodes) =>
+                nodes
+                  .map((n) => ({ ...n, selected: false }))
+                  .concat([newNode])
+              );
+            };
+            img.src = src;
+          };
+          reader.readAsDataURL(file);
+        });
+        return;
+      }
+    }
+
+    takeSnapshot();
     const type = evt.dataTransfer.getData("application/reactflow");
 
-    // this will convert the pixel position of the node to the react flow coordinate system
-    // so that a node is added at the correct position even when viewport is translated and/or zoomed in
     const position = screenToFlowPosition({ x: evt.clientX, y: evt.clientY });
 
+    // Handle image from sidebar upload
+    if (type === "image") {
+      const src = evt.dataTransfer.getData("image-src");
+      const aspectRatio = parseFloat(
+        evt.dataTransfer.getData("image-aspect-ratio") || "1"
+      );
+      const nodeWidth = 200;
+      const nodeHeight = nodeWidth / aspectRatio;
+      const newNode = {
+        id: Date.now().toString(),
+        type: "image" as const,
+        position,
+        style: { width: nodeWidth, height: nodeHeight },
+        data: { src, width: nodeWidth, height: nodeHeight, aspectRatio },
+        selected: true,
+      };
+      setNodes((nodes) =>
+        nodes.map((n) => ({ ...n, selected: false })).concat([newNode])
+      );
+      return;
+    }
+
+    // Handle table node
+    if (type === "table") {
+      const defaultCells: string[][] = [
+        ["Column A", "Column B", "Column C"],
+        ["", "", ""],
+        ["", "", ""],
+      ];
+      const newNode = {
+        id: Date.now().toString(),
+        type: "table" as const,
+        position,
+        style: { width: 300, height: 180 },
+        data: {
+          cells: defaultCells,
+          hasHeader: true,
+          headerBg: "#1e293b",
+          borderColor: "#374151",
+          width: 300,
+          height: 180,
+        },
+        selected: true,
+      };
+      setNodes((nodes) =>
+        nodes.map((n) => ({ ...n, selected: false })).concat([newNode])
+      );
+      return;
+    }
+
+    const stickyColor = evt.dataTransfer.getData("sticky-note-color") || "#fef9c3";
     const newNode = {
       id: Date.now().toString(),
-      type: "shape",
+      type: type === "sticky-note" ? "sticky-note" : "shape",
       position,
       style: { width: 100, height: 100 },
-      data: {
-        type,
-        color: "#3F8AE2",
-        text: "",
-        placeholder: true,
-      },
-
+      data: type === "sticky-note"
+        ? { text: "", color: stickyColor }
+        : { type, color: "#3F8AE2", text: "", placeholder: true },
       selected: true,
     };
 
@@ -222,35 +508,38 @@ export const useDiagram = () => {
     );
   };
 
-  // const onNodesChange = useCallback(
-  //   (changes: NodeChange[]) => {
-  //     const debouncedFunction = debounce(() => {
-  //       handleHelperLines(changes, getNodes());
-  //     }, 1); // 100ms delay
-
-  //     debouncedFunction();
-  //   },
-  //   [getNodes, handleHelperLines]
-  // );
-
   const onNodesChange = useCallback(
     (changes: NodeChange[]) => {
-      // 1️⃣ Apply node size/position changes
-      setNodes((nodes) => {
-        const updated = applyNodeChanges(changes, nodes);
-
-        // 2️⃣ Save width/height from NodeResizer into node.data
-        return updated.map((node) => ({
-          ...node,
-          data: {
-            ...node.data,
-            width: node.width,
-            height: node.height,
-          },
-        }));
+      setNodes((currentNodes) => {
+        const lockedIds = new Set(
+          currentNodes.filter((n) => n.data?.locked).map((n) => n.id)
+        );
+        // Strip position/dimension changes for locked nodes
+        const safeChanges = changes.filter((change) => {
+          if (change.type === "position" || change.type === "dimensions") {
+            return !lockedIds.has((change as any).id);
+          }
+          return true;
+        });
+        const updated = applyNodeChanges(safeChanges, currentNodes);
+        return updated.map((node) => {
+          // Force locked nodes back to their saved position on every change cycle.
+          // ReactFlow (uncontrolled mode) may have moved them internally before
+          // onNodesChange fires — this overrides that.
+          if (node.data?.locked && node.data?.lockedPosition) {
+            return {
+              ...node,
+              position: node.data.lockedPosition as { x: number; y: number },
+              data: { ...node.data, width: node.width, height: node.height },
+            };
+          }
+          return {
+            ...node,
+            data: { ...node.data, width: node.width, height: node.height },
+          };
+        });
       });
 
-      // 3️⃣ Helper lines support
       const debouncedFunction = debounce(() => {
         handleHelperLines(changes, getNodes());
       }, 1);
@@ -259,20 +548,6 @@ export const useDiagram = () => {
     },
     [setNodes, getNodes, handleHelperLines]
   );
-
-  // Inefficient method of dragging nodes
-  /*   const onNodesChange = useCallback(
-    (changes: NodeChange[]) => {
-      const debouncedFunction = debounce(() => {
-        setNodes((nodes) =>
-          applyNodeChanges(handleHelperLines(changes, nodes), nodes)
-        );
-      }, 1); // 100ms delay
-
-      debouncedFunction();
-    },
-    [setNodes, handleHelperLines]
-  ); */
 
   const onConnect: OnConnect = useCallback(
     (connection) => {
@@ -340,12 +615,6 @@ export const useDiagram = () => {
           nodes.map((n) => ({ ...n, selected: false })).concat([{ ...newNode }])
         );
 
-        /* const newEdge = {
-          id: `${connectingNodeId.current}-${newNode.id}`,
-          source: connectingNodeId.current,
-          target: newNode.id,
-          animated: true,
-        }; */
         const { connectionLinePath } = useAppStore.getState();
 
         const edge = {
@@ -374,8 +643,24 @@ export const useDiagram = () => {
     [screenToFlowPosition, setEdges, setNodes, takeSnapshot]
   );
 
+  const onEdgesChange = useCallback(
+    (changes: EdgeChange[]) => {
+      setEdges((currentEdges) => {
+        const lockedIds = new Set(
+          currentEdges.filter((e) => (e.data as any)?.locked).map((e) => e.id)
+        );
+        const safeChanges = changes.filter((change) =>
+          change.type === "remove" ? !lockedIds.has(change.id) : true
+        );
+        return applyEdgeChanges(safeChanges, currentEdges);
+      });
+    },
+    [setEdges]
+  );
+
   const onEdgeClick = useCallback(
     (_event: React.MouseEvent<Element, MouseEvent>, edge: Edge) => {
+      if ((edge.data as any)?.locked) return;
       setEditingEdgeId(edge.id);
     },
     []
@@ -419,28 +704,22 @@ export const useDiagram = () => {
   };
 
   const updateSelectedEdgesType = useCallback(
-  (type: "straight" | "step" | "smoothstep" | "bezier") => {
-    takeSnapshot();
-
-    setEdges((edges) =>
-      edges.map((edge) =>
-        edge.selected
-          ? {
-              ...edge,
-              type,
-            }
-          : edge
-      )
-    );
-  },
-  [setEdges, takeSnapshot]
-);
-
+    (type: "straight" | "step" | "smoothstep" | "bezier") => {
+      takeSnapshot();
+      setEdges((edges) =>
+        edges.map((edge) =>
+          edge.selected ? { ...edge, type } : edge
+        )
+      );
+    },
+    [setEdges, takeSnapshot]
+  );
 
   return {
     onDragOver,
     onDrop,
     onNodesChange,
+    onEdgesChange,
     onConnect,
     onConnectStart,
     onConnectEnd,
@@ -470,5 +749,19 @@ export const useDiagram = () => {
     deselectAll,
     uploadJson,
     updateSelectedEdgesType,
+    updateNodesStyle,
+    updateEdgesStyle,
+    selectedNodes,
+    selectedEdges,
+    saveToLocalStorage,
+    fitToSelection,
+    groupSelectedNodes,
+    diagramTitle,
+    setDiagramTitle,
+    toggleNodeLock,
+    toggleSelectionLock,
+    fitToNode,
+    getNodes,
+    takeSnapshot,
   };
 };

@@ -1,121 +1,43 @@
-// import React from 'react';
-
-// type Priority = 'high' | 'medium' | 'low';
-
-// interface TimelineShortTaskCardProps {
-//   title: string;
-//   startDate: string;
-//   endDate: string;
-//   assignee: string;
-//   priority: Priority;
-//   category?: string;
-//   stage: string;
-//   tags: string[];
-//   comments: number;
-//   attachments: number;
-//   flagged: boolean;
-// }
-
-// const priorityColors: Record<Priority, string> = {
-//   high: 'bg-pink-400/30',
-//   medium: 'bg-yellow-300/30',
-//   low: 'bg-blue-300/30',
-// };
-
-// const TimelineShortTaskCard: React.FC<TimelineShortTaskCardProps> = ({
-//   title,
-//   startDate,
-//   endDate,
-//   assignee,
-//   priority,
-//   category,
-// }) => {
-//   return (
-//     <div
-//       className={`rounded-lg shadow-md p-4 text-sm text-gray-800 ${priorityColors[priority]} w-fit`}
-//     >
-//       <div className="font-semibold">{title}</div>
-//       <div className="text-xs text-gray-700">
-//         {startDate} → {endDate}
-//       </div>
-//       <div className="mt-1 text-xs">👤 {assignee}</div>
-//       {category && <div className="text-xs italic">📁 {category}</div>}
-//       <div className="mt-2 text-xs font-medium uppercase tracking-wide">
-//         Priority: {priority}
-//       </div>
-//     </div>
-//   );
-// };
-
-// export default TimelineShortTaskCard;
-
-
+"use client";
 import React from "react";
 
 type Priority = "high" | "medium" | "low";
 
-interface TimelineShortTaskCardProps {
+export interface TimelineShortTaskCardProps {
   title: string;
-  startDate: string;
-  endDate: string;
   assignee: string;
   priority: Priority;
-  category?: string;
-  stage: string;
-  tags: string[];
-  comments: number;
-  attachments: number;
-  flagged: boolean;
 }
 
-const priorityColors: Record<Priority, string> = {
-  high: "border-pink-500 bg-pink-100/40",
-  medium: "border-yellow-400 bg-yellow-100/40",
-  low: "border-blue-400 bg-blue-100/40",
+const barColors: Record<Priority, string> = {
+  high:   "border-pink-500  bg-pink-100/70   dark:bg-pink-900/30   text-pink-900   dark:text-pink-100",
+  medium: "border-yellow-400 bg-yellow-100/70 dark:bg-yellow-900/30 text-yellow-900 dark:text-yellow-100",
+  low:    "border-blue-400  bg-blue-100/70   dark:bg-blue-900/30   text-blue-900   dark:text-blue-100",
 };
 
 const TimelineShortTaskCard: React.FC<TimelineShortTaskCardProps> = ({
   title,
-  startDate,
-  endDate,
   assignee,
   priority,
-  category,
 }) => {
-  const start = new Date(startDate);
-  const month = start.toLocaleString("default", { month: "short" });
-  const day = start.getDate();
+  const initials = assignee
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
 
   return (
     <div
-      className={`flex items-center border-l-4 ${priorityColors[priority]} rounded-lg shadow-sm hover:shadow-md transition-all duration-200 w-[260px]`}
+      title={`${title} · ${assignee}`}
+      className={`flex items-center h-full w-full border-l-4 rounded-md px-2 gap-1.5 overflow-hidden cursor-default select-none transition-all hover:brightness-95 hover:shadow-md ${barColors[priority]}`}
     >
-      {/* Date Section */}
-      <div className="flex flex-col items-center justify-center bg-white text-gray-800 px-3 py-2 border-r border-gray-200 rounded-l-lg">
-        <div className="text-xs font-semibold text-gray-500 uppercase">
-          {month}
-        </div>
-        <div className="text-lg font-bold text-gray-900">{day}</div>
-      </div>
-
-      {/* Details Section */}
-      <div className="flex-1 px-3 py-2">
-        <div className="font-semibold text-sm leading-tight">{title}</div>
-        <div className="text-xs text-gray-500">
-          {startDate} → {endDate}
-        </div>
-        <div className="mt-1 text-xs text-gray-700 flex items-center gap-1">
-          👤 {assignee}
-        </div>
-        {category && (
-          <div className="text-[11px] italic text-gray-600 mt-0.5">
-            📁 {category}
-          </div>
-        )}
-        <div className="mt-2 text-[11px] uppercase tracking-wide font-medium text-gray-600">
-          {priority} priority
-        </div>
-      </div>
+      <span className="text-xs font-semibold truncate flex-1 leading-none">
+        {title}
+      </span>
+      <span className="ml-auto shrink-0 text-[10px] font-bold bg-white/50 dark:bg-black/20 rounded-full w-5 h-5 flex items-center justify-center leading-none">
+        {initials}
+      </span>
     </div>
   );
 };

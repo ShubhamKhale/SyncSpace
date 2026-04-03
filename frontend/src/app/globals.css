@@ -1,8 +1,10 @@
 @import "tailwindcss";
 @import "@xyflow/react/dist/style.css";
 
+@variant dark (&:where(.dark, .dark *));
+
 :root {
-  --background: #ffffff;
+  --background: #F1F5F9;
   --foreground: #171717;
   --primary-button-background-color: #2563eb;
   --primary-background-color: #DBEAFE;
@@ -30,11 +32,25 @@
   --font-mono: var(--font-geist-mono);
 } */
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+.dark {
+  --background: #0F172A;
+  --foreground: #F1F5F9;
+  --primary-button-background-color: #3B82F6;
+  --primary-background-color: #1E3A5F;
+  --secondary-background-color: #94A3B8;
+  --tertiary-background-color: #1E293B;
+  --primary-text-color: #F1F5F9;
+  --secondary-text-color: #CBD5E1;
+  --tertiary-text-color: #94A3B8;
+  --quaternary-text-color: #CBD5E1;
+  --fifth-text-color: #60A5FA;
+  --sixth-text-color: #E2E8F0;
+  --danger-text-color: #FCA5A5;
+  --placeholder-text-color: #475569;
+  --sidebar-border-color: #334155;
+  --sidebar-option-background-color: #1E3A5F;
+  --sidebar-option-highlight-name-color: #93C5FD;
+  --sidebar-option-name-color: #CBD5E1;
 }
 
 /* body {

@@ -4,6 +4,7 @@ import type { ControlPointData } from "../ControlPoint";
 import { getLinearPath, getLinearControlPoints } from "./linear";
 import { getCatmullRomPath, getCatmullRomControlPoints } from "./catmull-rom";
 import { getStraightPath, getStraightControlPoints } from "./straight";
+// Smart path is handled directly in EditableEdge (needs live node data)
 
 import { Algorithm } from "../constants";
 
@@ -24,6 +25,9 @@ export function getControlPoints(
 
     case Algorithm.Straight:
       return getStraightControlPoints(points);
+
+    case Algorithm.Smart:
+      return []; // control points unused for smart routing
   }
 }
 
@@ -44,5 +48,8 @@ export function getPath(
 
     case Algorithm.Straight:
       return getStraightPath(points);
+
+    case Algorithm.Smart:
+      return getLinearPath(points); // fallback; actual smart path computed in EditableEdge
   }
 }
