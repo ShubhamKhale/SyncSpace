@@ -1,5 +1,10 @@
-import BoardTaskFlow from "@/app/components/BoardTaskFlow";
+import dynamic from "next/dynamic";
 
-export default function Page() {
-  return <BoardTaskFlow />;
+const BoardTaskFlow = dynamic(() => import("@/app/components/BoardTaskFlow"));
+
+type Props = { params: Promise<{ boardid: string }> };
+
+export default async function Page({ params }: Props) {
+  const { boardid } = await params;
+  return <BoardTaskFlow boardId={boardid} />;
 }

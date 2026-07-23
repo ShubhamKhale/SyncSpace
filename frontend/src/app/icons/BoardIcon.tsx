@@ -13,13 +13,13 @@ const BoardIcon: React.FC<BoardIconProps> = ({
   className = "",
   fill = "#6B7280",
 }) => {
-  const viewbox = `0 0 ${width} ${height}`;
+  
   return (
     <svg
       width={width}
       height={height}
       className={className}
-      viewBox={viewbox}
+      viewBox="0 0 20 20"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
     >

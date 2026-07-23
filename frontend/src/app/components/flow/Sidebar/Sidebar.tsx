@@ -9,16 +9,16 @@ import { ImagePlus } from "lucide-react";
 // ── Design tokens ─────────────────────────────────────────────
 const TILE =
   "group flex flex-col items-center justify-center gap-1.5 py-2.5 px-1 " +
-  "bg-gray-800/50 border border-gray-700/40 rounded-xl " +
-  "hover:bg-gray-700/60 hover:border-gray-600/60 " +
-  "hover:scale-[1.04] hover:shadow-lg active:scale-[0.96] " +
+  "rounded-lg " +
+  "hover:bg-gray-800 " +
+  "hover:scale-[1.04] active:scale-[0.96] " +
   "transition-all duration-150 select-none";
 
 const TILE_LABEL =
-  "text-[9px] font-medium text-gray-500 group-hover:text-gray-300 leading-none transition-colors";
+  "text-[9px] font-medium text-gray-500 group-hover:text-gray-200 leading-none transition-colors";
 
 const SECTION_HEADER =
-  "text-[9px] font-semibold tracking-[0.14em] text-gray-500 uppercase mb-2";
+  "text-[9px] font-semibold tracking-[0.14em] text-gray-600 uppercase mb-2 px-1";
 // ──────────────────────────────────────────────────────────────
 
 const NOTE_COLORS = [
@@ -154,7 +154,7 @@ function Sidebar() {
   };
 
   return (
-    <div className="bg-gray-900 border-r border-gray-800 h-full py-4 px-3 overflow-y-auto scrollbar-hide flex flex-col gap-5">
+    <div className="bg-gray-950 border-r border-gray-800/60 h-full py-4 px-2 overflow-y-auto scrollbar-hide flex flex-col gap-5">
 
       {/* ── Shapes ────────────────────────────────────────── */}
       <section>

@@ -1,115 +1,81 @@
-import React, { useEffect, useRef, useState } from "react";
-import MonacoEditor from "react-monaco-editor";
-import "./jsonViewer.css";
+"use client";
+import React, { useRef, useState } from "react";
 import { IoMdClose } from "react-icons/io";
+import { Copy, Check } from "lucide-react";
+import "./jsonViewer.css";
 
 interface JsonViewerProps {
   jsonString: string;
   toggleRightSidebar: () => void;
 }
 
-const JsonViewer: React.FC<JsonViewerProps> = (props: JsonViewerProps) => {
-  let prettyJsonString: string;
-  const observedDiv = useRef<any>(null);
-  const [width, setWidth] = useState();
-  const [height, setHeight] = useState();
-  const [syntaxHighlighting, setSyntaxHighlighting] = useState<boolean>(false);
+function highlight(json: string): string {
+  return json
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(
+      /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g,
+      (match) => {
+        let cls = "json-number";
+        if (/^"/.test(match)) {
+          cls = /:$/.test(match) ? "json-key" : "json-string";
+        } else if (/true|false/.test(match)) {
+          cls = "json-bool";
+        } else if (/null/.test(match)) {
+          cls = "json-null";
+        }
+        return `<span class="${cls}">${match}</span>`;
+      }
+    );
+}
 
+const JsonViewer: React.FC<JsonViewerProps> = ({ jsonString, toggleRightSidebar }) => {
+  const [copied, setCopied] = useState(false);
+  const observedDiv = useRef<HTMLDivElement>(null);
+
+  let prettyJson: string;
   try {
-    const jsonObj = JSON.parse(props.jsonString);
-    prettyJsonString = JSON.stringify(jsonObj, null, 2);
-  } catch (error) {
-    prettyJsonString = "Invalid JSON string";
+    prettyJson = JSON.stringify(JSON.parse(jsonString), null, 2);
+  } catch {
+    prettyJson = "Invalid JSON string";
   }
 
-  useEffect(
-    () => {
-      if (!observedDiv.current) {
-        // we do not initialize the observer unless the ref has
-        // been assigned
-        return;
-      }
-
-      // we also instantiate the resizeObserver and we pass
-      // the event handler to the constructor
-      const resizeObserver = new ResizeObserver(() => {
-        if (observedDiv.current && observedDiv.current.offsetWidth !== width) {
-          setWidth(observedDiv.current.offsetWidth);
-        }
-        if (
-          observedDiv.current &&
-          observedDiv.current.offsetHeight !== height
-        ) {
-          setHeight(observedDiv.current.offsetHeight);
-        }
-      });
-
-      // the code in useEffect will be executed when the component
-      // has mounted, so we are certain observedDiv.current will contain
-      // the div we want to observe
-      resizeObserver.observe(observedDiv.current);
-
-      // if useEffect returns a function, it is called right before the
-      // component unmounts, so it is the right place to stop observing
-      // the div
-      return function cleanup() {
-        resizeObserver.disconnect();
-      };
-    },
-    // only update the effect if the ref element changed
-    [observedDiv.current]
-  );
-
   const copyAll = async () => {
-    await navigator.clipboard.writeText(prettyJsonString);
-    alert("Copied to clipboard");
+    await navigator.clipboard.writeText(prettyJson);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   return (
-    <div
-      ref={observedDiv}
-      className="w-full json-viewer overflow-y-auto bg-[#1e1e1e]"
-    >
-      <div className="flex flex-row h-16 justify-between items-center p-4">
-        <button
-          className="text-white p-2 m-2 bg-slate-800 rounded-md"
-          onClick={copyAll}
-        >
-          Copy
-        </button>
-        <button
-          className="text-white p-2 m-2 bg-slate-800 rounded-md"
-          onClick={() => setSyntaxHighlighting(!syntaxHighlighting)}
-        >
-          Syntax
-        </button>
-        <div
-          onClick={props.toggleRightSidebar}
-          className="flex text-white hover:text-black cursor-pointer h-8 flex-row gap-3 justify-center items-center border-[1px] border-white hover:bg-gray-100 p-2 rounded-md"
-        >
-          <IoMdClose />
+    <div ref={observedDiv} className="w-full h-full flex flex-col json-viewer overflow-hidden bg-[#1e1e1e]">
+      {/* Toolbar */}
+      <div className="flex flex-row h-12 justify-between items-center px-4 border-b border-[#333] flex-shrink-0">
+        <span className="text-[#9DA5B4] text-xs font-mono">diagram.json</span>
+        <div className="flex items-center gap-2">
+          <button
+            className="flex items-center gap-1.5 text-[#9DA5B4] hover:text-white text-xs px-2 py-1 bg-[#2d2d2d] hover:bg-[#383838] rounded transition"
+            onClick={copyAll}
+          >
+            {copied ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
+            {copied ? "Copied" : "Copy"}
+          </button>
+          <button
+            onClick={toggleRightSidebar}
+            className="text-[#9DA5B4] hover:text-white p-1 rounded hover:bg-[#383838] transition"
+          >
+            <IoMdClose size={16} />
+          </button>
         </div>
       </div>
-      <MonacoEditor
-        width={width}
-        height={height}
-        language={syntaxHighlighting ? "json" : ""}
-        theme="vs-dark"
-        value={prettyJsonString}
-        options={{
-          readOnly: true,
-          lineNumbers: "on",
-          glyphMargin: false,
-          folding: false,
-          lineDecorationsWidth: 10,
-          lineNumbersMinChars: 0,
-          minimap: {
-            enabled: true,
-          },
-          stopRenderingLineAfter: 1000,
-          mouseWheelZoom: true,
-        }}
-      />
+
+      {/* JSON content */}
+      <div className="flex-1 overflow-auto">
+        <pre
+          className="text-xs font-mono p-4 leading-relaxed whitespace-pre"
+          dangerouslySetInnerHTML={{ __html: highlight(prettyJson) }}
+        />
+      </div>
     </div>
   );
 };

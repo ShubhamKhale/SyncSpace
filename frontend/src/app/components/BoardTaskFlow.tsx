@@ -17,14 +17,25 @@ import {
 } from "@dnd-kit/sortable";
 import {
   Calendar,
+  ExternalLink,
   FilterIcon,
   Grid,
   Layout,
+  BookOpen,
+  Pen,
+  Code2,
+  ShieldCheck,
+  Rocket,
+  GitBranch,
+  type LucideIcon,
 } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import TimelineShortTaskCard from "./TimeLineShortTaskCard";
 import { format, addDays, differenceInCalendarDays, isSameDay } from "date-fns";
 import PriorityPhaseMatrix from "./PriorityPhaseMatrix";
 import { useBoardTaskStore } from "@/app/store/useBoardTaskStore";
+import { useBoardStore } from "@/app/store/useBoardStore";
 import { useEditMode } from "@/app/hooks/useEditMode";
 import SelectPopover from "./SelectPopover";
 import { SortablePipelineStage } from "./kanban/SortablePipelineStage";
@@ -39,9 +50,42 @@ const STAGE_COLORS: Record<string, string> = {
   Deployment:  "bg-teal-500",
 };
 
-const BoardTaskFlow: React.FC = () => {
-  const { tasks, saveStates, updateTaskTitle, updateTaskPriority, updateTaskDates, updateTaskAssignee, updateTaskStage } = useBoardTaskStore();
-  const permissions = useEditMode("owner");
+const STAGE_BORDER: Record<string, string> = {
+  Planning:    "border-l-purple-500",
+  Design:      "border-l-blue-500",
+  Development: "border-l-amber-400",
+  QA:          "border-l-green-500",
+  Deployment:  "border-l-teal-500",
+};
+
+const STAGE_EMPTY: Record<string, { Icon: LucideIcon; bg: string; icon: string }> = {
+  Planning:    { Icon: BookOpen,    bg: "bg-purple-50 dark:bg-purple-900/20", icon: "text-purple-400" },
+  Design:      { Icon: Pen,         bg: "bg-blue-50 dark:bg-blue-900/20",     icon: "text-blue-400"   },
+  Development: { Icon: Code2,       bg: "bg-amber-50 dark:bg-amber-900/20",   icon: "text-amber-400"  },
+  QA:          { Icon: ShieldCheck, bg: "bg-green-50 dark:bg-green-900/20",   icon: "text-green-400"  },
+  Deployment:  { Icon: Rocket,      bg: "bg-teal-50 dark:bg-teal-900/20",     icon: "text-teal-400"   },
+};
+
+function StageEmptyState({ stageName }: { stageName: string }) {
+  const empty = STAGE_EMPTY[stageName];
+  if (!empty) return <p className="text-xs text-slate-400 italic py-4">No tasks yet</p>;
+  const { Icon, bg, icon } = empty;
+  return (
+    <div className="flex flex-col items-center justify-center py-8 gap-2">
+      <div className={`w-12 h-12 rounded-full flex items-center justify-center ${bg}`}>
+        <Icon size={22} className={icon} />
+      </div>
+      <p className="text-sm text-slate-400">No tasks yet</p>
+      <p className="text-xs text-slate-300 dark:text-slate-500">Add tasks to get started</p>
+    </div>
+  );
+}
+
+const BoardTaskFlow: React.FC<{ boardId?: string }> = ({ boardId }) => {
+  const { tasks, saveStates, updateTaskTitle, updateTaskPriority, updateTaskDates, updateTaskAssignee, updateTaskStage, fetchTasks } = useBoardTaskStore();
+  const { board, fetchBoard } = useBoardStore();
+  const permissions = useEditMode();
+  const router = useRouter();
   const [activeView,        setActiveView]        = useState<"kanban" | "timeline" | "matrix">("kanban");
   const [phaseFilter,       setPhaseFilter]       = useState("Phase");
   const [priorityFilter,    setPriorityFilter]    = useState("Priority");
@@ -55,6 +99,8 @@ const BoardTaskFlow: React.FC = () => {
   const [activeStageName, setActiveStageName] = useState<string | null>(null);
   const [activeTaskId,    setActiveTaskId]    = useState<string | null>(null);
 
+  const contributors = Array.from(new Set(tasks.map((t) => t.assignee).filter(Boolean)));
+
   const stages = stageOrder.map((name) => ({
     name,
     color: STAGE_COLORS[name] ?? "bg-slate-400",
@@ -66,109 +112,29 @@ const BoardTaskFlow: React.FC = () => {
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
   );
 
-  // Initialize tasks on component mount
   useEffect(() => {
-    if (!tasks || tasks.length === 0) {
-      useBoardTaskStore.setState({
-        tasks: [
-          {
-            id: "task-1",
-            stage: "Planning",
-            title: "Market Research",
-            tags: ["Marketing > Research", "External"],
-            startDate: "2025-10-05",
-            endDate: "2025-10-15",
-            assignee: "Alex Kim",
-            priority: "high",
-            comments: 3,
-            attachments: 2,
-            flagged: true,
-          },
-          {
-            id: "task-2",
-            stage: "Design",
-            title: "Wireframes",
-            tags: ["Design > Wireframes"],
-            startDate: "2025-10-10",
-            endDate: "2025-10-20",
-            assignee: "John Doe",
-            priority: "medium",
-            comments: 2,
-            attachments: 1,
-            flagged: false,
-          },
-          {
-            id: "task-3",
-            stage: "Development",
-            title: "Frontend Implementation",
-            tags: ["Development > Frontend"],
-            startDate: "2025-10-15",
-            endDate: "2025-10-25",
-            assignee: "Jane Smith",
-            priority: "low",
-            comments: 1,
-            attachments: 0,
-            flagged: false,
-          },
-          {
-            id: "task-4",
-            stage: "QA",
-            title: "User Testing",
-            tags: ["Testing > User Testing"],
-            startDate: "2025-10-20",
-            endDate: "2025-10-30",
-            assignee: "Bob Johnson",
-            priority: "high",
-            comments: 0,
-            attachments: 0,
-            flagged: false,
-          },
-          {
-            id: "task-5",
-            stage: "Deployment",
-            title: "Production Deployment",
-            tags: ["Deployment > Production"],
-            startDate: "2025-10-25",
-            endDate: "2025-11-05",
-            assignee: "Alice Lee",
-            priority: "medium",
-            comments: 0,
-            attachments: 0,
-            flagged: false,
-          },
-          {
-            id: "task-6",
-            stage: "Planning",
-            title: "Stakeholder Meetings",
-            tags: ["Planning > Reviews"],
-            startDate: "2025-10-05",
-            endDate: "2025-10-12",
-            assignee: "Alex Kim",
-            priority: "high",
-            comments: 1,
-            attachments: 0,
-            flagged: false,
-          },
-          {
-            id: "task-7",
-            stage: "Design",
-            title: "UI Design System",
-            tags: ["Design > System"],
-            startDate: "2025-10-10",
-            endDate: "2025-10-18",
-            assignee: "John Doe",
-            priority: "medium",
-            comments: 5,
-            attachments: 2,
-            flagged: false,
-          },
-        ],
-      });
+    if (boardId) {
+      fetchBoard(boardId);
+      fetchTasks(boardId);
     }
-  }, [tasks]);
+  }, [boardId, fetchBoard, fetchTasks]);
 
-  const startDate = new Date("2025-10-05");
-  const numberOfDays = 14;
+  // Build dynamic range from actual task dates
+  const validDates = tasks
+    .flatMap((t) => [t.startDate, t.endDate])
+    .filter(Boolean)
+    .map((s) => new Date(s!))
+    .filter((d) => !isNaN(d.getTime()));
+
+  const rangeMin = validDates.length > 0
+    ? new Date(Math.min(...validDates.map((d) => d.getTime())))
+    : addDays(new Date(), -3);
+  const rangeMax = validDates.length > 0
+    ? new Date(Math.max(...validDates.map((d) => d.getTime())))
+    : addDays(new Date(), 14);
+
+  const startDate = addDays(rangeMin, -2);
+  const numberOfDays = Math.max(14, differenceInCalendarDays(rangeMax, startDate) + 3);
 
   const timelineDays = Array.from({ length: numberOfDays }, (_, i) =>
     addDays(startDate, i)
@@ -209,7 +175,7 @@ const BoardTaskFlow: React.FC = () => {
         {/* Title row */}
         <div className="flex items-center justify-between mb-2.5">
           <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
-            Product Launch Q4
+            {board?.title ?? "Untitled Board"}
           </h1>
 
           {/* View buttons */}
@@ -247,6 +213,29 @@ const BoardTaskFlow: React.FC = () => {
               <Grid size={15} />
               Matrix
             </button>
+
+            {boardId && (
+              <button
+                onClick={() => router.push(`/dashboard/boards/${boardId}/flows`)}
+                className="flex items-center gap-1 sm:gap-1.5 border px-2 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition hover:cursor-pointer text-slate-600 dark:text-slate-300 border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700"
+              >
+                <GitBranch size={15} />
+                Flows
+              </button>
+            )}
+
+            {boardId && (
+              <>
+                <div className="w-px h-5 bg-slate-300 dark:bg-slate-600 mx-1" />
+                <Link
+                  href={`/dashboard/boards/${boardId}/tasks`}
+                  className="flex items-center gap-1 sm:gap-1.5 border px-2 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition hover:cursor-pointer bg-blue-600 text-white border-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:border-blue-500 dark:hover:bg-blue-600"
+                >
+                  <ExternalLink size={15} />
+                  All Tasks
+                </Link>
+              </>
+            )}
           </div>
         </div>
 
@@ -285,9 +274,7 @@ const BoardTaskFlow: React.FC = () => {
             onChange={setContributorFilter}
             options={[
               { value: "Contributor", label: "Contributor" },
-              { value: "Sarah",       label: "Sarah" },
-              { value: "Alex",        label: "Alex" },
-              { value: "Maria",       label: "Maria" },
+              ...contributors.map((name) => ({ value: name, label: name })),
             ]}
             triggerClassName="border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 rounded-md text-sm px-2 py-1 text-slate-700 dark:text-slate-200 whitespace-nowrap"
             // dropdownClassName="min-w-[130px]"
@@ -307,7 +294,7 @@ const BoardTaskFlow: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto scrollbar-hide bg-slate-200 dark:bg-slate-900 py-6 px-6">
+      <div className="flex-1 overflow-y-auto scrollbar-hide bg-[#F8F9FC] dark:bg-slate-900 py-6 px-6">
         {/* kanban */}
         {activeView === "kanban" && (
           <div>
@@ -399,15 +386,15 @@ const BoardTaskFlow: React.FC = () => {
                         key={stage.name}
                         id={stage.name}
                         isEmpty={colTasks.length === 0}
+                        borderClass={STAGE_BORDER[stage.name]}
+                        emptyContent={<StageEmptyState stageName={stage.name} />}
                         header={
                           <div className="flex items-center justify-between mb-3">
                             <h3 className="font-semibold text-slate-800 dark:text-slate-100 text-sm">
                               {stage.name}{" "}
                               <span className="text-slate-400">({colTasks.length})</span>
                             </h3>
-                            <button className="text-slate-400 text-lg font-bold hover:text-slate-700 dark:hover:text-slate-200 hover:cursor-pointer">
-                              +
-                            </button>
+                            <button className="w-6 h-6 rounded-full border border-slate-200 dark:border-slate-600 flex items-center justify-center text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 text-sm transition">+</button>
                           </div>
                         }
                       >
@@ -451,13 +438,14 @@ const BoardTaskFlow: React.FC = () => {
                   return (
                     <div
                       key={stage.name}
-                      className="bg-white dark:bg-slate-800 h-fit rounded-lg p-4 w-full shadow-sm border border-slate-200 dark:border-slate-700"
+                      className={`bg-white dark:bg-slate-800 h-fit rounded-lg p-4 w-full shadow-sm border border-l-4 border-slate-200 dark:border-slate-700 ${STAGE_BORDER[stage.name] ?? "border-l-slate-300"}`}
                     >
                       <div className="flex items-center justify-between mb-3">
                         <h3 className="font-semibold text-slate-800 dark:text-slate-100 text-sm">
                           {stage.name}{" "}
                           <span className="text-slate-400">({colTasks.length})</span>
                         </h3>
+                        <button className="w-6 h-6 rounded-full border border-slate-200 dark:border-slate-600 flex items-center justify-center text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 text-sm transition">+</button>
                       </div>
                       {colTasks.length > 0 ? (
                         colTasks.map((task) => (
@@ -473,7 +461,7 @@ const BoardTaskFlow: React.FC = () => {
                           />
                         ))
                       ) : (
-                        <p className="text-xs text-slate-400 italic">No tasks yet</p>
+                        <StageEmptyState stageName={stage.name} />
                       )}
                     </div>
                   );
@@ -528,13 +516,19 @@ const BoardTaskFlow: React.FC = () => {
 
               {/* ── Task rows ── */}
               {tasks.map((task, rowIdx) => {
-                const taskStart = new Date(task.startDate);
-                const taskEnd   = new Date(task.endDate);
-                const barColStart = Math.max(0, differenceInCalendarDays(taskStart, startDate));
-                const barColSpan  = Math.min(
-                  differenceInCalendarDays(taskEnd, taskStart) + 1,
-                  numberOfDays - barColStart
-                );
+                const taskStart = task.startDate ? new Date(task.startDate) : null;
+                const taskEnd   = task.endDate   ? new Date(task.endDate)   : null;
+                const hasBar = taskStart && taskEnd &&
+                  !isNaN(taskStart.getTime()) && !isNaN(taskEnd.getTime());
+                const barColStart = hasBar
+                  ? Math.max(0, differenceInCalendarDays(taskStart!, startDate))
+                  : -1;
+                const barColSpan = hasBar
+                  ? Math.max(1, Math.min(
+                      differenceInCalendarDays(taskEnd!, taskStart!) + 1,
+                      numberOfDays - barColStart
+                    ))
+                  : 0;
                 const isOdd = rowIdx % 2 === 1;
 
                 const priorityDot: Record<string, string> = {
@@ -577,8 +571,8 @@ const BoardTaskFlow: React.FC = () => {
                     {/* Day cells — render one per day, bar spans using gridColumn */}
                     {timelineDays.map((day, dayIdx) => {
                       const isToday     = isSameDay(day, new Date());
-                      const isBarStart  = dayIdx === barColStart;
-                      const inBar       = dayIdx >= barColStart && dayIdx < barColStart + barColSpan;
+                      const isBarStart  = hasBar && dayIdx === barColStart;
+                      const inBar       = hasBar && dayIdx >= barColStart && dayIdx < barColStart + barColSpan;
 
                       if (isBarStart) {
                         // Render the task bar spanning barColSpan columns

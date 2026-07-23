@@ -47,20 +47,20 @@ import TableNode from "./nodes/TableNode";
 import { PresentationMode } from "./PresentationMode";
 import { TemplateModal } from "./templates/TemplateModal";
 import { useTemplateStore } from "@/app/store/useTemplateStore";
-// import { CursorOverlay } from "./CursorOverlay"; — hidden until backend integration
+import { CursorOverlay } from "./CursorOverlay";
 import { useDiagram } from "@/app/hooks/useDiagram";
+import { useFlowPresence } from "@/app/hooks/useFlowPresence";
 import useUndoRedo from "@/app/hooks/useUndoRedo";
 import { useWindowSize } from "@/app/hooks/useWindowSize";
 import { useTheme } from "@/app/hooks/useTheme";
 import Sidebar from "./Sidebar/Sidebar";
 import { FlowHeader } from "./FlowHeader/FlowHeader";
+import { useBoardFlowsStore } from "@/app/store/useBoardFlowsStore";
 import KeyboardShortcuts from "./KeyboardShortcuts";
 import { HelpCircle, Maximize2, Layers, Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight, Type } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ColorPicker } from "./ColorPicker";
 import { FillColorPicker } from "./FillColorPicker";
-
-const SAVE_KEY = "syncspace-diagram";
 
 const ROW_THRESHOLD = 80;
 function computeSortedSlides(nodes: Node[]): Node[] {
@@ -134,8 +134,77 @@ const nodeTypes: NodeTypes = {
   table: TableNode,
 };
 
-const Flow = () => {
-  const diagram = useDiagram();
+interface FlowProps { flowId?: string; boardId?: string; }
+
+const Flow = ({ flowId, boardId }: FlowProps) => {
+  const saveKey = flowId ? `syncspace-flow-${flowId}` : "syncspace-diagram";
+
+  // Resolve flow name: Zustand store (fast, set by gallery page) → localStorage metadata fallback
+  const storeFlows = useBoardFlowsStore((s) => s.flows);
+  const flowName = useMemo(() => {
+    if (!boardId || !flowId) return undefined;
+    const storeMatch = storeFlows.find((f) => f.id === flowId);
+    if (storeMatch?.name) return storeMatch.name;
+    if (typeof window === "undefined") return undefined;
+    try {
+      const meta = JSON.parse(localStorage.getItem(`syncspace-flows-${boardId}`) ?? "[]") as Array<{ id: string; name: string }>;
+      return meta.find((f) => f.id === flowId)?.name;
+    } catch { return undefined; }
+  }, [boardId, flowId, storeFlows]);
+
+  const diagram = useDiagram({ saveKey, boardId, flowId, initialTitle: flowName });
+  const uploadJsonRef = useRef(diagram.uploadJson);
+  uploadJsonRef.current = diagram.uploadJson;
+  const getNodesRef = useRef(diagram.getNodes);
+  getNodesRef.current = diagram.getNodes;
+
+  // Sync diagram title back to flow metadata when user renames inside the editor.
+  const renameFlowInStore = useBoardFlowsStore((s) => s.renameFlow);
+  const prevTitleRef = useRef<string | null>(null);
+  useEffect(() => {
+    const title = diagram.diagramTitle;
+    if (!boardId || !flowId || !title) return;
+    if (prevTitleRef.current === null) {
+      prevTitleRef.current = title;
+      return;
+    }
+    if (prevTitleRef.current !== title) {
+      prevTitleRef.current = title;
+      renameFlowInStore(boardId, flowId, title);
+    }
+  }, [diagram.diagramTitle, boardId, flowId, renameFlowInStore]);
+
+  const {
+    participants,
+    cursorsRef,
+    sendCursorMove,
+    myId,
+    presenter,
+    broadcastPresentStart,
+    broadcastPresentStop,
+    broadcastPresentSlide,
+  } = useFlowPresence(
+    boardId ?? "",
+    flowId ?? "",
+    {
+      onDiagramUpdated: useCallback(
+        ({ nodes, edges }: { nodes: unknown[]; edges: unknown[] }) => {
+          uploadJsonRef.current(JSON.stringify({ nodes, edges }));
+        },
+        []
+      ),
+      onPresentationSlide: useCallback((nodeId: string) => {
+        const node = getNodesRef.current().find((n) => n.id === nodeId);
+        if (node) uploadJsonRef.current && diagram.fitToNode(node);
+      }, [diagram]),
+      onPresentationStopped: useCallback(() => {
+        // presenter state clears in hook; nothing extra needed here
+      }, []),
+    }
+  );
+
+  // true when someone else is presenting and we're a viewer
+  const isViewingPresentation = presenter !== null && presenter.id !== myId;
   const { getSnapshotJson, takeSnapshot } = useUndoRedo();
   const [isRightSidebarOpen, setIsRightSidebarOpen] = useState<boolean>(false);
   const [isLeftSidebarOpen, setIsLeftSidebarOpen] = useState<boolean>(false);
@@ -151,15 +220,37 @@ const Flow = () => {
     else setIsShapesSidebarOpen(true);
   }, [isMobile]);
 
-  // Load diagram from localStorage on mount, fall back to bundled default
+  // Sync initial diagram: localStorage cache (board flows) or default (standalone)
   const initialDiagram = useMemo(() => {
     if (typeof window === "undefined") return defaultDiagramJson;
-    const saved = localStorage.getItem(SAVE_KEY);
-    if (saved) {
-      try { return JSON.parse(saved); } catch {}
+    if (boardId && flowId) {
+      const cached = localStorage.getItem(saveKey);
+      if (cached) { try { return JSON.parse(cached); } catch {} }
+      return { title: "Untitled Diagram", nodes: [], edges: [] };
     }
+    const saved = localStorage.getItem(saveKey);
+    if (saved) { try { return JSON.parse(saved); } catch {} }
     return defaultDiagramJson;
-  }, []);
+  }, [saveKey, boardId, flowId]);
+
+  // Async API load — overwrites cached/empty initial state once server responds
+  useEffect(() => {
+    if (!boardId || !flowId) return;
+    import("@/lib/api").then(({ apiFetch }) => {
+      apiFetch<{ title: string; nodes: unknown[]; edges: unknown[] }>(
+        `/api/boards/${boardId}/flows/${flowId}/diagram`
+      )
+        .then((data) => {
+          if (data.nodes || data.edges) {
+            diagram.uploadJson(JSON.stringify(data));
+          }
+        })
+        .catch(() => {
+          // localStorage fallback already shown — nothing more to do
+        });
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [boardId, flowId]);
 
   const getDefaultSize = (w: number) => (w < 1024 ? 33 : 20);
 
@@ -181,7 +272,7 @@ const Flow = () => {
 
   const defaultEdgeOptions: DefaultEdgeOptions = {
     type: "editable-edge",
-    style: { strokeWidth: 2 },
+    style: { strokeWidth: 2, stroke: "#f59e0b" },
   };
 
   type CursorMode = "pan" | "select";
@@ -193,7 +284,15 @@ const Flow = () => {
   useEffect(() => { loadRecentsFromStorage(); }, [loadRecentsFromStorage]);
 
   // ── Presentation mode ────────────────────────────────────────
-  const { getNodes: getRawNodes } = useReactFlow();
+  const { getNodes: getRawNodes, screenToFlowPosition } = useReactFlow();
+
+  const handleCanvasMouseMove = useCallback(
+    (e: React.MouseEvent) => {
+      const pos = screenToFlowPosition({ x: e.clientX, y: e.clientY });
+      sendCursorMove(pos.x, pos.y);
+    },
+    [screenToFlowPosition, sendCursorMove]
+  );
   const [isPresentMode, setIsPresentMode] = useState(false);
   const [presentSlides, setPresentSlides] = useState<Node[]>([]);
   const [presentIndex, setPresentIndex] = useState(0);
@@ -207,14 +306,18 @@ const Flow = () => {
     setPresentIndex(0);
     setIsPresentMode(true);
     setTimeout(() => diagram.fitToNode(slides[0]), 0);
-  }, [getRawNodes, diagram]);
+    const myName = participants.find((p) => p.id === myId)?.name ?? "Someone";
+    broadcastPresentStart(myName);
+    broadcastPresentSlide(slides[0].id, 0);
+  }, [getRawNodes, diagram, participants, myId, broadcastPresentStart, broadcastPresentSlide]);
 
   const handleExitPresent = useCallback(() => {
     setIsPresentMode(false);
     setPresentSlides([]);
     setPresentIndex(0);
     presentSlidesRef.current = [];
-  }, []);
+    broadcastPresentStop();
+  }, [broadcastPresentStop]);
 
   const handlePresentNext = useCallback(() => {
     setPresentIndex((i) => Math.min(i + 1, presentSlidesRef.current.length - 1));
@@ -229,6 +332,7 @@ const Flow = () => {
     const slides = presentSlidesRef.current;
     if (slides.length === 0) return;
     diagram.fitToNode(slides[presentIndex]);
+    broadcastPresentSlide(slides[presentIndex].id, presentIndex);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [presentIndex, isPresentMode]);
 
@@ -263,6 +367,9 @@ const Flow = () => {
         onEnterPresent={handleEnterPresent}
         onExitPresent={handleExitPresent}
         onOpenTemplates={templateStore.openModal}
+        boardId={boardId}
+        flowId={flowId}
+        participants={participants}
       />
 
       <PanelGroup direction="horizontal">
@@ -281,24 +388,41 @@ const Flow = () => {
             isLeftSidebarOpen ? "bg-stone-600 visible" : "bg-transparent hidden"
           }`}
         />
-        {!isMobile && isShapesSidebarOpen && (
+        {!isMobile && isShapesSidebarOpen && !isViewingPresentation && (
           <ResizablePanel order={1} minSize={15} defaultSize={20}>
             <Sidebar />
           </ResizablePanel>
         )}
-        {!isMobile && isShapesSidebarOpen && (
+        {!isMobile && isShapesSidebarOpen && !isViewingPresentation && (
           <PanelResizeHandle className="w-1 cursor-col-resize bg-stone-600" />
         )}
         <ResizablePanel order={2}>
           <PanelGroup direction="horizontal">
             <ResizablePanel minSize={30} order={1}>
               <div style={{ position: "relative", width: "100%", height: "100%" }}>
+              {/* Viewer banner — shown to non-presenter when someone is presenting */}
+              {isViewingPresentation && (
+                <div style={{
+                  position: "absolute", top: 12, left: "50%", transform: "translateX(-50%)",
+                  zIndex: 30, background: "#1e1b4b", border: "1px solid #4f46e5",
+                  borderRadius: 10, padding: "7px 16px",
+                  display: "flex", alignItems: "center", gap: 8, pointerEvents: "none",
+                  boxShadow: "0 4px 20px rgba(79,70,229,0.4)",
+                }}>
+                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#ef4444", display: "inline-block", animation: "pulse 1.5s ease-in-out infinite" }} />
+                  <span style={{ fontSize: 12, fontWeight: 600, color: "#c7d2fe" }}>
+                    {presenter?.name} is presenting — view only
+                  </span>
+                </div>
+              )}
+              <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }`}</style>
+
               <ReactFlow
                 className={`${themeHook.theme || "light"} ${
-                  cursorMode === "select" ? "cursor-default" : "cursor-grab"
+                  isViewingPresentation ? "cursor-default" : cursorMode === "select" ? "cursor-default" : "cursor-grab"
                 }`}
-                onConnect={diagram.onConnect}
-                onConnectStart={diagram.onConnectStart}
+                onConnect={isViewingPresentation ? undefined : diagram.onConnect}
+                onConnectStart={isViewingPresentation ? undefined : diagram.onConnectStart}
                 connectionLineComponent={ConnectionLine}
                 connectionRadius={80}
                 proOptions={{ hideAttribution: true }}
@@ -311,16 +435,20 @@ const Flow = () => {
                 connectionLineType={ConnectionLineType.SmoothStep}
                 fitView
                 connectionMode={ConnectionMode.Loose}
-                panOnDrag={!isPresentMode && cursorMode === "pan"}
-                selectionOnDrag={!isPresentMode && cursorMode === "select"}
-                panOnScroll={!isPresentMode && cursorMode === "pan"}
-                zoomOnScroll={!isPresentMode && cursorMode === "pan"}
-                selectionKeyCode={cursorMode === "select" ? ["Shift"] : null}
-                onDrop={diagram.onDrop}
+                panOnDrag={!isPresentMode && !isViewingPresentation && cursorMode === "pan"}
+                selectionOnDrag={false}
+                panOnScroll={!isPresentMode && !isViewingPresentation && cursorMode === "pan"}
+                zoomOnScroll={!isViewingPresentation}
+                selectionKeyCode={null}
+                onDrop={isViewingPresentation ? undefined : diagram.onDrop}
                 snapToGrid={false}
                 snapGrid={[10, 10]}
-                onDragOver={diagram.onDragOver}
+                onDragOver={isViewingPresentation ? undefined : diagram.onDragOver}
                 zoomOnDoubleClick={false}
+                nodesDraggable={!isViewingPresentation}
+                nodesConnectable={!isViewingPresentation}
+                elementsSelectable={!isViewingPresentation}
+                onMouseMove={handleCanvasMouseMove}
                 onNodesChange={diagram.onNodesChange}
                 onEdgesChange={diagram.onEdgesChange}
                 onNodeDragStart={diagram.onNodeDragStart}
@@ -346,8 +474,8 @@ const Flow = () => {
                   </Panel>
                 ) : null}
 
-                <Panel position={isMobile ? "bottom-right" : "top-right"}>
-                  <div className={isMobile ? "mb-16" : ""}>
+                <Panel position="bottom-left">
+                  <div className="mb-2 ml-1">
                     <Controls className="flex flex-col items-start" showInteractive={false}>
                       <ControlButton onClick={() => diagram.undo()} title="Undo (Ctrl+Z)">
                         <CornerUpLeft fillOpacity={0} />
@@ -367,7 +495,20 @@ const Flow = () => {
                   </div>
                 </Panel>
 
-                {!isMobile && <MiniMap zoomable pannable draggable nodeComponent={MiniMapNode} />}
+                {!isMobile && (
+                  <MiniMap
+                    zoomable
+                    pannable
+                    draggable
+                    nodeComponent={MiniMapNode}
+                    style={{
+                      background: "#111827",
+                      border: "1px solid #374151",
+                      borderRadius: "8px",
+                    }}
+                    maskColor="rgba(17,24,39,0.6)"
+                  />
+                )}
 
                 <diagram.HelperLines
                   horizontal={diagram.helperLineHorizontal}
@@ -375,7 +516,7 @@ const Flow = () => {
                 />
                 <diagram.Markers />
               </ReactFlow>
-              {/* <CursorOverlay /> — hidden until backend integration */}
+              <CursorOverlay cursorsRef={cursorsRef} participants={participants} myId={myId} />
               {isPresentMode && (
                 <PresentationMode
                   slides={presentSlides}
@@ -446,10 +587,10 @@ const Flow = () => {
   );
 };
 
-const DiagramFrame = () => {
+const DiagramFrame = ({ flowId, boardId }: FlowProps = {}) => {
   return (
     <ReactFlowProvider>
-      <Flow />
+      <Flow flowId={flowId} boardId={boardId} />
     </ReactFlowProvider>
   );
 };

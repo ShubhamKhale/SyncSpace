@@ -7,29 +7,16 @@ import { useLinkedResourcesStore } from "@/app/store/useLinkedResourcesStore";
 import { LinkedResourcesSkeleton } from "./Skeleton";
 import EditLinkedResourcesModal from "./EditLinkedResourcesModal";
 
-const BoardLinkedResources: React.FC = () => {
-  const { loading, documentationLinks, links, setData, saveLinkedResources } =
+const BoardLinkedResources: React.FC<{ boardId?: string }> = ({ boardId }) => {
+  const { loading, documentationLinks, links, fetchResources, saveLinkedResources } =
     useLinkedResourcesStore();
 
   const [showModal, setShowModal] = useState(false);
   const [isSaving, setIsSaving]   = useState(false);
 
   useEffect(() => {
-    setData(
-      "This board is used to manage design, development, and documentation resources across the project lifecycle.",
-      [
-        { title: "Project Overview",            url: "https://docs.google.com/document/d/12345", description: "High-level goals, timelines, and project milestones." },
-        { title: "Technical Specification",     url: "https://docs.google.com/document/d/67890", description: "Detailed technical architecture and API references." },
-        { title: "Team Roles & Responsibilities", url: "https://docs.google.com/document/d/11223", description: "List of team members and their assigned tasks." },
-      ],
-      [
-        { title: "UI Design Mockups",    url: "https://figma.com/file/123",               icon: "Fi", color: "bg-black" },
-        { title: "Backend Repository",   url: "https://github.com/company/project",       icon: "GH", color: "bg-gray-800" },
-        { title: "Product Requirements", url: "https://notion.so/product-requirements",   icon: "N",  color: "bg-white text-black border border-gray-300" },
-        { title: "Meeting Notes",        url: "https://docs.google.com/document/123",     icon: "GD", color: "bg-blue-500" },
-      ]
-    );
-  }, [setData]);
+    if (boardId) fetchResources(boardId);
+  }, [boardId, fetchResources]);
 
   if (loading) return <LinkedResourcesSkeleton />;
 
@@ -54,7 +41,7 @@ const BoardLinkedResources: React.FC = () => {
 
           <ul className="space-y-2 text-sm">
             {documentationLinks.map((doc, idx) => (
-              <li key={idx} className="flex items-start space-x-2 rounded-lg p-2 hover:bg-slate-200 dark:hover:bg-slate-700 transition">
+              <li key={idx} className="flex items-start space-x-2 rounded-lg p-2 hover:bg-slate-100 dark:hover:bg-slate-700 transition">
                 <div className="w-8 h-8 flex-shrink-0 flex items-center justify-center bg-blue-100 text-blue-600 rounded-md border border-blue-200">
                   <FileText size={15} />
                 </div>
@@ -94,7 +81,7 @@ const BoardLinkedResources: React.FC = () => {
 
           <ul className="space-y-1">
             {links.map((link, idx) => (
-              <li key={idx} className="flex items-center justify-between rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 px-2 py-2 transition">
+              <li key={idx} className="flex items-center justify-between rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 px-2 py-2 transition">
                 <div className="flex items-center space-x-3 min-w-0">
                   <div className={`flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-md text-white text-xs font-bold ${link.color}`}>
                     {link.icon}

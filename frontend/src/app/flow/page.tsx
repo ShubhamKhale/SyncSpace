@@ -1,7 +1,9 @@
 "use client"
 
-import DiagramFrame from "../components/flow/DiagramFrame"
+import dynamic from "next/dynamic";
 import { Toaster } from "../components/flow/Toast/toaster"
+
+const DiagramFrame = dynamic(() => import("../components/flow/DiagramFrame"), { ssr: false });
 
 export default function FlowPage() {
   return (

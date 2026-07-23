@@ -1,41 +1,52 @@
 "use client";
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid,
+  Tooltip, ResponsiveContainer, Cell,
 } from "recharts";
+import { ChevronDown } from "lucide-react";
 
-const data = [
-  { name: "Product Roadmap", edits: 40, comments: 30, shares: 10 },
-  { name: "Marketing Campaign", edits: 35, comments: 25, shares: 8 },
-  { name: "Website Redesign", edits: 20, comments: 15, shares: 6 },
-  { name: "Q3 Planning", edits: 25, comments: 20, shares: 7 },
-  { name: "User Research", edits: 30, comments: 28, shares: 9 },
+export interface BoardActivityItem {
+  name: string;
+  value: number;
+}
+
+interface Props { data: BoardActivityItem[] }
+
+const FALLBACK: BoardActivityItem[] = [
+  { name: "Boards",   value: 0 },
+  { name: "Tasks",    value: 0 },
+  { name: "Comments", value: 0 },
+  { name: "Updates",  value: 0 },
 ];
 
-export default function BoardActivity() {
+const BAR_COLOR = "#6366F1";
+
+export default function BoardActivity({ data }: Props) {
+  const chartData = data.length ? data : FALLBACK;
   return (
-    <div className="bg-white dark:bg-slate-800 w-full h-48 sm:h-56 md:h-68 space-y-3 p-4 rounded-lg shadow-md">
-      <h2 className="text-sm font-semibold dark:text-slate-100">Board Activity</h2>
-      <div className="w-full h-[100%] py-3">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="name" />
-            <YAxis />
-            <Tooltip />
-            <Legend />
-            <Bar dataKey="edits" fill="#6366F1" />
-            <Bar dataKey="comments" fill="#22C55E" />
-            <Bar dataKey="shares" fill="#FACC15" />
-          </BarChart>
-        </ResponsiveContainer>
+    <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm p-5">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Board Activity</h2>
+        <button className="flex items-center gap-1 text-xs text-[#6366F1] font-medium">
+          This Month <ChevronDown size={13} />
+        </button>
       </div>
+      <ResponsiveContainer width="100%" height={220}>
+        <BarChart data={chartData} margin={{ top: 4, right: 8, left: -20, bottom: 0 }} barSize={40}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
+          <XAxis dataKey="name" tick={{ fontSize: 11, fill: "#94A3B8" }} axisLine={false} tickLine={false} />
+          <YAxis tick={{ fontSize: 11, fill: "#94A3B8" }} axisLine={false} tickLine={false} allowDecimals={false} />
+          <Tooltip
+            contentStyle={{ borderRadius: 8, border: "none", boxShadow: "0 4px 12px rgba(0,0,0,0.08)", fontSize: 12 }}
+            cursor={{ fill: "#F8F9FC" }}
+          />
+          <Bar dataKey="value" radius={[6, 6, 0, 0]}>
+            {chartData.map((_, i) => (
+              <Cell key={i} fill={BAR_COLOR} />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
     </div>
   );
 }

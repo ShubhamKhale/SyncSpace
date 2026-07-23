@@ -5,13 +5,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ```bash
-npm run dev      # Start dev server (Next.js, port 3000)
+npm run dev      # Start dev server with Turbopack (Next.js, port 3000)
 npm run build    # Production build
 npm run lint     # ESLint via next lint
 npm run start    # Start production server
 ```
 
-No test runner is configured. There is no backend in this directory — this is a frontend-only Next.js app with mock/simulated async data.
+`npm run dev` uses `--turbopack` for fast on-demand compilation (~3–8s first route, <100ms subsequent).
+No test runner is configured. There is no backend — this is a frontend-only Next.js app with mock/simulated async data.
 
 ## Tech Stack
 
@@ -29,18 +30,26 @@ No test runner is configured. There is no backend in this directory — this is 
 ### Route Structure
 
 ```
-/dashboard                          → Dashboard home (stats, recent activity)
+/                                   → Landing page (marketing)
+/signin                             → Sign in (email/password + OAuth)
+/signup                             → Sign up
+/dashboard                          → Dashboard home (stats, charts, recent activity)
 /dashboard/boards                   → Board listing grid
-/dashboard/boards/[boardid]         → Board detail (3-pane layout)
-/dashboard/boards/[boardid]/tasks   → Task flow/diagram view (full screen, no sidebars)
-/dashboard/history                  → Activity history
-/dashboard/notifications            → Notifications
-/dashboard/organization             → Org overview, members, roles sub-pages
-/dashboard/profile                  → Profile
-/dashboard/settings                 → Settings
+/dashboard/boards/[boardid]         → Board detail (3-pane layout: kanban/timeline/matrix)
+/dashboard/boards/[boardid]/tasks   → Full-screen task kanban (DndContext, TaskListCard columns)
+/dashboard/history                  → Activity history timeline
+/dashboard/notifications            → Notifications center
+/dashboard/organization             → Org overview (name, stats)
+/dashboard/organization/members     → Member management table
+/dashboard/organization/roles       → Roles & permissions reference (read-only)
+/dashboard/profile                  → User profile editor
+/dashboard/settings                 → Notification preferences
+/flow                               → Standalone full-screen flow/diagram canvas (DiagramFrame)
 ```
 
 The dashboard layout (`src/app/dashboard/layout.tsx`) renders a left nav sidebar. When the path is an individual board (`/dashboard/boards/[boardid]`), the sidebar is hidden and the board layout takes over the full viewport.
+
+**Important:** `/dashboard/boards/[boardid]/tasks` is a kanban task list (DndContext + TaskListCard columns), NOT the flow canvas. The standalone flow canvas lives at `/flow`.
 
 ### Board Detail Layout (3-pane)
 
@@ -49,7 +58,7 @@ The dashboard layout (`src/app/dashboard/layout.tsx`) renders a left nav sidebar
 - **Center**: board page children (`BoardTaskFlow` — kanban/timeline/matrix views)
 - **Right**: `BoardLinkedResources` — docs and external links
 
-The `/tasks` sub-route suppresses all sidebars and renders full-screen `DiagramFrame` (the flow canvas).
+When `pathname.includes("/tasks")`, both sidebars are suppressed and children render full-width.
 
 ### State Management
 
@@ -64,8 +73,25 @@ All stores live in `src/app/store/`:
 | `globalTaskStore` | App-wide task state |
 | `flowStore` | ReactFlow nodes/edges for the diagram canvas |
 | `flow/store.ts` | Connection line path state for editable edges (local to flow components) |
+| `useTemplateStore` | Template modal state: open/close, selected category, search query, recent template IDs (persisted to `"syncspace-recent-templates"` in localStorage) |
 
 Save states follow the pattern `"idle" | "loading" | "success" | "error"` keyed by `"${taskId}-${field}"`.
+
+### Performance & Code Splitting
+
+Heavy components are lazy-loaded via `next/dynamic()` to keep route chunks small:
+
+| File | Lazy-loaded component | Notes |
+|------|-----------------------|-------|
+| `src/app/dashboard/page.tsx` | 4 Recharts chart components | Server Component — no `ssr: false` |
+| `src/app/flow/page.tsx` | `DiagramFrame` | `{ ssr: false }` — ReactFlow requires browser |
+| `src/app/dashboard/boards/[boardid]/page.tsx` | `BoardTaskFlow` | Covers dnd-kit + date-fns chunk |
+| `src/app/dashboard/boards/[boardid]/tasks/layout.tsx` | `GlobalTaskDetail` | `{ ssr: false }` |
+
+`next.config.ts` has `experimental.optimizePackageImports: ["lucide-react", "recharts", "@xyflow/react"]` — only imported symbols are bundled, not the whole barrel.
+
+Every route has a `loading.tsx` skeleton for instant visual feedback during navigation:
+`/dashboard`, `/dashboard/boards`, `/dashboard/boards/[boardid]`, `/dashboard/history`, `/dashboard/notifications`, `/dashboard/organization`, `/dashboard/profile`, `/dashboard/settings`, `/flow`
 
 ### Dark Mode System
 
@@ -101,13 +127,36 @@ This means `dark:` classes respond to `.dark` on any ancestor, not just `<html>`
 ### Flow / Diagram Canvas
 
 Lives under `src/app/components/flow/`. Key files:
-- `DiagramFrame.tsx` — root component, wraps `ReactFlowProvider`, renders the canvas with `FlowEditor`, resizable JSON viewer panel, undo/redo, fullscreen
+- `DiagramFrame.tsx` — root component, wraps `ReactFlowProvider`, renders the canvas with `FlowEditor`, resizable JSON viewer panel, undo/redo, fullscreen, vote panel, presentation mode
 - `FlowEditor.tsx` — `<ReactFlow>` with custom node types, edge types, minimap, controls
-- `nodes/ShapeNode.tsx` — single custom node type supporting multiple shapes
+- `nodes/ShapeNode.tsx` — supports 9 shape types; textarea background/border dynamically matches node `data.fill` color; has comment badge + `NodeCommentPanel`
+- `nodes/StickyNoteNode.tsx` — sticky note; color stored as `data.color`; has comment badge + `NodeCommentPanel`
+- `nodes/GroupNode.tsx` — group container; color stored as `data.color`; has comment badge + `NodeCommentPanel`
+- `nodes/ImageNode.tsx` — image embed node
+- `nodes/TableNode.tsx` — editable grid table node
+- `nodes/NodeCommentPanel.tsx` — Miro-style comment panel (post/resolve/delete); elevates node `zIndex` to 9999 on open; closes on click-outside via capture-phase `mousedown` listener
 - `edges/EditableEdge/` — custom editable edge with control points and multiple path algorithms (bezier, catmull-rom, linear, straight)
-- `Sidebar/` — shape picker panel; `SidebarItem` is the draggable shape
-- `FlowHeader/FlowHeader.tsx` — toolbar with mode toggle, color pickers, downloads
+- `Sidebar/` — compact Miro-style shape picker panel; uses shared `TILE`/`TILE_LABEL` CSS token strings for uniform tile appearance; `SidebarItem` is the draggable shape tile
+- `FlowHeader/FlowHeader.tsx` — toolbar with mode toggle, color pickers, downloads, Templates button; all dropdowns use `getBoundingClientRect()` + `position: fixed` to escape `overflow-x-auto` clipping
+- `minimap-node/index.tsx` — custom MiniMap node renderer; reads `data.fill` (ShapeNode) OR `data.color` (StickyNote/Group) via `fill || color`; renders actual SVG shape or fallback `<rect>`
 - `Menu.tsx` — context menu for nodes
+- `templates/` — Template selection modal system (see below)
+
+#### Node Data Fields (important distinction)
+
+- **ShapeNode**: color = `data.fill` (hex), shape type = `data.type`
+- **StickyNoteNode / GroupNode**: color = `data.color`, no `data.type`
+- **Node comments**: `data.comments: NodeComment[]` — `{ id, author, text, createdAt, resolved }`
+
+Always use `fill || color` when reading a node's background color across all node types.
+
+### Templates System (`src/app/components/flow/templates/`)
+
+Miro/FigJam-style template picker triggered from the FlowHeader toolbar:
+- `templateData.ts` — `Template` type, `TEMPLATES` array (8 templates), `TEMPLATE_CATEGORIES`, `RECOMMENDED_IDS`, `POPULAR_IDS`
+- `TemplateCard.tsx` — single template tile with emoji preview, category badge, hover effects
+- `TemplateModal.tsx` — full modal: categories sidebar + search bar + Recommended/Recent/Popular/All sections; calls `diagram.takeSnapshot()` then `diagram.uploadJson()` to apply
+- `src/app/store/useTemplateStore.ts` — Zustand store for `isOpen`, `selectedCategory`, `searchQuery`, `recentIds` (persisted to localStorage key `"syncspace-recent-templates"`)
 
 ### Permission System
 
@@ -116,3 +165,12 @@ Lives under `src/app/components/flow/`. Key files:
 ### Path Alias
 
 `@/` maps to `src/` (configured in `tsconfig.json`). Use `@/app/...` for all internal imports.
+
+## Known Gotchas
+
+- **Turbopack rejects `:global` in plain CSS files** — `nodeStyles.css` uses plain descendant selectors (`.node .react-flow__resize-control.handle`), not CSS Modules `:global`. Never use `:global` in `.css` files (only valid in `.module.css` with webpack).
+- **`ssr: false` not allowed in Server Components** — only use `dynamic(() => import(...), { ssr: false })` inside `"use client"` files or client-only page files. Dashboard page is a Server Component — its dynamic imports have no options.
+- **MiniMap node color** — ShapeNode stores color as `data.fill`, StickyNote/Group store as `data.color`. Always use `(fill || color)` when reading minimap node color.
+- **Comment panel z-index** — `NodeCommentPanel` sets the parent node's `zIndex: 9999` in ReactFlow's node tree on mount (via `setNodes`) and resets to `0` on unmount. This is the only way to ensure the panel renders above sibling nodes.
+- **FlowHeader dropdowns** — use `getBoundingClientRect()` + `position: fixed` for all dropdown menus to escape the `overflow-x-auto` clipping of the toolbar container.
+- **`images.domains` deprecated** — `next.config.ts` should eventually migrate to `remotePatterns` (currently using deprecated `domains` — harmless warning).

@@ -1,6 +1,7 @@
 # SyncSpace Frontend — Complete Technical Summary
 
 > Use this document as context for Claude Desktop sessions to discuss features, architecture decisions, and plan new development.
+> **Backend integration:** The frontend is fully functional with mocked async data. The **Backend API Contract** section at the bottom of this file is the canonical specification for replacing all mocks with real API calls.
 
 ---
 
@@ -98,6 +99,7 @@ All stores in `src/app/store/`:
 | `globalTaskStore` | `globalTaskStore.ts` | App-wide selected task state |
 | `useFlowStore` | `flowStore.ts` | ReactFlow nodes/edges (general) |
 | `useAppStore` | `flow/store.ts` | Connection line path during edge drawing (local to flow) |
+| `useTemplateStore` | `useTemplateStore.ts` | Template modal state: `isOpen`, `selectedCategory`, `searchQuery`, `recentIds` (persisted to localStorage) |
 
 ### Save State Pattern
 ```typescript
@@ -186,6 +188,8 @@ DiagramFrame.tsx          → Root: ReactFlowProvider, panels, mobile layout
 - Double-click to edit text (stored in `node.data.text`)
 - Font styling in `node.data`: `fontFamily`, `fontSize`, `fontWeight`, `fontStyle`, `textDecoration`, `textAlign`, `color`
 - Fill color in `node.data.fill`
+- **Textarea editing:** background and border dynamically match the node's fill color (`background: fill || "white"`, `border: 1px solid ${fill || "#ccc"}`)
+- **SVG stroke:** transparent/matched for colored nodes (`stroke={fill && fill !== "#ffffff" ? fill : "black"}`) — preserves default black border on uncolored nodes
 - List types: `node.data.listType` (`"bullet" | "numbered" | "checklist" | null`)
 - Checklist state: `node.data.checkedItems: boolean[]`
 - 8 connection handles (top/bottom/left/right, source + target each)
@@ -259,7 +263,9 @@ DiagramFrame.tsx          → Root: ReactFlowProvider, panels, mobile layout
 - Stroke width selector (edge styling)
 - Text alignment (left / center / right)
 - List formatting (bullet / numbered / checklist / clear)
-**Right section:** Cursor mode toggle (Select/Pan), collaborator avatars, **Vote button**, Share button
+**Right section:** Cursor mode toggle (Select/Pan), collaborator avatars, **Templates button** (opens TemplateModal), **Vote button**, Share button
+
+**Dropdown positioning:** All dropdowns (ColorPicker, FillColorPicker, font family, font size, stroke width) use `getBoundingClientRect()` on the trigger button and render with `position: fixed` + explicit `top/left` coordinates. This avoids clipping by `overflow-x: auto` on the toolbar container.
 
 ### Vote Panel (`VotePanel.tsx`)
 
@@ -298,6 +304,42 @@ All node types support locking. State stored in `node.data.locked` + ReactFlow's
 - Amber lock badge (top-left interior) always visible when node is locked
 - Amber/gray lock toggle button appears top-left when node is selected
 
+### Flow Sidebar (`Sidebar/Sidebar.tsx` + `SidebarItem.tsx`)
+
+Compact Miro-style shapes palette (left panel, auto-collapses on mobile):
+- Shared `TILE` and `TILE_LABEL` CSS token strings for uniform dark tile appearance across all items
+- **Shapes section:** 2-column grid of `SidebarItem` tiles — each shows a 34×34 SVG preview of the shape + short label; draggable via HTML5 drag API with off-screen ghost image
+- **Sticky Notes section:** 5 color tiles showing a 28×28 colored note preview with fold corner + ruled lines; drag sets `"sticky-note-color"` on `dataTransfer`
+- **Elements section:** 2-column grid — Table tile (SVG grid preview) + Image upload button (triggers file input)
+- `SHAPE_LABELS` record maps shape type keys to display labels
+
+### Templates System (`src/app/components/flow/templates/`)
+
+Miro/FigJam-style template picker, triggered from FlowHeader **Templates** button:
+
+**`templateData.ts`:**
+- `Template` type: `{ id, title, category, description, preview (emoji), tags, data: { nodes, edges } }`
+- `TEMPLATE_CATEGORIES`: All, AI, Agile, Brainstorming, Processes, Meetings, Planning, Research, Systems
+- `TEMPLATES` array: 8 built-in templates — Blank Canvas, Mind Map, Basic Flowchart, Sprint Planning, Meeting Notes, System Architecture, User Journey, AI Pipeline
+- All shape nodes use `type: "shape"` with `data: { type: ShapeType, text, fill, color }`; sticky notes use `type: "sticky-note"` with `data: { text, color }`
+- `RECOMMENDED_IDS`, `POPULAR_IDS` — curated lists for sectioned display
+
+**`useTemplateStore.ts`** (`src/app/store/useTemplateStore.ts`):
+- Zustand store: `isOpen`, `selectedCategory`, `searchQuery`, `recentIds`
+- `openModal()` resets category to "All" and clears search
+- `addRecent(id)` prepends id, caps at 6, persists to localStorage key `"syncspace-recent-templates"`
+- `loadRecentsFromStorage()` — call on mount in DiagramFrame
+
+**`TemplateCard.tsx`:** Tile with `h-28` emoji preview area, per-template colored background, category badge overlay, title + description footer. Hover: `scale-[1.02]` + blue border glow.
+
+**`TemplateModal.tsx`:**
+- `fixed inset-0 z-[200]` backdrop with blur; `max-w-5xl max-h-[88vh]` panel
+- Left sidebar (`w-44`): category buttons with active (`bg-blue-600/20 text-blue-400`) / inactive states
+- Right content: when not searching + "All" selected → sectioned (Recommended / Recently Used / Popular / All Templates); when searching → flat filtered grid; when category selected → flat section
+- `handleApply`: calls `diagram.takeSnapshot()` (undo point) → `diagram.uploadJson(JSON.stringify(template.data))` → saves to localStorage `"syncspace-diagram"` → `store.addRecent(id)` → `store.closeModal()`
+- ESC key closes; click backdrop closes
+- DiagramFrame mounts `<TemplateModal diagram={diagram} />` and passes `onOpenTemplates={templateStore.openModal}` to FlowHeader
+
 ### Multiplayer Cursors (`CursorOverlay.tsx`)
 
 **Currently hidden — pending backend integration.**
@@ -333,8 +375,9 @@ Central hook managing all flow interactions:
 - **Clipboard:** `copySelection()`, `pasteSelection()` (offset +40px)
 - **Grouping:** `groupSelectedNodes()` — creates GroupNode enclosing selection
 - **Connection:** `onConnect`, `onConnectStart`, `onConnectEnd` — free-draw via Space+drag
-- **Persistence:** localStorage auto-save, JSON import/export
-- **Undo/Redo:** via `useUndoRedo` hook (100-item history)
+- **Persistence:** localStorage auto-save, JSON import/export via `uploadJson(jsonString)` — calls `setNodes` + `setEdges` internally; used by TemplateModal to apply templates
+- **Undo/Redo:** via `useUndoRedo` hook (100-item history); `takeSnapshot()` is exposed in return object for external use (e.g. TemplateModal calls it before applying a template)
+- **Sticky note drop color:** reads `evt.dataTransfer.getData("sticky-note-color")` in `onDrop` to preserve the dragged color (falls back to `"#fef9c3"`)
 - **Helper lines:** snap-to-grid alignment guides during drag
 - **Edge editing:** `editingEdgeId` / `setEditingEdgeId` for edge toolbar
 
@@ -433,6 +476,7 @@ src/app/
 │   │   ├── edges/EditableEdge/, ConnectionLine.tsx, MarkerDefinition.tsx
 │   │   ├── EdgeToolbar/EdgeToolbar.tsx
 │   │   ├── ColorPicker.tsx, FillColorPicker.tsx
+│   │   ├── templates/templateData.ts, TemplateCard.tsx, TemplateModal.tsx
 │   │   ├── Menu.tsx, About.tsx, KeyboardShortcuts.tsx
 │   │   ├── nodeStyles.css, store.ts
 │   │   └── HelperLines/, JsonViewer/, Downloads/, minimap-node/
@@ -460,3 +504,722 @@ src/app/
 - **Save state pattern:** per-field optimistic updates with `"idle" | "loading" | "success" | "error"` keyed by `"${id}-${field}"`
 - **No tests configured** — verify via `npm run dev` + browser
 - **No backend** — all async operations are simulated delays in stores
+- **Sidebar tile system:** use shared `TILE` and `TILE_LABEL` CSS token strings (defined in `Sidebar.tsx`) for any new shape/element tiles to stay visually consistent
+
+---
+
+## Known Gotchas & Past Fixes
+
+### Dropdown clipping in FlowHeader
+`overflow-x: auto` on the toolbar container clips absolutely-positioned children. All dropdowns (ColorPicker, FillColorPicker, font family, font size, stroke width) must use `position: fixed` with coordinates derived from `buttonRef.current.getBoundingClientRect()`. Never use `position: absolute` + `top: 100%` inside the toolbar.
+
+### TDZ errors in node components (ImageNode, StickyNoteNode)
+`const locked = !!data.locked` must be declared **before** any `useState` or `useEffect` that references it. React function component bodies execute top-to-bottom; placing `const` after a hook that captures it triggers a Temporal Dead Zone error.
+
+### Sticky note drop color
+`onDrop` in `useDiagram.tsx` reads `"sticky-note-color"` from `dataTransfer`. The `SidebarItem` for sticky notes must call `evt.dataTransfer.setData("sticky-note-color", color)` in its `onDragStart`. Do not hardcode the color in `onDrop`.
+
+### `takeSnapshot` must be in useDiagram return object
+`takeSnapshot` is destructured from `useUndoRedo()` inside `useDiagram.tsx`. It is used internally AND must be included in the hook's return object so external callers (e.g. `TemplateModal`) can create undo points before destructive operations.
+
+### Template apply uses `uploadJson`
+`diagram.uploadJson(JSON.stringify(template.data))` is the correct way to apply a template — it already calls `setNodes` + `setEdges` internally. Always call `diagram.takeSnapshot()` first to create an undo point.
+
+---
+
+## Backend API Contract
+
+> **For Go backend developers:** This section is the complete specification of every API endpoint the frontend needs, derived directly from the Zustand stores and component data operations. All async store actions currently use `setTimeout(..., 300ms)` mocks — replace each with the corresponding `fetch` call below.
+
+### Base URL Convention
+
+```
+/api/v1/
+```
+
+All endpoints are prefixed with `/api/v1/`. All request and response bodies are JSON. All protected endpoints require `Authorization: Bearer <jwt_token>` header.
+
+---
+
+### Auth Strategy
+
+The frontend uses **NextAuth.js** with Google + GitHub OAuth providers. Backend must:
+
+1. Accept OAuth callback and issue a **JWT** (recommended) or session cookie
+2. Expose a token endpoint for email/password login
+3. All protected routes return **401 Unauthorized** on invalid/expired token; frontend will clear session and redirect to `/signin`
+
+**OAuth flow:**
+```
+Frontend → NextAuth → [Google|GitHub] OAuth → NextAuth callback → Backend token exchange → JWT returned to client
+```
+
+**Auth header (all protected routes):**
+```
+Authorization: Bearer <jwt_token>
+```
+
+---
+
+### Canonical TypeScript Types
+
+These are the exact types from the frontend stores and components. The Go backend structs must match these field names and types exactly.
+
+```typescript
+// ─── Auth ──────────────────────────────────────────────────────────────────
+
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  bio?: string;
+  avatar?: string;         // URL
+  createdAt: string;       // ISO 8601
+}
+
+interface AuthResponse {
+  user: User;
+  token: string;           // JWT
+}
+
+// ─── Organizations ─────────────────────────────────────────────────────────
+
+interface Organization {
+  id: string;
+  name: string;
+  memberCount: number;
+  boardCount: number;
+}
+
+type OrgRole = "owner" | "admin" | "member" | "viewer";
+type MemberStatus = "active" | "invited" | "suspended";
+
+interface Member {
+  id: string;
+  name: string;
+  email: string;
+  role: OrgRole;
+  status: MemberStatus;
+}
+
+// ─── Boards ────────────────────────────────────────────────────────────────
+
+type BoardStatus = "active" | "on-hold" | "archived";
+
+interface BoardTag {
+  label: string;
+  color: string;           // hex e.g. "#2563EB"
+  textColor: string;       // contrasting hex e.g. "#ffffff"
+}
+
+interface Board {
+  id: string;
+  title: string;
+  description: string;
+  owner: string;           // user id
+  createdAt: string;       // ISO 8601
+  updatedAt: string;       // ISO 8601
+  tags: BoardTag[];
+  status: BoardStatus;
+  coverColor: string;      // hex
+  memberCount?: number;    // optional summary field for board listing
+}
+
+// ─── Board Tasks ───────────────────────────────────────────────────────────
+
+type TaskPriority = "high" | "medium" | "low";
+
+// Board stages/columns (ordered):
+// "Planning" | "Design" | "Development" | "QA" | "Deployment"
+
+interface BoardTask {
+  id: string;
+  boardId: string;
+  stage: string;           // one of the stage names above
+  title: string;
+  tags: string[];          // e.g. ["Marketing > Research", "External"]
+  startDate: string;       // "YYYY-MM-DD"
+  endDate: string;         // "YYYY-MM-DD"
+  assignee: string;        // user name or id
+  priority: TaskPriority;
+  comments: number;        // count
+  attachments: number;     // count
+  flagged: boolean;
+}
+
+// ─── Linked Resources ──────────────────────────────────────────────────────
+
+interface LinkedResource {
+  title: string;
+  url: string;
+  description?: string;
+  icon?: string;
+  color?: string;          // hex
+}
+
+interface BoardLinkedResources {
+  boardId: string;
+  description: string;
+  documentationLinks: LinkedResource[];
+  links: LinkedResource[];
+}
+
+// ─── Notifications ─────────────────────────────────────────────────────────
+
+interface NotificationSettings {
+  comments: boolean;
+  invites: boolean;
+  productUpdates: boolean;
+}
+
+interface Notification {
+  id: string;
+  userId: string;
+  title: string;
+  body: string;
+  read: boolean;
+  createdAt: string;       // ISO 8601
+}
+
+// ─── Activity / History ────────────────────────────────────────────────────
+
+interface ActivityEvent {
+  id: string;
+  actor: string;           // user name
+  action: string;          // e.g. "created board", "moved task"
+  target: string;          // entity name
+  boardId?: string;
+  createdAt: string;       // ISO 8601
+}
+
+// ─── Diagrams (Flow Canvas) ────────────────────────────────────────────────
+
+type ShapeType =
+  | "circle" | "round-rectangle" | "rectangle" | "hexagon"
+  | "diamond" | "arrow-rectangle" | "cylinder" | "triangle" | "parallelogram";
+
+type Algorithm = "smart" | "straight" | "linear" | "catmull-rom" | "bezier";
+
+type ConditionType = "yes" | "no" | "true" | "false" | "success" | "error" | "default" | null;
+
+interface NodeComment {
+  id: string;
+  author: string;
+  text: string;
+  createdAt: number;       // Unix epoch ms
+  resolved: boolean;
+}
+
+// ShapeNode data (node.type = "shape")
+interface ShapeNodeData {
+  type: ShapeType;
+  text?: string;
+  fill?: string;           // background hex
+  color?: string;          // text hex
+  fontSize?: string;       // e.g. "14px"
+  fontFamily?: string;
+  fontWeight?: "normal" | "bold";
+  fontStyle?: "normal" | "italic";
+  textDecoration?: "none" | "underline";
+  textAlign?: "left" | "center" | "right";
+  listType?: "bullet" | "numbered" | "checklist" | null;
+  checkedItems?: boolean[];
+  locked?: boolean;
+  lockedPosition?: { x: number; y: number };
+  comments?: NodeComment[];
+}
+
+// StickyNoteNode data (node.type = "sticky-note")
+interface StickyNoteData {
+  text: string;
+  color?: string;          // background hex
+  textAlign?: "left" | "center" | "right";
+  listType?: "bullet" | "numbered" | "checklist" | null;
+  checkedItems?: boolean[];
+  locked?: boolean;
+  lockedPosition?: { x: number; y: number };
+  comments?: NodeComment[];
+}
+
+// GroupNode data (node.type = "group")
+interface GroupNodeData {
+  label?: string;
+  color?: string;          // hex, semi-transparent bg = color + "10"
+  locked?: boolean;
+  comments?: NodeComment[];
+}
+
+// ImageNode data (node.type = "image")
+interface ImageNodeData {
+  src: string;             // URL
+  caption?: string;
+  locked?: boolean;
+  comments?: NodeComment[];
+}
+
+// TableNode data (node.type = "table")
+interface TableNodeData {
+  cells: string[][];       // [row][col], default 3x3
+  hasHeader: boolean;
+  borderColor?: string;
+  headerBg?: string;
+  locked?: boolean;
+  comments?: NodeComment[];
+}
+
+interface ControlPointData {
+  id: string;
+  x: number;
+  y: number;
+  active?: boolean;
+}
+
+// EditableEdge data (edge.type = "editable-edge")
+interface EditableEdgeData {
+  algorithm?: Algorithm;
+  points: ControlPointData[];
+  animation?: string;
+  animationDirection?: string;
+  showMovingBall?: boolean;
+  arrowStyle?: "end" | "start" | "both" | "none";
+  labelPosition?: number;
+  title?: string;
+  conditionType?: ConditionType;
+  locked?: boolean;
+}
+
+// Full diagram snapshot (stored in DB and sent over wire)
+interface DiagramNode {
+  id: string;
+  type: "shape" | "sticky-note" | "group" | "image" | "table";
+  position: { x: number; y: number };
+  data: ShapeNodeData | StickyNoteData | GroupNodeData | ImageNodeData | TableNodeData;
+  draggable?: boolean;
+  deletable?: boolean;
+  style?: Record<string, string | number>;
+  zIndex?: number;
+  measured?: { width: number; height: number };
+}
+
+interface DiagramEdge {
+  id: string;
+  source: string;
+  target: string;
+  type?: "editable-edge";
+  data?: EditableEdgeData;
+  selected?: boolean;
+  animated?: boolean;
+  style?: Record<string, string | number>;
+  markerEnd?: { type: string; color?: string };
+  markerStart?: { type: string; color?: string };
+}
+
+interface Diagram {
+  id: string;
+  title: string;
+  boardId?: string;        // null for standalone /flow diagrams
+  ownerId: string;
+  nodes: DiagramNode[];
+  edges: DiagramEdge[];
+  createdAt: string;       // ISO 8601
+  updatedAt: string;       // ISO 8601
+}
+
+// ─── Voting ────────────────────────────────────────────────────────────────
+
+type VoteType = "approve" | "review" | "reject";
+
+interface FlowVote {
+  userId: string;
+  name: string;
+  vote: VoteType;
+}
+
+// ─── Permissions ───────────────────────────────────────────────────────────
+
+type BoardRole = "owner" | "editor" | "viewer";
+
+interface EditPermissions {
+  canEditBoardMetadata: boolean;   // owner only
+  canEditTasks: boolean;           // owner or editor
+  canDeleteTasks: boolean;         // owner only
+  canReorderTasks: boolean;        // owner or editor
+}
+```
+
+---
+
+### API Endpoints
+
+#### Authentication
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| `POST` | `/api/v1/auth/signup` | No | Register with email/password |
+| `POST` | `/api/v1/auth/signin` | No | Login with email/password |
+| `GET` | `/api/v1/auth/me` | Yes | Get current user from JWT |
+| `POST` | `/api/v1/auth/oauth/callback` | No | OAuth token exchange (Google/GitHub) |
+
+**POST /auth/signup**
+```json
+Request:  { "name": "string", "email": "string", "password": "string" }
+Response: { "user": User, "token": "string" }
+```
+
+**POST /auth/signin**
+```json
+Request:  { "email": "string", "password": "string" }
+Response: { "user": User, "token": "string" }
+```
+
+**GET /auth/me**
+```json
+Response: { "user": User }
+```
+
+---
+
+#### Users / Profile
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| `GET` | `/api/v1/users/me` | Yes | Get user profile |
+| `PATCH` | `/api/v1/users/me` | Yes | Update profile fields |
+| `GET` | `/api/v1/users/me/notifications/settings` | Yes | Get notification prefs |
+| `PATCH` | `/api/v1/users/me/notifications/settings` | Yes | Update notification prefs |
+
+**PATCH /users/me**
+```json
+Request:  { "name": "string", "bio": "string", "avatar": "url_string" }
+Response: { "user": User }
+```
+
+**PATCH /users/me/notifications/settings**
+```json
+Request:  { "comments": true, "invites": true, "productUpdates": false }
+Response: { "settings": NotificationSettings }
+```
+
+---
+
+#### Organizations
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| `GET` | `/api/v1/organizations/me` | Yes | Get org info |
+| `PATCH` | `/api/v1/organizations/me` | Yes | Update org name |
+| `GET` | `/api/v1/organizations/me/members` | Yes | List members |
+| `POST` | `/api/v1/organizations/me/members/invite` | Yes | Invite member by email |
+| `PATCH` | `/api/v1/organizations/me/members/:memberId` | Yes | Update role or status |
+| `DELETE` | `/api/v1/organizations/me/members/:memberId` | Yes | Remove member |
+
+**POST /organizations/me/members/invite**
+```json
+Request:  { "email": "string", "role": "admin" | "member" | "viewer" }
+Response: { "member": Member }
+```
+
+**PATCH /organizations/me/members/:memberId**
+```json
+Request:  { "role": OrgRole?, "status": MemberStatus? }
+Response: { "member": Member }
+```
+
+---
+
+#### Boards
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| `GET` | `/api/v1/boards` | Yes | List all boards (current user's org) |
+| `POST` | `/api/v1/boards` | Yes | Create board |
+| `GET` | `/api/v1/boards/:boardId` | Yes | Get board metadata |
+| `PATCH` | `/api/v1/boards/:boardId` | Yes | Update board (full metadata) |
+| `PATCH` | `/api/v1/boards/:boardId/title` | Yes | Update title only (optimistic) |
+| `PATCH` | `/api/v1/boards/:boardId/description` | Yes | Update description only (optimistic) |
+| `DELETE` | `/api/v1/boards/:boardId` | Yes | Delete board |
+
+**POST /boards**
+```json
+Request:  { "title": "string", "description": "string", "coverColor": "#hex" }
+Response: { "board": Board }
+```
+
+**PATCH /boards/:boardId**
+```json
+Request:  {
+  "title": "string",
+  "description": "string",
+  "tags": BoardTag[],
+  "status": "active" | "on-hold" | "archived",
+  "coverColor": "#hex"
+}
+Response: { "board": Board }
+```
+
+**PATCH /boards/:boardId/title**
+```json
+Request:  { "title": "string" }
+Response: { "board": { "id": "...", "title": "..." } }
+```
+
+**PATCH /boards/:boardId/description**
+```json
+Request:  { "description": "string" }
+Response: { "board": { "id": "...", "description": "..." } }
+```
+
+---
+
+#### Board Tasks
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| `GET` | `/api/v1/boards/:boardId/tasks` | Yes | List all tasks for a board |
+| `POST` | `/api/v1/boards/:boardId/tasks` | Yes | Create task |
+| `PATCH` | `/api/v1/boards/:boardId/tasks/:taskId/title` | Yes | Update title (optimistic) |
+| `PATCH` | `/api/v1/boards/:boardId/tasks/:taskId/priority` | Yes | Update priority (optimistic) |
+| `PATCH` | `/api/v1/boards/:boardId/tasks/:taskId/dates` | Yes | Update date range (optimistic) |
+| `PATCH` | `/api/v1/boards/:boardId/tasks/:taskId/assignee` | Yes | Update assignee (optimistic) |
+| `PATCH` | `/api/v1/boards/:boardId/tasks/:taskId/stage` | Yes | Move between stages (optimistic) |
+| `DELETE` | `/api/v1/boards/:boardId/tasks/:taskId` | Yes | Delete task |
+
+> **Save state key pattern:** The frontend tracks per-field save state with key `"${taskId}-${field}"` — e.g. `"task-1-title"`. Each `PATCH` above maps to one field key.
+
+**POST /boards/:boardId/tasks**
+```json
+Request:  {
+  "stage": "Planning",
+  "title": "string",
+  "tags": ["string"],
+  "startDate": "YYYY-MM-DD",
+  "endDate": "YYYY-MM-DD",
+  "assignee": "string",
+  "priority": "high" | "medium" | "low",
+  "flagged": false
+}
+Response: { "task": BoardTask }
+```
+
+**PATCH /boards/:boardId/tasks/:taskId/title**
+```json
+Request:  { "title": "string" }
+Response: { "task": { "id": "...", "title": "..." } }
+```
+
+**PATCH /boards/:boardId/tasks/:taskId/priority**
+```json
+Request:  { "priority": "high" | "medium" | "low" }
+Response: { "task": { "id": "...", "priority": "..." } }
+```
+
+**PATCH /boards/:boardId/tasks/:taskId/dates**
+```json
+Request:  { "startDate": "YYYY-MM-DD", "endDate": "YYYY-MM-DD" }
+Response: { "task": { "id": "...", "startDate": "...", "endDate": "..." } }
+```
+
+**PATCH /boards/:boardId/tasks/:taskId/assignee**
+```json
+Request:  { "assignee": "string" }
+Response: { "task": { "id": "...", "assignee": "..." } }
+```
+
+**PATCH /boards/:boardId/tasks/:taskId/stage**
+```json
+Request:  { "stage": "string" }
+Response: { "task": { "id": "...", "stage": "..." } }
+```
+
+---
+
+#### Linked Resources
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| `GET` | `/api/v1/boards/:boardId/resources` | Yes | Get board's linked resources |
+| `PATCH` | `/api/v1/boards/:boardId/resources` | Yes | Save all linked resources |
+
+**GET /boards/:boardId/resources**
+```json
+Response: {
+  "description": "string",
+  "documentationLinks": LinkedResource[],
+  "links": LinkedResource[]
+}
+```
+
+**PATCH /boards/:boardId/resources**
+```json
+Request:  {
+  "description": "string",
+  "documentationLinks": LinkedResource[],
+  "links": LinkedResource[]
+}
+Response: { "resources": BoardLinkedResources }
+```
+
+---
+
+#### Diagrams (Flow Canvas)
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| `GET` | `/api/v1/diagrams/:diagramId` | Yes | Load diagram (nodes + edges) |
+| `PUT` | `/api/v1/diagrams/:diagramId` | Yes | Full save (title + nodes + edges) |
+| `POST` | `/api/v1/diagrams` | Yes | Create new blank diagram |
+| `DELETE` | `/api/v1/diagrams/:diagramId` | Yes | Delete diagram |
+| `GET` | `/api/v1/diagrams/:diagramId/votes` | Yes | Get all votes |
+| `POST` | `/api/v1/diagrams/:diagramId/votes` | Yes | Cast or update vote |
+| `DELETE` | `/api/v1/diagrams/:diagramId/votes/me` | Yes | Retract current user's vote |
+
+> **Important:** `nodes` and `edges` are stored as JSON blobs. The Go backend should treat them as `jsonb` (Postgres) — no need to parse individual node fields.
+
+**GET /diagrams/:diagramId**
+```json
+Response: { "diagram": Diagram }
+```
+
+**PUT /diagrams/:diagramId**
+```json
+Request:  {
+  "title": "string",
+  "nodes": DiagramNode[],
+  "edges": DiagramEdge[]
+}
+Response: { "diagram": Diagram }
+```
+
+**POST /diagrams**
+```json
+Request:  { "title": "string", "boardId": "string?" }
+Response: { "diagram": Diagram }
+```
+
+**POST /diagrams/:diagramId/votes**
+```json
+Request:  { "vote": "approve" | "review" | "reject" }
+Response: { "votes": FlowVote[] }
+```
+
+**GET /diagrams/:diagramId/votes**
+```json
+Response: { "votes": FlowVote[] }
+```
+
+---
+
+#### Activity / History
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| `GET` | `/api/v1/activity` | Yes | User's activity feed (paginated) |
+| `GET` | `/api/v1/boards/:boardId/activity` | Yes | Board-scoped activity |
+
+**Query params:** `?page=1&limit=20`
+
+```json
+Response: {
+  "events": ActivityEvent[],
+  "total": 100,
+  "page": 1,
+  "limit": 20
+}
+```
+
+---
+
+#### Notifications
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| `GET` | `/api/v1/notifications` | Yes | List notifications |
+| `PATCH` | `/api/v1/notifications/:id/read` | Yes | Mark one as read |
+| `POST` | `/api/v1/notifications/read-all` | Yes | Mark all as read |
+
+**GET /notifications**
+```json
+Response: { "notifications": Notification[], "unreadCount": 3 }
+```
+
+---
+
+### localStorage → API Migration Map
+
+These are all current localStorage usages in the frontend and their backend replacement:
+
+| localStorage Key | Current Use | Replace With |
+|---|---|---|
+| `syncspace-diagram` | Auto-save current diagram | `PUT /api/v1/diagrams/:id` |
+| `syncspace-diagram-votes` | Store diagram votes | `GET/POST/DELETE /api/v1/diagrams/:id/votes` |
+| `syncspace-recent-templates` | Track recently used templates | Keep local (no backend needed — UI state only) |
+| `theme` | Light/dark mode preference | Keep local (user device preference) |
+
+---
+
+### Store → API Mapping
+
+| Zustand Store | Mock Operation | Real API Call |
+|---|---|---|
+| `useBoardStore.updateBoardTitle()` | `setTimeout 300ms` | `PATCH /api/v1/boards/:boardId/title` |
+| `useBoardStore.updateBoardDescription()` | `setTimeout 300ms` | `PATCH /api/v1/boards/:boardId/description` |
+| `useBoardStore.updateBoardDetails()` | `setTimeout 300ms` | `PATCH /api/v1/boards/:boardId` |
+| `useBoardTaskStore.updateTaskTitle()` | `setTimeout 300ms` | `PATCH /api/v1/boards/:boardId/tasks/:taskId/title` |
+| `useBoardTaskStore.updateTaskPriority()` | `setTimeout 300ms` | `PATCH /api/v1/boards/:boardId/tasks/:taskId/priority` |
+| `useBoardTaskStore.updateTaskDates()` | `setTimeout 300ms` | `PATCH /api/v1/boards/:boardId/tasks/:taskId/dates` |
+| `useBoardTaskStore.updateTaskAssignee()` | `setTimeout 300ms` | `PATCH /api/v1/boards/:boardId/tasks/:taskId/assignee` |
+| `useBoardTaskStore.updateTaskStage()` | `setTimeout 300ms` | `PATCH /api/v1/boards/:boardId/tasks/:taskId/stage` |
+| `useLinkedResourcesStore.saveLinkedResources()` | `setTimeout 300ms` | `PATCH /api/v1/boards/:boardId/resources` |
+| `useDiagram` (localStorage auto-save) | localStorage write | `PUT /api/v1/diagrams/:id` |
+
+---
+
+### Error Response Format
+
+All endpoints should return errors in this shape:
+
+```json
+{
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Title is required",
+    "fields": { "title": "required" }
+  }
+}
+```
+
+HTTP status codes:
+- `200 OK` — success
+- `201 Created` — resource created
+- `400 Bad Request` — validation error
+- `401 Unauthorized` — missing/invalid JWT
+- `403 Forbidden` — insufficient role
+- `404 Not Found` — resource doesn't exist
+- `500 Internal Server Error` — server error
+
+---
+
+### Save State Pattern (Frontend Behavior)
+
+The frontend uses per-field optimistic save states to show inline feedback. For every `PATCH` call, the frontend:
+
+1. Sets `saveStates["${id}-${field}"] = "loading"`
+2. Makes the API call
+3. On `2xx` → sets state to `"success"` for 1.5s, then resets to `"idle"`
+4. On error → sets state to `"error"`, reverts optimistic update
+
+The backend just needs standard HTTP status codes — the frontend handles the UI feedback.
+
+---
+
+### Multiplayer / Real-Time (Future)
+
+The following features are implemented in the frontend but currently use mock data — they require a real-time backend (WebSockets or SSE):
+
+| Feature | Current State | Backend Requirement |
+|---|---|---|
+| `CursorOverlay` — live collaborator cursors | Hidden (mock random walk) | WebSocket: broadcast `{ userId, x, y }` events per diagram |
+| Diagram vote sync | localStorage only | Already has REST endpoints above; add WebSocket push for live updates |
+| Presence indicators | Hardcoded `isOnline: true/false` | WebSocket: user join/leave events per diagram room |
+
+To enable `CursorOverlay`: uncomment its import in `DiagramFrame.tsx` and replace the random-walk animation with WebSocket position events.

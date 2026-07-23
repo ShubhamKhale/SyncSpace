@@ -1,4 +1,6 @@
-export type UserRole = "owner" | "editor" | "viewer";
+import { useUserStore, UserRole } from "@/app/store/useUserStore";
+
+export type { UserRole };
 
 export interface EditPermissions {
   canEditBoardMetadata: boolean;
@@ -7,13 +9,14 @@ export interface EditPermissions {
   canReorderTasks: boolean;
 }
 
-export const useEditMode = (userRole?: UserRole): EditPermissions => {
-  const role = userRole || "viewer";
+export const useEditMode = (roleOverride?: UserRole | null): EditPermissions => {
+  const storeRole = useUserStore((s) => s.user?.role);
+  const role = roleOverride ?? storeRole ?? "viewer";
 
   return {
-    canEditBoardMetadata: role === "owner",
-    canEditTasks: role === "owner" || role === "editor",
+    canEditBoardMetadata: role === "owner" || role === "admin",
+    canEditTasks: role === "owner" || role === "admin" || role === "member",
     canDeleteTasks: role === "owner",
-    canReorderTasks: role === "owner" || role === "editor",
+    canReorderTasks: role === "owner" || role === "admin" || role === "member",
   };
 };

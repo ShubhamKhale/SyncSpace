@@ -193,11 +193,13 @@ import {
 } from "@xyflow/react";
 import { ShapeComponents, ShapeType } from "@/app/components/shape/types";
 import { useEffect, useState } from "react";
-import { Lock, Unlock } from "lucide-react";
+import { Lock, Unlock, MessageSquare } from "lucide-react";
+import { NodeCommentPanel, NodeComment } from "./NodeCommentPanel";
 
 export default function ShapeNode({ data }: any) {
   const { type, width, height, fill, text, textAlign, listType, checkedItems, fontFamily, fontSize, fontWeight, fontStyle: dataFontStyle, textDecoration, color: textColor } = data;
   const locked = !!data.locked;
+  const comments: NodeComment[] = data.comments || [];
   const Shape = ShapeComponents[type as ShapeType];
 
   const nodeWidth = width || 80;
@@ -208,6 +210,14 @@ export default function ShapeNode({ data }: any) {
 
   const isSelected = getNodes()?.find((n) => n.id === nodeId)?.selected;
   const isConnecting = useStore((s) => !!s.connectionStartHandle);
+
+  const [showComments, setShowComments] = useState(false);
+  const hasComments = comments.length > 0;
+
+  // Close comment panel when node is deselected
+  useEffect(() => {
+    if (!isSelected) setShowComments(false);
+  }, [isSelected]);
 
   // Editable text state
   const [isEditing, setIsEditing] = useState(false);
@@ -550,6 +560,44 @@ export default function ShapeNode({ data }: any) {
           background: "#fff",
         }}
       />
+
+      {/* Comment badge */}
+      {(isSelected || hasComments) && (
+        <button
+          onClick={(e) => { e.stopPropagation(); setShowComments((v) => !v); }}
+          title="Comments"
+          style={{
+            position: "absolute",
+            bottom: -10,
+            right: -10,
+            background: hasComments ? "#3b82f6" : "#6b7280",
+            color: "white",
+            borderRadius: "50%",
+            width: 18,
+            height: 18,
+            border: "none",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 9,
+            fontWeight: "bold",
+            zIndex: 10,
+          }}
+        >
+          {hasComments ? comments.length : <MessageSquare size={9} />}
+        </button>
+      )}
+
+      {/* Comment panel */}
+      {showComments && (
+        <NodeCommentPanel
+          nodeId={nodeId!}
+          comments={comments}
+          locked={locked}
+          onClose={() => setShowComments(false)}
+        />
+      )}
     </div>
   );
 }

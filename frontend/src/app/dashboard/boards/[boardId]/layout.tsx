@@ -1,5 +1,5 @@
 "use client";
-import { usePathname } from "next/navigation";
+import { usePathname, useParams } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import BoardSidebar from "@/app/components/BoardSidebar";
 import BoardLinkedResources from "@/app/components/BoardLinkedResources";
@@ -10,9 +10,16 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const [leftCollapsed,  setLeftCollapsed]  = useState(() => typeof window !== "undefined" && window.innerWidth < 1024);
-  const [rightCollapsed, setRightCollapsed] = useState(() => typeof window !== "undefined" && window.innerWidth < 1280);
+  const [leftCollapsed,  setLeftCollapsed]  = useState(false);
+  const [rightCollapsed, setRightCollapsed] = useState(false);
   const pathname = usePathname();
+  const params = useParams<{ boardid: string }>();
+  const boardId = params?.boardid;
+
+  useEffect(() => {
+    setLeftCollapsed(window.innerWidth < 1024);
+    setRightCollapsed(window.innerWidth < 1280);
+  }, []);
 
   useEffect(() => {
     const handleResize = () => {
@@ -23,12 +30,14 @@ export default function DashboardLayout({
     return () => window.removeEventListener("resize", handleResize);
   }, []);
   const isTaskPage = pathname?.includes("/tasks");
+  const isFlowEditor = /\/flows\/[^/]+/.test(pathname ?? "");
+  const isFullScreen = isTaskPage || isFlowEditor;
 
   return (
     <>
-      {/* If it's NOT the task page, show the board layout */}
-      {!isTaskPage ? (
-        <div className="bg-slate-100 dark:bg-slate-900 h-screen flex overflow-hidden rounded-none md:rounded-2xl shadow-none md:shadow-lg">
+      {/* If it's NOT a full-screen page, show the board layout */}
+      {!isFullScreen ? (
+        <div className="bg-[#F8F9FC] dark:bg-slate-900 h-screen flex overflow-hidden rounded-none md:rounded-2xl shadow-none md:shadow-lg">
 
           {/* Mobile backdrop — shown when a sidebar is open on small screens */}
           {(!leftCollapsed || !rightCollapsed) && (
@@ -46,13 +55,13 @@ export default function DashboardLayout({
           >
             {!leftCollapsed && (
               <div className="absolute lg:relative inset-y-0 left-0 z-30 w-64 h-full">
-                <BoardSidebar />
+                <BoardSidebar boardId={boardId} />
               </div>
             )}
           </div>
 
           {/* Main Content Area */}
-          <div className="flex flex-col flex-1 bg-slate-50 dark:bg-slate-800 min-w-0 relative">
+          <div className="flex flex-col flex-1 bg-white dark:bg-slate-800 min-w-0 relative">
             {/* Toggle Button (Left) — in main content so it paints over the left sidebar (earlier in DOM) */}
             <button
               onClick={() => setLeftCollapsed(!leftCollapsed)}
@@ -80,13 +89,13 @@ export default function DashboardLayout({
 
             {!rightCollapsed && (
               <div className="absolute lg:relative inset-y-0 right-0 z-30 w-72 h-full">
-                <BoardLinkedResources />
+                <BoardLinkedResources boardId={boardId} />
               </div>
             )}
           </div>
         </div>
       ) : (
-        /* On /tasks page, render only the children (no sidebars) */
+        /* Full-screen: /tasks or /flows/[flowId] — no sidebars */
         <>{children}</>
       )}
     </>

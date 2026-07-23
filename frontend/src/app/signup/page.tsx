@@ -1,15 +1,62 @@
 "use client";
-import React from "react";
+import React, { useState } from "react";
 import AppLogo from "../icons/AppLogo";
 import GoogleIcon from "../icons/GoogleIcon";
 import GithubIcon from "../icons/GithubIcon";
 import { Eye, EyeOff } from "lucide-react";
-import { useState } from "react";
 import Link from "next/link";
+import { signIn } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { storeAuthTokens } from "@/lib/api";
+import { useUserStore, User } from "@/app/store/useUserStore";
+
+const API = process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:8080";
 
 const Page = () => {
+  const router = useRouter();
+  const setUser = useUserStore((s) => s.setUser);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    if (password !== confirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
+    setLoading(true);
+    try {
+      const inviteToken =
+        typeof window !== "undefined"
+          ? new URLSearchParams(window.location.search).get("invite_token")
+          : null;
+      const res = await fetch(`${API}/api/auth/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, password, ...(inviteToken ? { invite_token: inviteToken } : {}) }),
+      });
+      const json = await res.json();
+      if (!json.success) {
+        setError(json.error ?? "Registration failed");
+        return;
+      }
+      const { token, session_key, user } = json.data;
+      storeAuthTokens(token, session_key, user.id);
+      setUser(user as User);
+      router.push(user.hasOrg ? "/dashboard" : "/onboarding");
+    } catch {
+      setError("Network error — is the backend running?");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="grid pt-3 py-12 bg-[var(--primary-background-color)] h-screen place-items-center">
@@ -32,11 +79,17 @@ const Page = () => {
       </p>
 
       <div className="mt-3 px-10 py-10 flex flex-col rounded-lg bg-white">
-        <div className="rounded-md hover:cursor-pointer py-2 space-x-3 flex items-center justify-center border border-[#D1D5DB]">
+        <div
+          onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
+          className="rounded-md hover:cursor-pointer py-2 space-x-3 flex items-center justify-center border border-[#D1D5DB]"
+        >
           <GoogleIcon width={20} height={20} />
           <p className="ml-2 font-medium text-sm">Continue with Google</p>
         </div>
-        <div className="mt-5 rounded-md hover:cursor-pointer py-2 space-x-3 flex items-center justify-center border border-[#D1D5DB]">
+        <div
+          onClick={() => signIn("github")}
+          className="mt-5 rounded-md hover:cursor-pointer py-2 space-x-3 flex items-center justify-center border border-[#D1D5DB]"
+        >
           <GithubIcon width={20} height={20} />
           <p className="ml-2 font-medium text-sm">Continue with Github</p>
         </div>
@@ -47,7 +100,13 @@ const Page = () => {
           </span>
           <div className="flex-grow h-px bg-[#D1D5DB]"></div>
         </div>
-        <div className="mt-2 space-y-5">
+
+        <form onSubmit={handleSignUp} className="mt-2 space-y-5">
+          {error && (
+            <p className="text-sm text-red-500 bg-red-50 px-3 py-2 rounded-md">
+              {error}
+            </p>
+          )}
           <div className="flex items-center justify-between space-x-5">
             <div>
               <div>
@@ -56,8 +115,11 @@ const Page = () => {
                 </p>
                 <input
                   type="text"
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
                   placeholder="Enter your full name"
-                  className="w-full px-3 py-2 mt-1 placeholder:text-[var(--placeholder-text-color)] border border-[#D1D5DB] rounded-md focus:outline-none focus:ring-1 focus:ring-[var(--quaternary-text-color))] focus:border-[var(--primary-button-background-color)]"
+                  className="w-full px-3 py-2 mt-1 placeholder:text-[var(--placeholder-text-color)] border border-[#D1D5DB] rounded-md focus:outline-none focus:ring-1 focus:ring-[var(--quaternary-text-color)] focus:border-[var(--primary-button-background-color)]"
                 />
               </div>
               <div className="mt-4">
@@ -66,42 +128,25 @@ const Page = () => {
                 </p>
                 <input
                   type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   placeholder="Enter your email address"
-                  className="w-full px-3 py-2 mt-1 placeholder:text-[var(--placeholder-text-color)] border border-[#D1D5DB] rounded-md focus:outline-none focus:ring-1 focus:ring-[var(--quaternary-text-color))] focus:border-[var(--primary-button-background-color)]"
+                  className="w-full px-3 py-2 mt-1 placeholder:text-[var(--placeholder-text-color)] border border-[#D1D5DB] rounded-md focus:outline-none focus:ring-1 focus:ring-[var(--quaternary-text-color)] focus:border-[var(--primary-button-background-color)]"
                 />
               </div>
             </div>
 
-            {/* <div>
-              <div>
-                <p className="text-sm text-[var(--quaternary-text-color)]">
-                  Password
-                </p>
-                <input
-                  type="password"
-                  placeholder="Create a password"
-                  className="w-full px-3 py-2 mt-1 placeholder:text-[var(--placeholder-text-color)] border border-[#D1D5DB] rounded-md focus:outline-none focus:ring-1 focus:ring-[var(--quaternary-text-color))] focus:border-[var(--primary-button-background-color)]"
-                />
-              </div>
-              <div className="mt-4">
-                <p className="text-sm text-[var(--quaternary-text-color)]">
-                  Confirm Password
-                </p>
-                <input
-                  type="password"
-                  placeholder="Confirm your password"
-                  className="w-full px-3 py-2 mt-1 placeholder:text-[var(--placeholder-text-color)] border border-[#D1D5DB] rounded-md focus:outline-none focus:ring-1 focus:ring-[var(--quaternary-text-color))] focus:border-[var(--primary-button-background-color)]"
-                />
-              </div>
-            </div> */}
             <div>
-              {/* Password Field */}
               <div className="relative">
                 <p className="text-sm text-[var(--quaternary-text-color)]">
                   Password
                 </p>
                 <input
                   type={showPassword ? "text" : "password"}
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   placeholder="Create a password"
                   className="w-full px-3 py-2 mt-1 placeholder:text-[var(--placeholder-text-color)] border border-[#D1D5DB] rounded-md focus:outline-none focus:ring-1 focus:ring-[var(--quaternary-text-color)] focus:border-[var(--primary-button-background-color)] pr-10"
                 />
@@ -114,13 +159,15 @@ const Page = () => {
                 </button>
               </div>
 
-              {/* Confirm Password Field */}
               <div className="relative mt-4">
                 <p className="text-sm text-[var(--quaternary-text-color)]">
                   Confirm Password
                 </p>
                 <input
                   type={showConfirmPassword ? "text" : "password"}
+                  required
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="Confirm your password"
                   className="w-full px-3 py-2 mt-1 placeholder:text-[var(--placeholder-text-color)] border border-[#D1D5DB] rounded-md focus:outline-none focus:ring-1 focus:ring-[var(--quaternary-text-color)] focus:border-[var(--primary-button-background-color)] pr-10"
                 />
@@ -143,6 +190,7 @@ const Page = () => {
             <label className="flex items-center hover:cursor-pointer text-sm text-[var(--quaternary-text-color)]">
               <input
                 type="checkbox"
+                required
                 className="mr-2 h-4 w-4 hover:cursor-pointer"
               />
               I agree to the
@@ -161,10 +209,14 @@ const Page = () => {
               Privacy Policy
             </a>
           </div>
-          <button className="rounded-md hover:cursor-pointer w-full px-3 py-2 bg-[var(--primary-button-background-color)] text-white hover:bg-white hover:text-[var(--primary-button-background-color)] hover:border hover:border-[var(--primary-button-background-color)] text-center">
-            Sign Up
+          <button
+            type="submit"
+            disabled={loading}
+            className="rounded-md hover:cursor-pointer w-full px-3 py-2 bg-[var(--primary-button-background-color)] text-white hover:bg-white hover:text-[var(--primary-button-background-color)] hover:border hover:border-[var(--primary-button-background-color)] text-center disabled:opacity-60"
+          >
+            {loading ? "Creating account…" : "Sign Up"}
           </button>
-        </div>
+        </form>
       </div>
     </div>
   );

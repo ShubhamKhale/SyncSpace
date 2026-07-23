@@ -315,13 +315,14 @@ export function EditableEdge({
                   borderColor: color,
                   borderWidth: "2px",
                   borderStyle: data.animation === Animation.Solid ? "solid" : "none",
-                  backgroundImage:
+                  backgroundImage: (
                     data.animation === Animation.Solid
                       ? "none"
                       : `linear-gradient(90deg, ${color} 50%, transparent 50%),
                linear-gradient(90deg, ${color} 50%, transparent 50%),
                linear-gradient(0deg, ${color} 50%, transparent 50%),
-               linear-gradient(0deg, ${color} 50%, transparent 50%)`,
+               linear-gradient(0deg, ${color} 50%, transparent 50%)`
+                  ) as string,
                   backgroundRepeat:
                     data.animation === Animation.Solid
                       ? "none"
@@ -341,7 +342,7 @@ export function EditableEdge({
                 }}
                 className="bottom-full p-2 text-center text-sm dark:bg-black bg-white rounded-md"
               >
-                {data.title}
+                {data.title as string}
               </div>
             ) : (
               !conditionCfg && (

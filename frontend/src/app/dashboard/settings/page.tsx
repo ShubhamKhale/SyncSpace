@@ -1,69 +1,137 @@
-"use client"
+"use client";
+import React, { useEffect, useState } from "react";
+import { apiFetch } from "@/lib/api";
+import { Check, X } from "lucide-react";
+
+interface NotificationPrefs {
+  comments: boolean;
+  invites: boolean;
+  product_updates: boolean;
+}
+
+const PREFS_CONFIG = [
+  {
+    key: "comments" as keyof NotificationPrefs,
+    label: "Comments",
+    desc: "Get notified when someone comments on your boards.",
+  },
+  {
+    key: "invites" as keyof NotificationPrefs,
+    label: "Invites",
+    desc: "Get notified when you are invited to a board.",
+  },
+  {
+    key: "product_updates" as keyof NotificationPrefs,
+    label: "Product Updates",
+    desc: "Get notified about new features and updates.",
+  },
+];
+
+type ToastType = "success" | "error";
 
 export default function SettingsPage() {
+  const [prefs, setPrefs] = useState<NotificationPrefs>({
+    comments: true,
+    invites: true,
+    product_updates: false,
+  });
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [toast, setToast] = useState<{ type: ToastType; msg: string } | null>(null);
 
+  useEffect(() => {
+    apiFetch<NotificationPrefs>("/api/settings/notifications")
+      .then(data => setPrefs(data))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  const showToast = (type: ToastType, msg: string) => {
+    setToast({ type, msg });
+    setTimeout(() => setToast(null), 3000);
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const updated = await apiFetch<NotificationPrefs>("/api/settings/notifications", {
+        method: "PATCH",
+        body: JSON.stringify(prefs),
+      });
+      setPrefs(updated);
+      showToast("success", "Preferences saved.");
+    } catch (err) {
+      showToast("error", (err as Error).message ?? "Failed to save preferences.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const toggle = (key: keyof NotificationPrefs) =>
+    setPrefs(p => ({ ...p, [key]: !p[key] }));
 
   return (
-    <div className="bg-slate-100 dark:bg-slate-900 min-h-screen pt-4 px-4 md:px-6 pb-6">
-      <p className="text-[var(--primary-text-color)] font-semibold text-xl">
-        Settings
-      </p>
+    <div className="bg-[#F8F9FC] dark:bg-slate-900 min-h-screen pt-6 px-4 md:px-8 lg:px-12 pb-10">
+      {/* Toast */}
+      {toast && (
+        <div className={`fixed top-5 right-5 z-50 flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-lg text-sm font-medium text-white transition-all ${
+          toast.type === "success" ? "bg-emerald-500" : "bg-red-500"
+        }`}>
+          {toast.type === "success"
+            ? <Check size={16} />
+            : <X size={16} />}
+          {toast.msg}
+        </div>
+      )}
 
-      <div className="rounded-lg mt-4 px-4 pb-6 bg-white dark:bg-slate-800 shadow max-w-3xl">
-        <div className="py-4 px-3 space-y-2 border-b border-b-[var(--sidebar-option-background-color)]">
-          <p className="font-medium text-base text-[var(--primary-text-color)]">
-            Notifications
-          </p>
-          <p className="text-xs text-[var(--tertiary-text-color)]">
-            Manage your notificaton preferences.
-          </p>
+      <div className="mb-6">
+        <h1 className="font-bold text-xl text-slate-800 dark:text-slate-100">Settings</h1>
+        <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Manage your account preferences.</p>
+      </div>
+
+      <div className="max-w-2xl bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+        {/* Card header */}
+        <div className="px-6 py-5 border-b border-slate-200 dark:border-slate-700">
+          <p className="font-semibold text-base text-slate-800 dark:text-slate-100">Notifications</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Manage your notification preferences.</p>
         </div>
 
-        <div className="mt-3 px-3 flex items-start space-x-3">
-          <div className="mt-1 flex items-center hover:cursor-pointer text-sm text-[var(--quaternary-text-color)]">
-            <input type="checkbox" className="h-4 w-4 hover:cursor-pointer" />
-          </div>
-          <div>
-            <p className="font-medium text-base text-[var(--primary-text-color)]">
-              Comments 
-            </p>
-            <p className="text-xs mt-1 text-[var(--tertiary-text-color)]">
-              Get notified when someone comments on your boards.
-            </p>
-          </div>
+        {/* Prefs list */}
+        <div className="divide-y divide-slate-100 dark:divide-slate-700">
+          {loading ? (
+            <div className="px-6 py-8 text-sm text-slate-400 text-center">Loading preferences…</div>
+          ) : (
+            PREFS_CONFIG.map(({ key, label, desc }) => (
+              <div
+                key={key}
+                onClick={() => toggle(key)}
+                className="flex items-center justify-between px-6 py-4 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 transition group"
+              >
+                <div>
+                  <p className="font-medium text-sm text-slate-800 dark:text-slate-100">{label}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{desc}</p>
+                </div>
+                {/* Toggle */}
+                <div className={`relative w-11 h-6 rounded-full transition-colors flex-shrink-0 ${
+                  prefs[key] ? "bg-[#6366F1]" : "bg-slate-200 dark:bg-slate-600"
+                }`}>
+                  <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
+                    prefs[key] ? "translate-x-5" : "translate-x-0"
+                  }`} />
+                </div>
+              </div>
+            ))
+          )}
         </div>
 
-        <div className="mt-3 px-3 flex items-start space-x-3">
-          <div className="mt-1 flex items-center hover:cursor-pointer text-sm text-[var(--quaternary-text-color)]">
-            <input type="checkbox" className="h-4 w-4 hover:cursor-pointer" />
-          </div>
-          <div>
-            <p className="font-medium text-base text-[var(--primary-text-color)]">
-              Invites
-            </p>
-            <p className="text-xs mt-1 text-[var(--tertiary-text-color)]">
-              Get notified when you are invited to a board.
-            </p>
-          </div>
-        </div>
-
-        <div className="mt-3 px-3 flex items-start space-x-3">
-          <div className="mt-1 flex items-center hover:cursor-pointer text-sm text-[var(--quaternary-text-color)]">
-            <input type="checkbox" className="h-4 w-4 hover:cursor-pointer" />
-          </div>
-          <div>
-            <p className="font-medium text-base text-[var(--primary-text-color)]">
-              Product Updates 
-            </p>
-            <p className="text-xs mt-1 text-[var(--tertiary-text-color)]">
-              Get notified about new features and updates.
-            </p>
-          </div>
-        </div>
-
-        <div className="flex justify-end">
-          <button className=" mt-5 w-fit flex items-center justify-center space-x-3 rounded-md hover:cursor-pointer  px-6 py-2 bg-[var(--primary-button-background-color)] text-white text-center">
-            <p>Save Preferences</p>
+        {/* Footer */}
+        <div className="px-6 py-4 border-t border-slate-200 dark:border-slate-700 flex justify-end">
+          <button
+            onClick={handleSave}
+            disabled={saving || loading}
+            className="px-6 py-2.5 bg-[#6366F1] hover:bg-[#4F46E5] text-white text-sm font-semibold rounded-xl disabled:opacity-60 disabled:cursor-not-allowed transition"
+          >
+            {saving ? "Saving…" : "Save Preferences"}
           </button>
         </div>
       </div>

@@ -36,7 +36,7 @@
   background: #9ca8b3;
 }
 
-.node :global .react-flow__resize-control.handle {
+.node .react-flow__resize-control.handle {
   width: 10px;
   height: 10px;
   border-radius: 100%;
@@ -63,6 +63,35 @@
   background: #3367d9;
   left: 4px;
   top: 5px;
+}
+
+/* ── Node interaction states ──────────────────────────── */
+
+.react-flow__node {
+  cursor: grab;
+}
+.react-flow__node:active {
+  cursor: grabbing;
+}
+.react-flow__node:not(.selected):hover {
+  filter: drop-shadow(0 6px 20px rgba(0, 0, 0, 0.5));
+  z-index: 10;
+}
+.react-flow__node.selected {
+  outline: 2px solid #3b82f6;
+  outline-offset: 3px;
+  border-radius: 5px;
+  filter: drop-shadow(0 0 10px rgba(59, 130, 246, 0.35));
+}
+
+/* ── Edge hover / selected ────────────────────────────── */
+
+.react-flow__edge:hover .react-flow__edge-path {
+  stroke-width: 3 !important;
+}
+.react-flow__edge:hover .react-flow__edge-path,
+.react-flow__edge.selected .react-flow__edge-path {
+  filter: drop-shadow(0 0 4px rgba(245, 158, 11, 0.5));
 }
 
 /* ── Magnetic Connect ─────────────────────────────────── */

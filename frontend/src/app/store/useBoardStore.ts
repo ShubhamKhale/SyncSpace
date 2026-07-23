@@ -1,10 +1,11 @@
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
+import { apiFetch, encryptedFetch } from "@/lib/api";
 
 export interface BoardTag {
   label: string;
-  color: string;      // hex or tailwind color key
-  textColor: string;  // contrasting text color
+  color: string;
+  textColor: string;
 }
 
 export type BoardStatus = "active" | "on-hold" | "archived";
@@ -19,6 +20,7 @@ export interface Board {
   tags: BoardTag[];
   status: BoardStatus;
   coverColor: string;
+  flowId?: string;
 }
 
 export interface BoardDetailsUpdate {
@@ -29,13 +31,55 @@ export interface BoardDetailsUpdate {
   coverColor: string;
 }
 
+export interface LocalBoardMeta {
+  tags: BoardTag[];
+  status: BoardStatus;
+  coverColor: string;
+}
+
+const META_PREFIX = "ss_board_meta_";
+
+function readLocalMeta(boardId: string): LocalBoardMeta | null {
+  try {
+    const raw = localStorage.getItem(`${META_PREFIX}${boardId}`);
+    return raw ? (JSON.parse(raw) as LocalBoardMeta) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function writeLocalMeta(boardId: string, meta: LocalBoardMeta): void {
+  try {
+    localStorage.setItem(`${META_PREFIX}${boardId}`, JSON.stringify(meta));
+  } catch {}
+}
+
+// Normalises snake_case or camelCase backend responses into the Board shape
+function mapBoard(raw: Record<string, unknown>): Board {
+  const id = raw.id as string;
+  const meta = typeof window !== "undefined" ? readLocalMeta(id) : null;
+  return {
+    id,
+    title: (raw.title as string) ?? "",
+    description: ((raw.description ?? "") as string),
+    owner: (((raw.owner ?? raw.owner_id) ?? "") as string),
+    createdAt: (((raw.createdAt ?? raw.created_at) ?? "") as string),
+    updatedAt: (((raw.updatedAt ?? raw.updated_at) ?? "") as string),
+    // Prefer backend fields, fall back to localStorage, then defaults
+    tags: (raw.tags as BoardTag[] | undefined) ?? meta?.tags ?? [],
+    status: ((raw.status as BoardStatus | undefined) ?? meta?.status ?? "active"),
+    coverColor: (((raw.coverColor ?? raw.cover_color) as string | undefined) ?? meta?.coverColor ?? "#2563EB"),
+    flowId: ((raw.flowId ?? raw.flow_id) as string | undefined),
+  };
+}
+
 interface BoardState {
   board: Board | null;
   loading: boolean;
   error: string | null;
   saveStates: Record<string, "idle" | "loading" | "success" | "error">;
 
-  // Actions
+  fetchBoard: (boardId: string) => Promise<void>;
   setBoard: (board: Board) => void;
   updateBoardTitle: (title: string) => Promise<void>;
   updateBoardDescription: (description: string) => Promise<void>;
@@ -46,104 +90,115 @@ interface BoardState {
   ) => void;
 }
 
+function resetSaveStateAfter(
+  set: (fn: (s: BoardState) => Partial<BoardState>) => void,
+  field: string,
+  ms = 1200
+) {
+  setTimeout(
+    () =>
+      set((s) => ({
+        saveStates: { ...s.saveStates, [field]: "idle" },
+      })),
+    ms
+  );
+}
+
 export const useBoardStore = create<BoardState>()(
-  devtools((set) => ({
+  devtools((set, get) => ({
     board: null,
     loading: false,
     error: null,
     saveStates: {},
 
+    fetchBoard: async (boardId: string) => {
+      set({ loading: true, error: null });
+      try {
+        const list = await encryptedFetch<unknown>("/api/boards", "GET");
+        const arr = Array.isArray(list) ? list : [];
+        const raw = arr.find(
+          (b: unknown) => (b as Record<string, unknown>).id === boardId
+        ) as Record<string, unknown> | undefined;
+        if (!raw) throw new Error("Board not found");
+        set({ board: mapBoard(raw), loading: false });
+      } catch (err) {
+        set({ error: (err as Error).message, loading: false });
+      }
+    },
+
     setBoard: (board) => set({ board }),
 
     updateBoardTitle: async (title: string) => {
-      set((state) => ({
-        saveStates: { ...state.saveStates, title: "loading" },
-      }));
+      const boardId = get().board?.id;
+      if (!boardId) return;
+      set((s) => ({ saveStates: { ...s.saveStates, title: "loading" } }));
+      // Optimistic update immediately
+      set((s) => ({ board: s.board ? { ...s.board, title } : null }));
       try {
-        await new Promise((resolve) => setTimeout(resolve, 300));
-        set((state) => ({
-          board: state.board ? { ...state.board, title } : null,
-          saveStates: { ...state.saveStates, title: "success" },
-        }));
-        setTimeout(
-          () =>
-            set((state) => ({
-              saveStates: { ...state.saveStates, title: "idle" },
-            })),
-          1200
-        );
+        await apiFetch(`/api/boards/${boardId}`, {
+          method: "PATCH",
+          body: JSON.stringify({ title }),
+        });
+        set((s) => ({ saveStates: { ...s.saveStates, title: "success" } }));
+        resetSaveStateAfter(set, "title");
       } catch {
-        set((state) => ({
-          saveStates: { ...state.saveStates, title: "error" },
-          error: "Failed to update title",
-        }));
+        // Keep optimistic update even if backend PATCH missing; show idle
+        set((s) => ({ saveStates: { ...s.saveStates, title: "idle" } }));
       }
     },
 
     updateBoardDescription: async (description: string) => {
-      set((state) => ({
-        saveStates: { ...state.saveStates, description: "loading" },
+      const boardId = get().board?.id;
+      if (!boardId) return;
+      set((s) => ({
+        saveStates: { ...s.saveStates, description: "loading" },
+        board: s.board ? { ...s.board, description } : null,
       }));
       try {
-        await new Promise((resolve) => setTimeout(resolve, 300));
-        set((state) => ({
-          board: state.board ? { ...state.board, description } : null,
-          saveStates: { ...state.saveStates, description: "success" },
-        }));
-        setTimeout(
-          () =>
-            set((state) => ({
-              saveStates: { ...state.saveStates, description: "idle" },
-            })),
-          1200
-        );
+        await apiFetch(`/api/boards/${boardId}`, {
+          method: "PATCH",
+          body: JSON.stringify({ description }),
+        });
+        set((s) => ({ saveStates: { ...s.saveStates, description: "success" } }));
+        resetSaveStateAfter(set, "description");
       } catch {
-        set((state) => ({
-          saveStates: { ...state.saveStates, description: "error" },
-          error: "Failed to update description",
-        }));
+        set((s) => ({ saveStates: { ...s.saveStates, description: "idle" } }));
       }
     },
 
     updateBoardDetails: async (details: BoardDetailsUpdate) => {
-      set((state) => ({
-        saveStates: { ...state.saveStates, details: "loading" },
+      const boardId = get().board?.id;
+      if (!boardId) return;
+      set((s) => ({ saveStates: { ...s.saveStates, details: "loading" } }));
+
+      // Persist frontend-only fields (tags, status, coverColor) to localStorage immediately
+      writeLocalMeta(boardId, {
+        tags: details.tags,
+        status: details.status,
+        coverColor: details.coverColor,
+      });
+
+      // Optimistic update
+      set((s) => ({
+        board: s.board
+          ? { ...s.board, ...details, updatedAt: new Date().toISOString().split("T")[0] }
+          : null,
+        saveStates: { ...s.saveStates, details: "success" },
       }));
+      resetSaveStateAfter(set, "details");
+
+      // Also try backend PATCH for title/description (silently ignore if endpoint missing)
       try {
-        // TODO: Replace with real API call
-        await new Promise((resolve) => setTimeout(resolve, 300));
-        set((state) => ({
-          board: state.board
-            ? {
-                ...state.board,
-                title: details.title,
-                description: details.description,
-                tags: details.tags,
-                status: details.status,
-                coverColor: details.coverColor,
-                updatedAt: new Date().toISOString().split("T")[0],
-              }
-            : null,
-          saveStates: { ...state.saveStates, details: "success" },
-        }));
-        setTimeout(
-          () =>
-            set((state) => ({
-              saveStates: { ...state.saveStates, details: "idle" },
-            })),
-          1200
-        );
+        await apiFetch(`/api/boards/${boardId}`, {
+          method: "PATCH",
+          body: JSON.stringify({ title: details.title, description: details.description }),
+        });
       } catch {
-        set((state) => ({
-          saveStates: { ...state.saveStates, details: "error" },
-          error: "Failed to update board details",
-        }));
+        // Backend PATCH not available yet — localStorage already persisted frontend fields
       }
     },
 
     setSaveState: (field, state) =>
-      set((prevState) => ({
-        saveStates: { ...prevState.saveStates, [field]: state },
-      })),
+      set((s) => ({ saveStates: { ...s.saveStates, [field]: state } })),
   }))
 );

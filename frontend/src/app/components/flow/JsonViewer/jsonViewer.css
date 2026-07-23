@@ -20,11 +20,14 @@
   background: transparent;
 }
 
-.json-viewer > .react-monaco-editor-container {
-  width: 100%;
-}
-
 .json-viewer {
   width: 100%;
   height: 100%;
 }
+
+/* Syntax highlight tokens */
+.json-viewer .json-key    { color: #9CDCFE; }
+.json-viewer .json-string { color: #CE9178; }
+.json-viewer .json-number { color: #B5CEA8; }
+.json-viewer .json-bool   { color: #569CD6; }
+.json-viewer .json-null   { color: #569CD6; }

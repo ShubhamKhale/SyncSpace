@@ -1,27 +1,55 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Organization } from "./types";
 import TeamMembersIcon from "../../icons/TeamMembers";
 import TaskBoardIcon from "../../icons/TaskBoardIcon";
 import OrganizationIcon from "../../icons/OrganizationIcon";
+import { apiFetch } from "@/lib/api";
+import { useUserStore } from "@/app/store/useUserStore";
 
 export default function OrganizationOverviewPage() {
   const [org, setOrg] = useState<Organization>({
-    id: "org-1",
-    name: "Acme Corp",
-    memberCount: 12,
-    boardCount: 8,
+    id: "",
+    name: "",
+    memberCount: 0,
+    boardCount: 0,
   });
-
+  const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
-  const [editName, setEditName] = useState(org.name);
+  const [editName, setEditName] = useState("");
+  const [saving, setSaving] = useState(false);
 
-  const currentUserRole: "admin" | "owner" | "member" = "owner";
+  const { user } = useUserStore();
+  const currentUserRole = user?.role ?? "viewer";
+
+  useEffect(() => {
+    apiFetch<Record<string, unknown>>("/api/organization")
+      .then((data) => {
+        const mapped: Organization = {
+          id: data.id as string,
+          name: data.name as string,
+          memberCount: (data.memberCount ?? data.member_count ?? 0) as number,
+          boardCount: (data.boardCount ?? data.board_count ?? 0) as number,
+        };
+        setOrg(mapped);
+        setEditName(mapped.name);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
 
   const handleSave = async () => {
-    setOrg({ ...org, name: editName });
-    setIsEditing(false);
+    setSaving(true);
+    try {
+      await apiFetch(`/api/organization/${org.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ name: editName }),
+      });
+      setOrg((prev) => ({ ...prev, name: editName }));
+      setIsEditing(false);
+    } catch {}
+    setSaving(false);
   };
 
   const handleCancel = () => {
@@ -29,101 +57,106 @@ export default function OrganizationOverviewPage() {
     setIsEditing(false);
   };
 
+  if (loading) {
+    return (
+      <div className="px-4 md:px-8 lg:px-12 pt-4 pb-6 bg-slate-100 dark:bg-slate-900 min-h-full flex items-center justify-center">
+        <p className="text-[var(--tertiary-text-color)]">Loading…</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="px-4 md:px-8 lg:px-12 pt-4 pb-6 bg-slate-100 dark:bg-slate-900 min-h-full">
-      {/* Header */}
+    <div className="px-4 md:px-8 lg:px-12 pt-6 pb-10 bg-[#F8F9FC] dark:bg-slate-900 min-h-full">
       <div className="flex items-center justify-between mb-6">
-        <p className="font-semibold text-xl text-[var(--primary-text-color)]">
+        <h1 className="font-semibold text-xl text-slate-800 dark:text-slate-100">
           Organization Overview
-        </p>
+        </h1>
         {(currentUserRole === "owner" || currentUserRole === "admin") && (
           <button
             onClick={() => setIsEditing(!isEditing)}
-            className="px-4 py-2 bg-[var(--primary-button-background-color)] text-white rounded-lg hover:bg-blue-700 transition hover:cursor-pointer"
+            className="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg transition text-sm font-medium"
           >
             {isEditing ? "Cancel" : "Edit Organization"}
           </button>
         )}
       </div>
 
-      {/* Edit Form */}
-      {isEditing && (currentUserRole === "owner" || currentUserRole === "admin") && (
-        <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md mb-6">
-          <h2 className="text-base font-semibold text-gray-900 dark:text-slate-100 mb-4 pb-3 border-b border-[var(--sidebar-option-background-color)]">
+      {isEditing && (
+        <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm mb-6">
+          <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100 mb-4 pb-3 border-b border-slate-100 dark:border-slate-700">
             Edit Organization
           </h2>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
                 Organization Name
               </label>
               <input
                 type="text"
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
-                className="w-full border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2.5 text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition"
               />
             </div>
-            <div className="flex justify-end space-x-3 pt-2">
+            <div className="flex justify-end gap-3 pt-2">
               <button
                 onClick={handleCancel}
-                className="px-4 py-2 bg-gray-200 dark:bg-slate-700 text-gray-900 dark:text-slate-200 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-600 transition hover:cursor-pointer text-sm"
+                className="px-4 py-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600 transition text-sm font-medium"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSave}
-                className="px-4 py-2 bg-[var(--primary-button-background-color)] text-white rounded-lg hover:bg-blue-700 transition hover:cursor-pointer text-sm"
+                disabled={saving}
+                className="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg transition text-sm font-medium disabled:opacity-60"
               >
-                Save Changes
+                {saving ? "Saving…" : "Save Changes"}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-        <div className="bg-white dark:bg-slate-800 px-4 pt-4 pb-6 inline-flex items-start justify-between rounded-lg shadow-md">
-          <div className="space-y-4">
-            <p className="text-[#6B7280] dark:text-slate-400 text-base">Total Members</p>
-            <p className="text-black dark:text-slate-100 text-xl font-semibold">{org.memberCount}</p>
+        <div className="bg-white dark:bg-slate-800 px-5 py-4 flex items-center justify-between rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm">
+          <div className="space-y-2">
+            <p className="text-slate-500 dark:text-slate-400 text-sm">Total Members</p>
+            <p className="text-slate-800 dark:text-slate-100 text-2xl font-bold">{org.memberCount}</p>
           </div>
-          <TeamMembersIcon />
+          <TeamMembersIcon className="w-10 h-10 flex-shrink-0" />
         </div>
-        <div className="bg-white dark:bg-slate-800 px-4 pt-4 pb-6 inline-flex items-start justify-between rounded-lg shadow-md">
-          <div className="space-y-4">
-            <p className="text-[#6B7280] dark:text-slate-400 text-base">Total Boards</p>
-            <p className="text-black dark:text-slate-100 text-xl font-semibold">{org.boardCount}</p>
+        <div className="bg-white dark:bg-slate-800 px-5 py-4 flex items-center justify-between rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm">
+          <div className="space-y-2">
+            <p className="text-slate-500 dark:text-slate-400 text-sm">Total Boards</p>
+            <p className="text-slate-800 dark:text-slate-100 text-2xl font-bold">{org.boardCount}</p>
           </div>
-          <TaskBoardIcon />
+          <TaskBoardIcon className="w-10 h-10 flex-shrink-0" />
         </div>
-        <div className="bg-white dark:bg-slate-800 px-4 pt-4 pb-6 inline-flex items-start justify-between rounded-lg shadow-md">
-          <div className="space-y-4">
-            <p className="text-[#6B7280] dark:text-slate-400 text-base">Your Role</p>
-            <p className="text-black dark:text-slate-100 text-xl font-semibold capitalize">{currentUserRole}</p>
+        <div className="bg-white dark:bg-slate-800 px-5 py-4 flex items-center justify-between rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm">
+          <div className="space-y-2">
+            <p className="text-slate-500 dark:text-slate-400 text-sm">Your Role</p>
+            <p className="text-slate-800 dark:text-slate-100 text-2xl font-bold capitalize">{currentUserRole}</p>
           </div>
-          <OrganizationIcon />
+          <OrganizationIcon width={40} height={40} />
         </div>
       </div>
 
-      {/* Organization Info Card */}
-      <div className="bg-white dark:bg-slate-800 rounded-lg shadow-md p-6">
-        <h2 className="text-base font-semibold text-gray-900 dark:text-slate-100 mb-4 pb-3 border-b border-[var(--sidebar-option-background-color)]">
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm p-6">
+        <h2 className="text-sm font-semibold text-slate-800 dark:text-slate-100 mb-4 pb-3 border-b border-slate-100 dark:border-slate-700">
           Organization Details
         </h2>
         <div className="space-y-4">
           <div className="flex items-center">
-            <span className="text-sm font-medium text-gray-500 dark:text-slate-400 w-40">Name</span>
-            <span className="text-sm text-gray-900 dark:text-slate-100 font-medium">{org.name}</span>
+            <span className="text-sm font-medium text-slate-500 dark:text-slate-400 w-40">Name</span>
+            <span className="text-sm text-slate-800 dark:text-slate-100 font-medium">{org.name}</span>
           </div>
           <div className="flex items-center">
-            <span className="text-sm font-medium text-gray-500 dark:text-slate-400 w-40">Organization ID</span>
-            <span className="text-sm text-gray-400 dark:text-slate-300 font-mono">{org.id}</span>
+            <span className="text-sm font-medium text-slate-500 dark:text-slate-400 w-40">Organization ID</span>
+            <span className="text-sm text-slate-400 dark:text-slate-300 font-mono">{org.id}</span>
           </div>
           <div className="flex items-center">
-            <span className="text-sm font-medium text-gray-500 dark:text-slate-400 w-40">Your Role</span>
-            <span className="px-2.5 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-700 capitalize">
+            <span className="text-sm font-medium text-slate-500 dark:text-slate-400 w-40">Your Role</span>
+            <span className="px-2.5 py-1 text-xs font-medium rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 capitalize">
               {currentUserRole}
             </span>
           </div>

@@ -4,24 +4,24 @@
 @variant dark (&:where(.dark, .dark *));
 
 :root {
-  --background: #F1F5F9;
+  --background: #F8F9FC;
   --foreground: #171717;
-  --primary-button-background-color: #2563eb;
-  --primary-background-color: #DBEAFE;
+  --primary-button-background-color: #6366f1;
+  --primary-background-color: #EEF2FF;
   --secondary-background-color: #6B7280;
-  --tertiary-background-color: #F3F4F6;
+  --tertiary-background-color: #F8F9FC;
   --primary-text-color: #111827;
   --secondary-text-color: #4B5563;
   --tertiary-text-color: #6B7280;
   --quaternary-text-color: #374151;
-  --fifth-text-color: #2563eb;
+  --fifth-text-color: #6366f1;
   --sixth-text-color: #1F2937;
   --danger-text-color: #991B1B;
   --placeholder-text-color: #CCCCCC;
   --sidebar-border-color: #E5E7EB;
-  --sidebar-option-background-color: #EFF6FF;
-  --sidebar-option-highlight-name-color: #1D4ED8;
-  --sidebar-option-name-color: #374151;
+  --sidebar-option-background-color: #EEF2FF;
+  --sidebar-option-highlight-name-color: #2563EB;
+  --sidebar-option-name-color: #6B7280;
 }
 
 /* primary secondary tertiary quaternary */  
@@ -33,31 +33,123 @@
 } */
 
 .dark {
-  --background: #0F172A;
-  --foreground: #F1F5F9;
-  --primary-button-background-color: #3B82F6;
-  --primary-background-color: #1E3A5F;
-  --secondary-background-color: #94A3B8;
-  --tertiary-background-color: #1E293B;
-  --primary-text-color: #F1F5F9;
-  --secondary-text-color: #CBD5E1;
-  --tertiary-text-color: #94A3B8;
-  --quaternary-text-color: #CBD5E1;
-  --fifth-text-color: #60A5FA;
-  --sixth-text-color: #E2E8F0;
+  --background: #0B0D17;
+  --foreground: #E4E7F5;
+  --primary-button-background-color: #6366f1;
+  --primary-background-color: #1A2550;
+  --secondary-background-color: #6B7194;
+  --tertiary-background-color: #111422;
+  --primary-text-color: #E4E7F5;
+  --secondary-text-color: #C8CDE7;
+  --tertiary-text-color: #9BA3C8;
+  --quaternary-text-color: #C8CDE7;
+  --fifth-text-color: #818cf8;
+  --sixth-text-color: #D4D8F0;
   --danger-text-color: #FCA5A5;
-  --placeholder-text-color: #475569;
-  --sidebar-border-color: #334155;
-  --sidebar-option-background-color: #1E3A5F;
-  --sidebar-option-highlight-name-color: #93C5FD;
-  --sidebar-option-name-color: #CBD5E1;
+  --placeholder-text-color: #3A3F5C;
+  --sidebar-border-color: #1E2035;
+  --sidebar-option-background-color: #1A2550;
+  --sidebar-option-highlight-name-color: #7B9BF8;
+  --sidebar-option-name-color: #9BA3C8;
 }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Deep-navy dark theme: override Tailwind slate utilities in dark mode.
+   These rules come after @import "tailwindcss" so they win on equal specificity.
+   ───────────────────────────────────────────────────────────────────────────── */
+
+/* Backgrounds */
+.dark\:bg-slate-900:where(.dark, .dark *) { background-color: #0B0D17; }
+.dark\:bg-slate-800:where(.dark, .dark *) { background-color: #111422; }
+.dark\:bg-slate-700:where(.dark, .dark *) { background-color: #181C30; }
+.dark\:bg-slate-600:where(.dark, .dark *) { background-color: #1E2238; }
+
+/* Hover backgrounds */
+.dark\:hover\:bg-slate-900:where(.dark, .dark *):hover { background-color: #0B0D17; }
+.dark\:hover\:bg-slate-800:where(.dark, .dark *):hover { background-color: #111422; }
+.dark\:hover\:bg-slate-700:where(.dark, .dark *):hover { background-color: #181C30; }
+.dark\:hover\:bg-slate-600:where(.dark, .dark *):hover { background-color: #1E2238; }
+
+/* Borders */
+.dark\:border-slate-700:where(.dark, .dark *) { border-color: #1E2035; }
+.dark\:border-slate-600:where(.dark, .dark *) { border-color: #252840; }
+.dark\:border-slate-500:where(.dark, .dark *) { border-color: #2E3355; }
+
+/* Text */
+.dark\:text-slate-100:where(.dark, .dark *) { color: #E4E7F5; }
+.dark\:text-slate-200:where(.dark, .dark *) { color: #C8CDE7; }
+.dark\:text-slate-300:where(.dark, .dark *) { color: #9BA3C8; }
+.dark\:text-slate-400:where(.dark, .dark *) { color: #6B7194; }
+.dark\:text-slate-500:where(.dark, .dark *) { color: #4E5470; }
+.dark\:text-slate-600:where(.dark, .dark *) { color: #363C5A; }
+
+/* Hover text */
+.dark\:hover\:text-slate-200:where(.dark, .dark *):hover { color: #C8CDE7; }
+.dark\:hover\:text-slate-100:where(.dark, .dark *):hover { color: #E4E7F5; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Global pointer cursor for all interactive elements */
+button,
+[role="button"],
+select,
+label[for],
+summary {
+  cursor: pointer;
+}
+
+button:disabled,
+[role="button"][aria-disabled="true"] {
+  cursor: not-allowed;
+}
+
+/* Placeholder */
+.dark\:placeholder-slate-500:where(.dark, .dark *)::placeholder { color: #4E5470; }
+.dark\:placeholder-slate-600:where(.dark, .dark *)::placeholder { color: #363C5A; }
+
+/* Opacity slate variants */
+.dark\:bg-slate-800\/60:where(.dark, .dark *) { background-color: rgb(17 20 34 / 0.6); }
+.dark\:bg-slate-800\/90:where(.dark, .dark *) { background-color: rgb(17 20 34 / 0.9); }
+.dark\:bg-slate-700\/80:where(.dark, .dark *) { background-color: rgb(24 28 48 / 0.8); }
+.dark\:bg-slate-700\/60:where(.dark, .dark *) { background-color: rgb(24 28 48 / 0.6); }
+.dark\:bg-slate-700\/50:where(.dark, .dark *) { background-color: rgb(24 28 48 / 0.5); }
+
+/* bg-white in dark mode → navy card surface */
+.dark .bg-white { background-color: #111422; }
+
+/* Light page bg in dark mode */
+.dark .bg-\[\#F8F9FC\] { background-color: #0B0D17; }
+.dark .bg-\[\#F4F5FB\] { background-color: #0B0D17; }
+
+/* EEF2FF (indigo tint) in dark mode → deep navy tint */
+.dark .bg-\[\#EEF2FF\] { background-color: #1A2550; }
+
+/* Other light bg shades → dark equivalents */
+.dark .bg-\[\#F8FAFC\] { background-color: #0F1220; }
+.dark .bg-slate-50 { background-color: #0F1220; }
+.dark .hover\:bg-slate-50:hover { background-color: #181C30; }
 
 /* body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 } */
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Light theme polish — consistent card/border tokens across all pages.
+   ───────────────────────────────────────────────────────────────────────────── */
+
+/* Ensure page background is always the correct light gray */
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+}
 
 /* Hide scrollbar but allow scrolling */
 .scrollbar-hide::-webkit-scrollbar {

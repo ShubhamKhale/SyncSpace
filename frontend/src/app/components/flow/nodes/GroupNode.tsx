@@ -2,7 +2,8 @@
 
 import { NodeResizer, useNodeId, useReactFlow } from "@xyflow/react";
 import { useState, useEffect } from "react";
-import { Lock, Unlock } from "lucide-react";
+import { Lock, Unlock, MessageSquare } from "lucide-react";
+import { NodeCommentPanel, NodeComment } from "./NodeCommentPanel";
 
 const GROUP_COLORS = [
   "#3b82f6", // blue
@@ -46,6 +47,14 @@ export default function GroupNode({ data, style }: any) {
   };
 
   const locked = !!data.locked;
+  const comments: NodeComment[] = data.comments || [];
+  const hasComments = comments.length > 0;
+  const [showComments, setShowComments] = useState(false);
+
+  // Close comment panel when node is deselected
+  useEffect(() => {
+    if (!isSelected) setShowComments(false);
+  }, [isSelected]);
 
   const deleteNode = () => {
     setNodes((nodes) => nodes.filter((n) => n.id !== nodeId));
@@ -208,6 +217,44 @@ export default function GroupNode({ data, style }: any) {
           </div>
         )}
       </div>
+
+      {/* Comment badge */}
+      {(isSelected || hasComments) && (
+        <button
+          onClick={(e) => { e.stopPropagation(); setShowComments((v) => !v); }}
+          title="Comments"
+          style={{
+            position: "absolute",
+            bottom: -10,
+            right: -10,
+            background: hasComments ? "#3b82f6" : "#6b7280",
+            color: "white",
+            borderRadius: "50%",
+            width: 18,
+            height: 18,
+            border: "none",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 9,
+            fontWeight: "bold",
+            zIndex: 10,
+          }}
+        >
+          {hasComments ? comments.length : <MessageSquare size={9} />}
+        </button>
+      )}
+
+      {/* Comment panel */}
+      {showComments && (
+        <NodeCommentPanel
+          nodeId={nodeId!}
+          comments={comments}
+          locked={locked}
+          onClose={() => setShowComments(false)}
+        />
+      )}
     </div>
   );
 }

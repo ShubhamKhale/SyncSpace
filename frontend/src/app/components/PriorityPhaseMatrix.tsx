@@ -1,63 +1,25 @@
 "use client";
 import React from "react";
+import { Zap } from "lucide-react";
+import { useBoardTaskStore } from "@/app/store/useBoardTaskStore";
 
-interface Task {
-  initials: string;
+const PRIORITIES = ["high", "medium", "low"] as const;
+const STAGES     = ["Planning", "Design", "Development", "QA", "Deployment"] as const;
+
+const PRIORITY_META: Record<string, { label: string; color: string; totalColor: string; cellBg: string }> = {
+  high:   { label: "High",   color: "text-red-500",    totalColor: "text-red-500",    cellBg: "border-red-200    dark:border-red-900/50    bg-red-50    dark:bg-red-900/20"    },
+  medium: { label: "Medium", color: "text-orange-500", totalColor: "text-orange-400", cellBg: "border-orange-200 dark:border-orange-900/50 bg-orange-50 dark:bg-orange-900/20" },
+  low:    { label: "Low",    color: "text-green-500",  totalColor: "text-green-400",  cellBg: "border-green-200  dark:border-green-900/50  bg-green-50  dark:bg-green-900/20"  },
+};
+
+function initials(name?: string) {
+  if (!name) return "?";
+  return name.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2);
 }
-
-interface Phase {
-  name: string;
-  tasks: Task[];
-}
-
-interface PriorityRow {
-  level: "High" | "Medium" | "Low";
-  color: string; // text color
-  borderColor: string; // accent border color
-  totalColor: string; // total number color
-  phases: Phase[];
-}
-
-const data: PriorityRow[] = [
-  {
-    level: "High",
-    color: "text-red-600",
-    borderColor: "border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-900/20",
-    totalColor: "text-red-500",
-    phases: [
-      { name: "Planning", tasks: [{ initials: "M" }, { initials: "P" }] },
-      { name: "Design", tasks: [{ initials: "U" }] },
-      { name: "Development", tasks: [{ initials: "A" }, { initials: "S" }] },
-      { name: "QA", tasks: [{ initials: "Ir" }] },
-    ],
-  },
-  {
-    level: "Medium",
-    color: "text-orange-500",
-    borderColor: "border-orange-200 dark:border-orange-900/50 bg-orange-50 dark:bg-orange-900/20",
-    totalColor: "text-orange-400",
-    phases: [
-      { name: "Planning", tasks: [{ initials: "C" }] },
-      { name: "Design", tasks: [{ initials: "W" }] },
-      { name: "Development", tasks: [{ initials: "D" }] },
-      { name: "QA", tasks: [{ initials: "U" }] },
-    ],
-  },
-  {
-    level: "Low",
-    color: "text-green-500",
-    borderColor: "border-green-200 dark:border-green-900/50 bg-green-50 dark:bg-green-900/20",
-    totalColor: "text-green-400",
-    phases: [
-      { name: "Planning", tasks: [{ initials: "M" }] },
-      { name: "Design", tasks: [{ initials: "U" }] },
-      { name: "Development", tasks: [{ initials: "A" }] },
-      { name: "QA", tasks: [{ initials: "Ir" }] },
-    ],
-  },
-];
 
 const PriorityPhaseMatrix: React.FC = () => {
+  const { tasks } = useBoardTaskStore();
+
   return (
     <div className="bg-white dark:bg-slate-800 rounded-2xl shadow p-6">
       <h2 className="text-lg font-semibold mb-6 text-gray-800 dark:text-slate-100">
@@ -65,55 +27,67 @@ const PriorityPhaseMatrix: React.FC = () => {
       </h2>
 
       <div className="overflow-x-auto scrollbar-hide">
-      <div className="min-w-[640px] grid grid-cols-[120px_repeat(4,minmax(120px,1fr))_80px] gap-3 text-center text-sm font-medium">
-        {/* Header Row */}
-        <div></div>
-        {["Planning", "Design", "Development", "QA"].map((phase) => (
-          <div key={phase} className="text-gray-700 dark:text-slate-300">
-            {phase}
-          </div>
-        ))}
-        <div className="text-gray-700 dark:text-slate-300">Total</div>
+        <div
+          className="min-w-[700px] grid gap-3 text-center text-sm font-medium"
+          style={{ gridTemplateColumns: `140px repeat(${STAGES.length}, minmax(100px,1fr)) 72px` }}
+        >
+          {/* Header */}
+          <div />
+          {STAGES.map((s) => (
+            <div key={s} className="text-gray-700 dark:text-slate-300 pb-1">{s}</div>
+          ))}
+          <div className="text-gray-700 dark:text-slate-300 pb-1">Total</div>
 
-        {/* Data Rows */}
-        {data.map((priority) => (
-          <React.Fragment key={priority.level}>
-            {/* Priority Label */}
-            <div className={`flex items-center justify-end pr-2 ${priority.color}`}>
-              <span className="font-semibold flex items-center gap-1">
-                <span>⚡</span> {priority.level}
-              </span>
-            </div>
+          {/* Rows */}
+          {PRIORITIES.map((priority) => {
+            const meta = PRIORITY_META[priority];
+            const rowTasks = tasks.filter((t) => (t.priority ?? "medium").toLowerCase() === priority);
+            const rowTotal = rowTasks.length;
 
-            {/* Phases */}
-            {priority.phases.map((phase) => (
-              <div
-                key={phase.name}
-                className={`flex flex-col items-center gap-2 p-3 rounded-xl border ${priority.borderColor}`}
-              >
-                <div className="text-lg font-semibold text-gray-700 dark:text-slate-200">
-                  {phase.tasks.length}
+            return (
+              <React.Fragment key={priority}>
+                {/* Priority label */}
+                <div className={`flex items-center justify-end pr-3 gap-1.5 ${meta.color}`}>
+                  <Zap size={14} className="shrink-0" />
+                  <span className="font-semibold">{meta.label}</span>
                 </div>
-                <div className="flex flex-wrap justify-center gap-1">
-                  {phase.tasks.map((task, i) => (
+
+                {/* Stage cells */}
+                {STAGES.map((stage) => {
+                  const cellTasks = rowTasks.filter((t) => t.stage === stage);
+                  return (
                     <div
-                      key={i}
-                      className="bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 shadow-sm rounded-md px-2 py-1 text-xs font-medium text-gray-700 dark:text-slate-200"
+                      key={stage}
+                      className={`flex flex-col items-center gap-2 p-3 rounded-xl border ${meta.cellBg}`}
                     >
-                      {task.initials}
+                      <span className="text-lg font-semibold text-gray-700 dark:text-slate-200">
+                        {cellTasks.length}
+                      </span>
+                      {cellTasks.length > 0 && (
+                        <div className="flex flex-wrap justify-center gap-1">
+                          {cellTasks.map((t) => (
+                            <div
+                              key={t.id}
+                              title={`${t.title}${t.assignee ? ` · ${t.assignee}` : ""}`}
+                              className="bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 shadow-sm rounded-md px-1.5 py-0.5 text-[10px] font-semibold text-gray-700 dark:text-slate-200"
+                            >
+                              {initials(t.assignee) || t.title.slice(0, 2).toUpperCase()}
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                  ))}
-                </div>
-              </div>
-            ))}
+                  );
+                })}
 
-            {/* Total */}
-            <div className={`flex items-center justify-center font-semibold ${priority.totalColor}`}>
-              {priority.phases.reduce((sum, p) => sum + p.tasks.length, 0)}
-            </div>
-          </React.Fragment>
-        ))}
-      </div>
+                {/* Row total */}
+                <div className={`flex items-center justify-center font-bold text-base ${meta.totalColor}`}>
+                  {rowTotal}
+                </div>
+              </React.Fragment>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

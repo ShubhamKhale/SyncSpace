@@ -3,16 +3,49 @@ import React, { useState } from "react";
 import AppLogo from "../icons/AppLogo";
 import GoogleIcon from "../icons/GoogleIcon";
 import GithubIcon from "../icons/GithubIcon";
-import { signIn, signOut, useSession } from "next-auth/react";
+import { signIn } from "next-auth/react";
 import Link from "next/link";
 import { Eye, EyeOff } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { storeAuthTokens } from "@/lib/api";
+import { useUserStore, User } from "@/app/store/useUserStore";
+
+const API = process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:8080";
 
 const Page = () => {
-  const { data: session } = useSession();
-  console.log("session", session);
-  // {session?.user?.name}
-
+  const router = useRouter();
+  const setUser = useUserStore((s) => s.setUser);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+    try {
+      const res = await fetch(`${API}/api/auth/signin`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      const json = await res.json();
+      if (!json.success) {
+        setError(json.error ?? "Invalid email or password");
+        return;
+      }
+      const { token, session_key, user } = json.data;
+      storeAuthTokens(token, session_key, user.id);
+      setUser(user as User);
+      router.push(user.hasOrg ? "/dashboard" : "/onboarding");
+    } catch {
+      setError("Network error — is the backend running?");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="grid h-screen pt-3 py-12 bg-[var(--primary-background-color)] place-items-center">
@@ -34,7 +67,6 @@ const Page = () => {
         </Link>
       </p>
 
-      {/* <button onClick={() => signOut()}>Sign out</button> */}
       <div className="mt-3 px-10 py-10 flex flex-col rounded-lg bg-white">
         <div
           onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
@@ -57,15 +89,24 @@ const Page = () => {
           </span>
           <div className="flex-grow h-px bg-[#D1D5DB]"></div>
         </div>
-        <div className="mt-2 space-y-5">
+
+        <form onSubmit={handleSignIn} className="mt-2 space-y-5">
+          {error && (
+            <p className="text-sm text-red-500 bg-red-50 px-3 py-2 rounded-md">
+              {error}
+            </p>
+          )}
           <div>
             <p className="text-sm text-[var(--quaternary-text-color)]">
               Email address
             </p>
             <input
               type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               placeholder="Enter your email address"
-              className="w-full px-3 py-2 mt-1 placeholder:text-[var(--placeholder-text-color)] border border-[#D1D5DB] rounded-md focus:outline-none focus:ring-1 focus:ring-[var(--quaternary-text-color))] focus:border-[var(--primary-button-background-color)]"
+              className="w-full px-3 py-2 mt-1 placeholder:text-[var(--placeholder-text-color)] border border-[#D1D5DB] rounded-md focus:outline-none focus:ring-1 focus:ring-[var(--quaternary-text-color)] focus:border-[var(--primary-button-background-color)]"
             />
           </div>
           <div>
@@ -75,6 +116,9 @@ const Page = () => {
             <div className="relative">
               <input
                 type={showPassword ? "text" : "password"}
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter your password"
                 className="w-full px-3 py-2 mt-1 placeholder:text-[var(--placeholder-text-color)] border border-[#D1D5DB] rounded-md focus:outline-none focus:ring-1 focus:ring-[var(--quaternary-text-color)] focus:border-[var(--primary-button-background-color)] pr-10"
               />
@@ -99,10 +143,14 @@ const Page = () => {
               Forgot your password?
             </a>
           </div>
-          <button className="rounded-md hover:cursor-pointer w-full px-3 py-2 bg-[var(--primary-button-background-color)] text-white hover:bg-white hover:text-[var(--primary-button-background-color)] hover:border hover:border-[var(--primary-button-background-color)] text-center">
-            Sign In
+          <button
+            type="submit"
+            disabled={loading}
+            className="rounded-md hover:cursor-pointer w-full px-3 py-2 bg-[var(--primary-button-background-color)] text-white hover:bg-white hover:text-[var(--primary-button-background-color)] hover:border hover:border-[var(--primary-button-background-color)] text-center disabled:opacity-60"
+          >
+            {loading ? "Signing in…" : "Sign In"}
           </button>
-        </div>
+        </form>
       </div>
     </div>
   );

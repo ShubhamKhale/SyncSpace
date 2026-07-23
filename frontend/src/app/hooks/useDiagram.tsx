@@ -29,10 +29,13 @@ import { useAppStore } from "../components/flow/store";
 import { DEFAULT_ALGORITHM } from "../components/flow/edges/EditableEdge/constants";
 import { ControlPointData } from "../components/flow/edges/EditableEdge";
 import { MarkerDefinition } from "../components/flow/edges/MarkerDefinition";
+import { apiFetch } from "@/lib/api";
 
-const SAVE_KEY = "syncspace-diagram";
-
-export const useDiagram = () => {
+export const useDiagram = (opts?: { saveKey?: string; boardId?: string; flowId?: string; initialTitle?: string }) => {
+  const effectiveKey = opts?.saveKey ?? "syncspace-diagram";
+  const boardId = opts?.boardId;
+  const flowId = opts?.flowId;
+  const initialTitle = opts?.initialTitle;
   const useReactFlow = useReactFlowHook;
   const {
     screenToFlowPosition,
@@ -57,12 +60,12 @@ export const useDiagram = () => {
 
   // Diagram title — persisted in localStorage
   const [diagramTitle, setDiagramTitle] = useState<string>(() => {
-    if (typeof window === "undefined") return "Untitled Diagram";
-    const saved = localStorage.getItem(SAVE_KEY);
+    if (typeof window === "undefined") return initialTitle ?? "Untitled Diagram";
+    const saved = localStorage.getItem(effectiveKey);
     if (saved) {
-      try { return JSON.parse(saved).title || "Untitled Diagram"; } catch {}
+      try { return JSON.parse(saved).title || initialTitle || "Untitled Diagram"; } catch {}
     }
-    return "Untitled Diagram";
+    return initialTitle ?? "Untitled Diagram";
   });
 
   const onDragOver: DragEventHandler<HTMLDivElement> = (evt) => {
@@ -81,17 +84,33 @@ export const useDiagram = () => {
     setEdges((edges) => edges.map((edge) => ({ ...edge, selected: false })));
   };
 
-  // ── Save to localStorage ───────────────────────────────────
-  const saveToLocalStorage = useCallback(() => {
+  // ── Persist: localStorage + API (when boardId/flowId present) ────
+  const autoSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const persistDiagram = useCallback(() => {
     try {
-      const snapshot = getSnapshotJson();
-      const data = JSON.parse(snapshot);
-      data.title = diagramTitle;
-      localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+      const nodes = getNodes();
+      const edges = getEdges();
+      const data = { title: diagramTitle, nodes, edges };
+      localStorage.setItem(effectiveKey, JSON.stringify(data));
+      if (boardId && flowId) {
+        apiFetch(`/api/boards/${boardId}/flows/${flowId}/diagram`, {
+          method: "PUT",
+          body: JSON.stringify(data),
+        }).catch((e) => console.error("Auto-save failed", e));
+      }
     } catch (e) {
       console.error("Failed to save diagram", e);
     }
-  }, [getSnapshotJson, diagramTitle]);
+  }, [getNodes, getEdges, diagramTitle, effectiveKey, boardId, flowId]);
+
+  const triggerAutoSave = useCallback(() => {
+    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+    autoSaveTimer.current = setTimeout(persistDiagram, 2000);
+  }, [persistDiagram]);
+
+  // Keep backward-compat alias for Menu.tsx manual save
+  const saveToLocalStorage = persistDiagram;
 
   // ── Zoom to fit selection ──────────────────────────────────
   const fitToSelection = useCallback(() => {
@@ -374,15 +393,17 @@ export const useDiagram = () => {
   }, []);
 
   const uploadJson = (jsonString: string) => {
-    const diagramData = JSON.parse(jsonString);
-    if (diagramData.nodes && diagramData.edges) {
-      setNodes(diagramData.nodes);
-      setEdges(diagramData.edges);
-      if (diagramData.title) setDiagramTitle(diagramData.title);
-    } else {
-      console.error(
-        'Invalid JSON format. Expected an object with "nodes" and "edges" arrays.'
-      );
+    try {
+      const diagramData = JSON.parse(jsonString);
+      if (diagramData && Array.isArray(diagramData.nodes) && Array.isArray(diagramData.edges)) {
+        setNodes(diagramData.nodes);
+        setEdges(diagramData.edges);
+        if (diagramData.title) setDiagramTitle(diagramData.title);
+      } else {
+        console.error('Invalid diagram JSON: expected { nodes: [], edges: [] }');
+      }
+    } catch (e) {
+      console.error("Failed to parse diagram JSON", e);
     }
   };
 
@@ -545,8 +566,9 @@ export const useDiagram = () => {
       }, 1);
 
       debouncedFunction();
+      triggerAutoSave();
     },
-    [setNodes, getNodes, handleHelperLines]
+    [setNodes, getNodes, handleHelperLines, triggerAutoSave]
   );
 
   const onConnect: OnConnect = useCallback(
@@ -654,8 +676,9 @@ export const useDiagram = () => {
         );
         return applyEdgeChanges(safeChanges, currentEdges);
       });
+      triggerAutoSave();
     },
-    [setEdges]
+    [setEdges, triggerAutoSave]
   );
 
   const onEdgeClick = useCallback(
@@ -754,6 +777,7 @@ export const useDiagram = () => {
     selectedNodes,
     selectedEdges,
     saveToLocalStorage,
+    triggerAutoSave,
     fitToSelection,
     groupSelectedNodes,
     diagramTitle,

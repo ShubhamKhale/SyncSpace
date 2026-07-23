@@ -114,15 +114,15 @@ const ShortTaskCard: React.FC<ShortTaskCardProps> = ({
       style={style}
       {...attributes}
       {...listeners}   
-      className="rounded-md bg-white border-2 border-red-500 px-4 py-4 pb-6 hover:cursor-pointer"
+      className="rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-4 py-4 pb-6 shadow-sm hover:shadow-md transition-shadow"
     >
-      <p className="font-medium text-lg text-[var(--sixth-text-color)]">
+      <p className="font-medium text-base text-slate-800 dark:text-slate-100">
         {title}
       </p>
-      <p className="text-base text-[var(--sixth-text-color)]">{description}</p>
+      <p className="text-sm text-slate-500 dark:text-slate-400">{description}</p>
       <div className="mt-2 flex items-center">
-        <CalendarIcon width={20} height={20} className="hover:cursor-pointer" />
-        <p className="ml-2 text-[var(--tertiary-text-color)] hover:cursor-pointer">
+        <CalendarIcon width={20} height={20} className="text-slate-400" />
+        <p className="ml-2 text-slate-500 dark:text-slate-400 text-sm">
           {formattedDate}
         </p>
         <div
