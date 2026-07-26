@@ -47,6 +47,7 @@ import TableNode from "./nodes/TableNode";
 import { PresentationMode } from "./PresentationMode";
 import { TemplateModal } from "./templates/TemplateModal";
 import { useTemplateStore } from "@/app/store/useTemplateStore";
+const AiDiagramPanel = dynamic(() => import("@/app/components/ai/AiDiagramPanel"), { ssr: false });
 import { CursorOverlay } from "./CursorOverlay";
 import { useDiagram } from "@/app/hooks/useDiagram";
 import { useFlowPresence } from "@/app/hooks/useFlowPresence";
@@ -283,6 +284,9 @@ const Flow = ({ flowId, boardId }: FlowProps) => {
   const loadRecentsFromStorage = useTemplateStore((s) => s.loadRecentsFromStorage);
   useEffect(() => { loadRecentsFromStorage(); }, [loadRecentsFromStorage]);
 
+  // ── AI panel ─────────────────────────────────────────────────
+  const [isAIOpen, setIsAIOpen] = useState(false);
+
   // ── Presentation mode ────────────────────────────────────────
   const { getNodes: getRawNodes, screenToFlowPosition } = useReactFlow();
 
@@ -367,6 +371,7 @@ const Flow = ({ flowId, boardId }: FlowProps) => {
         onEnterPresent={handleEnterPresent}
         onExitPresent={handleExitPresent}
         onOpenTemplates={templateStore.openModal}
+        onOpenAI={() => setIsAIOpen(true)}
         boardId={boardId}
         flowId={flowId}
         participants={participants}
@@ -583,6 +588,13 @@ const Flow = ({ flowId, boardId }: FlowProps) => {
       {showShortcuts && <KeyboardShortcuts onClose={() => setShowShortcuts(false)} />}
 
       {templateStore.isOpen && <TemplateModal diagram={diagram} />}
+      {isAIOpen && (
+        <AiDiagramPanel
+          isOpen={isAIOpen}
+          onClose={() => setIsAIOpen(false)}
+          diagram={diagram}
+        />
+      )}
     </div>
   );
 };

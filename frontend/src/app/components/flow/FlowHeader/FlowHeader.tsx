@@ -1,6 +1,6 @@
 "use client";
 
-import { PenBox, Hand, MousePointer2, BarChart2, Lock, Unlock, Play, X as XIcon, Layers, ArrowLeft, FileText, Star, AlignJustify, Undo2, Redo2 } from "lucide-react";
+import { PenBox, Hand, MousePointer2, BarChart2, Lock, Unlock, Play, X as XIcon, Layers, ArrowLeft, FileText, Star, AlignJustify, Undo2, Redo2, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { VotePanel } from "../VotePanel";
@@ -39,6 +39,7 @@ interface HeaderProps {
   onEnterPresent?: () => void;
   onExitPresent?: () => void;
   onOpenTemplates?: () => void;
+  onOpenAI?: () => void;
   boardId?: string;
   flowId?: string;
   participants?: Participant[];
@@ -55,6 +56,7 @@ export const FlowHeader = ({
   onEnterPresent,
   onExitPresent,
   onOpenTemplates,
+  onOpenAI,
   boardId,
   flowId,
   participants,
@@ -497,6 +499,14 @@ export const FlowHeader = ({
           title="Browse templates"
         >
           <Layers size={12} /> <span className="hidden sm:inline">Templates</span>
+        </button>
+
+        <button
+          onClick={onOpenAI}
+          className="bg-indigo-600 hover:bg-indigo-500 hover:cursor-pointer text-white px-2 py-1 rounded-md flex items-center gap-1 transition-colors font-medium text-xs"
+          title="Generate diagram with AI"
+        >
+          <Sparkles size={12} /> <span className="hidden sm:inline">Generate AI</span>
         </button>
 
         <button className="bg-blue-600 hover:bg-blue-500 hover:cursor-pointer text-white px-2 py-1 rounded-md flex items-center gap-1 transition-colors font-medium text-xs">
