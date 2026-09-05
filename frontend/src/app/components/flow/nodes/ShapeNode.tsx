@@ -189,7 +189,7 @@ import {
   NodeResizer,
   useNodeId,
   useReactFlow,
-  useStore,
+  useConnection,
 } from "@xyflow/react";
 import { ShapeComponents, ShapeType } from "@/app/components/shape/types";
 import { useEffect, useState } from "react";
@@ -209,7 +209,7 @@ export default function ShapeNode({ data }: any) {
   const { getNodes, setNodes } = useReactFlow();
 
   const isSelected = getNodes()?.find((n) => n.id === nodeId)?.selected;
-  const isConnecting = useStore((s) => !!s.connectionStartHandle);
+  const isConnecting = useConnection((c) => c.inProgress);
 
   const [showComments, setShowComments] = useState(false);
   const hasComments = comments.length > 0;

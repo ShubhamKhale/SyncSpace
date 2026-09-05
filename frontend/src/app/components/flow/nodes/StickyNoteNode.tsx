@@ -260,7 +260,7 @@ export default function StickyNoteNode({ data }: any) {
           {!localText
             ? "Double-click to edit…"
             : listType
-            ? localText.split("\n").filter(Boolean).map((line, i) => (
+            ? localText.split("\n").filter(Boolean).map((line: string, i: number) => (
                 <div key={i} style={{ display: "flex", gap: 6, alignItems: "flex-start" }}>
                   {listType === "checklist" ? (
                     <span

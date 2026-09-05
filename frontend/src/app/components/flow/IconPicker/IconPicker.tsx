@@ -3,7 +3,7 @@ import { IconName } from "@fortawesome/fontawesome-svg-core";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import "./IconPicker.scss";
 import { useIconPicker } from "./useIconPicker";
-import { FixedSizeGrid  } from "react-window";
+import { Grid, type CellComponentProps } from "react-window";
 import { IconLookup } from "@fortawesome/free-solid-svg-icons";
 
 export type FontAwesomeIconPickerProps = {
@@ -37,25 +37,27 @@ const IconPicker = ({ value, onChange }: FontAwesomeIconPickerProps) => {
   const numColumns = 11;
   const numRows = Math.ceil(iconsFiltered.length / numColumns);
 
+  type CellProps = { icons: IconLookup[]; numColumns: number; value?: string; onChange?: (v: string) => void };
+
   const Cell = ({
     columnIndex,
     rowIndex,
     style,
-  }: {
-    columnIndex: any;
-    rowIndex: any;
-    style: any;
-  }) => {
-    const icon = iconsFiltered[rowIndex * numColumns + columnIndex];
+    icons,
+    numColumns: cols,
+    value: selectedValue,
+    onChange: onSelect,
+  }: CellComponentProps<CellProps>) => {
+    const icon = icons[rowIndex * cols + columnIndex];
     return (
       <div style={style} className="iconPicker__iconWrapper">
         {icon && (
           <button
             className={`iconPicker__iconItem ${
-              icon.iconName === value ? "selected" : ""
+              icon.iconName === selectedValue ? "selected" : ""
             }`}
             title={icon.iconName}
-            onClick={() => onChange?.(icon.iconName)}
+            onClick={() => onSelect?.(icon.iconName)}
           >
             <FontAwesomeIcon
               icon={icon}
@@ -106,17 +108,18 @@ const IconPicker = ({ value, onChange }: FontAwesomeIconPickerProps) => {
               onChange={(e) => setSearchText(e.target.value)}
             />
           </div>
-          <FixedSizeGrid 
+          <Grid
             className="iconPicker__iconsContainer"
-            width={400} // Set the width of the viewport
-            height={200} // Set the height of the viewport
+            style={{ width: 400, height: 200 }}
+            defaultWidth={400}
+            defaultHeight={200}
             columnCount={numColumns}
             rowCount={numRows}
-            columnWidth={35} // Set the width of each cell
-            rowHeight={35} // Set the height of each cell
-          >
-            {Cell}
-          </FixedSizeGrid>
+            columnWidth={35}
+            rowHeight={35}
+            cellComponent={Cell}
+            cellProps={{ icons: iconsFiltered, numColumns, value, onChange }}
+          />
         </div>
       )}
     </div>

@@ -22,11 +22,6 @@ export default function GroupNode({ data, style }: any) {
   const [editingLabel, setEditingLabel] = useState(false);
   const [labelDraft, setLabelDraft] = useState(data.label || "Group");
 
-  // Exit label editing if node gets locked
-  useEffect(() => {
-    if (locked && editingLabel) setEditingLabel(false);
-  }, [locked]);
-
   const borderColor = data.color || "#3b82f6";
 
   const saveLabel = () => {
@@ -50,6 +45,11 @@ export default function GroupNode({ data, style }: any) {
   const comments: NodeComment[] = data.comments || [];
   const hasComments = comments.length > 0;
   const [showComments, setShowComments] = useState(false);
+
+  // Exit label editing if node gets locked
+  useEffect(() => {
+    if (locked && editingLabel) setEditingLabel(false);
+  }, [locked, editingLabel]);
 
   // Close comment panel when node is deselected
   useEffect(() => {

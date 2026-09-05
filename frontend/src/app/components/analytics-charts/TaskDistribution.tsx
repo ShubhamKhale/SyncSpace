@@ -5,6 +5,7 @@ import { LayoutGrid } from "lucide-react";
 export interface DistributionItem {
   name: string;
   value: number;
+  [key: string]: unknown;
 }
 
 interface Props { data: DistributionItem[] }

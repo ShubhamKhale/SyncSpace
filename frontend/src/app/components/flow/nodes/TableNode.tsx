@@ -4,7 +4,7 @@ import {
   NodeResizer,
   useNodeId,
   useReactFlow,
-  useStore,
+  useConnection,
 } from "@xyflow/react";
 import { useEffect, useState } from "react";
 import useUndoRedo from "@/app/hooks/useUndoRedo";
@@ -26,7 +26,7 @@ export default function TableNode({ data }: any) {
   const nodeId = useNodeId();
   const { getNodes, setNodes } = useReactFlow();
   const isSelected = getNodes()?.find((n) => n.id === nodeId)?.selected;
-  const isConnecting = useStore((s) => !!s.connectionStartHandle);
+  const isConnecting = useConnection((c) => c.inProgress);
 
   const { takeSnapshot } = useUndoRedo({
     enableShortcuts: false,

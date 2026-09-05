@@ -4,7 +4,7 @@ import {
   NodeResizer,
   useNodeId,
   useReactFlow,
-  useStore,
+  useConnection,
 } from "@xyflow/react";
 import { useEffect, useState } from "react";
 import { Lock, Unlock } from "lucide-react";
@@ -19,7 +19,7 @@ export default function ImageNode({ data }: any) {
   const { getNodes, setNodes } = useReactFlow();
 
   const isSelected = getNodes()?.find((n) => n.id === nodeId)?.selected;
-  const isConnecting = useStore((s) => !!s.connectionStartHandle);
+  const isConnecting = useConnection((c) => c.inProgress);
 
   const locked = !!data.locked;
 

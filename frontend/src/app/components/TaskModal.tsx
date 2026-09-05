@@ -66,7 +66,7 @@ const inputCls = "w-full rounded-lg border border-slate-200 dark:border-slate-60
 const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, boardName, boardId }) => {
   const [title, setTitle]                           = useState("");
   const [description, setDescription]               = useState("");
-  const [priority, setPriority]                     = useState<"low" | "medium" | "high" | "urgent">("medium");
+  const [priority, setPriority]                     = useState<"low" | "medium" | "high">("medium");
   const [status, setStatus]                         = useState("Planning");
   const [showStatusDrop, setShowStatusDrop]         = useState(false);
   const [assignee, setAssignee]                     = useState("");
@@ -224,13 +224,12 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, boardName, board
               {/* Priority */}
               <div>
                 {fieldLabel(<Flag size={11} />, "Priority")}
-                <div className="grid grid-cols-4 gap-2">
-                  {(["low", "medium", "high", "urgent"] as const).map((p) => {
+                <div className="grid grid-cols-3 gap-2">
+                  {(["low", "medium", "high"] as const).map((p) => {
                     const cfg: Record<string, { color: string; label: string }> = {
                       low:    { color: "#16A34A", label: "Low" },
                       medium: { color: "#D97706", label: "Medium" },
                       high:   { color: "#DC2626", label: "High" },
-                      urgent: { color: "#7C3AED", label: "Urgent" },
                     };
                     const active = priority === p;
                     return (

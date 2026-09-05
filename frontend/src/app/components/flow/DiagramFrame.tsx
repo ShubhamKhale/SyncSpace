@@ -196,7 +196,7 @@ const Flow = ({ flowId, boardId }: FlowProps) => {
       ),
       onPresentationSlide: useCallback((nodeId: string) => {
         const node = getNodesRef.current().find((n) => n.id === nodeId);
-        if (node) uploadJsonRef.current && diagram.fitToNode(node);
+        if (node) diagram.fitToNode(node);
       }, [diagram]),
       onPresentationStopped: useCallback(() => {
         // presenter state clears in hook; nothing extra needed here
