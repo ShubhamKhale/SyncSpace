@@ -12,7 +12,32 @@ npm run start    # Start production server
 ```
 
 `npm run dev` uses `--turbopack` for fast on-demand compilation (~3–8s first route, <100ms subsequent).
-No test runner is configured. There is no backend — this is a frontend-only Next.js app with mock/simulated async data.
+No test runner is configured. This is NOT a pure mock app — it's a client for a separate external backend (REST API + WebSocket service), not a full-stack Next.js app with its own API routes.
+
+### Backend Integration
+
+- **REST API**: `src/lib/api.ts` — `apiFetch`/`apiDelete`/`encryptedFetch` wrappers. JWT bearer auth read from localStorage (`ss_jwt`), auto-redirect to `/signin` on 401, `storeAuthTokens`/`clearAuthTokens`/`isAuthenticated` helpers. Base URL: `NEXT_PUBLIC_API_BASE` (default `http://localhost:8080`).
+- **Payload encryption**: `src/lib/crypto.ts` — AES-GCM via Web Crypto API (12-byte nonce + ciphertext + GCM tag, base64 wire format). `encryptedFetch` uses this for sensitive payloads (onboarding, boards list).
+- **WebSocket**: `src/lib/wsClient.ts` — hand-rolled client with auto-reconnect/exponential backoff (doubling up to 30s), message queueing while disconnected, JWT-in-query-string auth. Base URL: `NEXT_PUBLIC_WS_BASE` (default `ws://localhost:8068`).
+- **Auth**: `src/pages/api/auth/[...nextauth].ts` (legacy Pages Router, coexists with App Router) configures NextAuth with GitHub + Google OAuth. Used on `/signin` and `/signup` alongside email/password.
+- No `src/app/api/**` route handlers and no `middleware.ts` exist — this NextAuth handler is the only API route in the repo.
+
+### Real-Time Collaboration
+
+- `src/app/hooks/useFlowPresence.ts` — WebSocket-based presence: live participant list, cursor positions, presenter tracking, throttled updates. Exposes `Participant`/`PresenterInfo` and `onDiagramUpdated`/`onPresentationSlide`/`onPresentationStopped` callbacks.
+- `src/app/components/flow/CursorOverlay.tsx` — renders other users' live cursors on the canvas (rAF-driven, viewport-aware).
+- `src/app/components/flow/VotePanel.tsx` — real-time voting on a diagram (approve/needs-review/reject), synced over WS, shows per-participant vote.
+- `src/app/components/flow/PresentationMode.tsx` — presenter mode: step through nodes as "slides" (prev/next/exit), synced to viewers via `useFlowPresence`.
+
+### AI Diagram Generation
+
+Runs entirely client-side — no server call for inference:
+- `@huggingface/transformers` runs `onnx-community/Qwen2.5-0.5B-Instruct` (q4 quantized, CPU-only ONNX Runtime) in-browser.
+- `src/app/lib/webllm/` — `model.ts`/`client.ts` (model loading + progress callback), `generator.ts`, `parser.ts` (`extractJson`), `prompt.ts` (system prompt for diagram generation).
+- `src/app/lib/diagram-validator/` — validates the LLM's generated `LogicalGraph` JSON structure.
+- `src/app/lib/layout/` — `assignPositions()`, auto-layout for generated nodes.
+- `src/app/lib/reactflow-converter/` — `convertToReactFlow()`, converts logical graph to React Flow nodes/edges.
+- `src/app/components/ai/AiDiagramPanel.tsx` — "Generate diagram with AI" side panel (prompt input, loading-model/generating/error states, Esc + click-outside to close); injects result via `diagram.uploadJson()`. Supporting UI: `PromptInput.tsx`, `ModelLoader.tsx`, `GenerationProgress.tsx`.
 
 ## Tech Stack
 
@@ -20,10 +45,18 @@ No test runner is configured. There is no backend — this is a frontend-only Ne
 - **TypeScript**
 - **Tailwind CSS v4** — configured via `@import "tailwindcss"` in `globals.css`, NOT via `tailwind.config.js`
 - **Zustand v5** — all client state
-- **@xyflow/react** — flow/diagram canvas
-- **@dnd-kit** — drag-and-drop in kanban
-- **Recharts** — analytics charts
-- **lucide-react** — icons throughout
+- **@xyflow/react** (v12) — flow/diagram canvas. Note: `reactflow` v11 is also still installed (partial migration leftover) — use `@xyflow/react` for new code.
+- **@dnd-kit** (`core`/`modifiers`/`sortable`/`utilities`) — kanban drag-and-drop, including sortable/reorderable pipeline-stage columns, not just card dragging
+- **Recharts** — analytics charts (`BoardActivity`, `TaskCompletionTrend`, `TaskDistribution`, `TeamContribution`, `PriorityPhaseMatrix`)
+- **@huggingface/transformers** — in-browser LLM inference for AI diagram generation
+- **gsap** (+ Draggable plugin) — draggable edge labels on the flow canvas
+- **html-to-image** — PNG/GIF/SVG export of diagrams
+- **date-fns** — date formatting for editable date fields (date picker itself is hand-built, `CustomDatePicker.tsx`)
+- **@radix-ui/react-dropdown-menu**, **@radix-ui/react-toast** — accessible popover/toast primitives
+- **react-window** — virtualized lists (icon picker)
+- **next-auth** — Google/GitHub OAuth
+- **lucide-react** — primary icon set. `@fortawesome/*`, `react-feather`, `react-icons`, `react-ionicons` are also present and used in places — redundant, prefer lucide-react for new code.
+- **Dead dependency**: `monaco-editor` / `react-monaco-editor` are installed but not imported anywhere in `src/` — do not build on them without confirming first.
 
 ## Architecture Overview
 
@@ -31,18 +64,22 @@ No test runner is configured. There is no backend — this is a frontend-only Ne
 
 ```
 /                                   → Landing page (marketing)
-/signin                             → Sign in (email/password + OAuth)
-/signup                             → Sign up
+/signin                             → Sign in (email/password + NextAuth Google/GitHub OAuth)
+/signup                             → Sign up (same auth pattern as signin)
+/invite                             → Accept org invite via ?token=, fetches invite info from API
+/onboarding                         → 3-step wizard: create org (color picker) → invite team → create first board
 /dashboard                          → Dashboard home (stats, charts, recent activity)
-/dashboard/boards                   → Board listing grid
+/dashboard/boards                   → Board listing grid (search filter, grid/list toggle, pagination)
 /dashboard/boards/[boardid]         → Board detail (3-pane layout: kanban/timeline/matrix)
 /dashboard/boards/[boardid]/tasks   → Full-screen task kanban (DndContext, TaskListCard columns)
-/dashboard/history                  → Activity history timeline
+/dashboard/boards/[boardid]/flows   → List of flow diagrams belonging to this board
+/dashboard/boards/[boardid]/flows/[flowId] → Individual flow/diagram editor bound to a board
+/dashboard/history                  → Activity history timeline (paginated, entity_type board/task/org)
 /dashboard/notifications            → Notifications center
-/dashboard/organization             → Org overview (name, stats)
-/dashboard/organization/members     → Member management table
+/dashboard/organization             → Org overview (name, stats, role-gated editing)
+/dashboard/organization/members     → Member management table (active/invited counts)
 /dashboard/organization/roles       → Roles & permissions reference (read-only)
-/dashboard/profile                  → User profile editor
+/dashboard/profile                  → User profile editor (incl. avatar upload with preview)
 /dashboard/settings                 → Notification preferences
 /flow                               → Standalone full-screen flow/diagram canvas (DiagramFrame)
 ```
@@ -66,11 +103,13 @@ All stores live in `src/app/store/`:
 
 | Store | Purpose |
 |---|---|
-| `useBoardStore` | Board metadata (title, description, tags, status, coverColor), with per-field save states |
+| `useUserStore` | User session state (name/email/avatarUrl/role/orgId), `fetchUser`/`setUser`/`clearUser`, `getInitials()` |
+| `useBoardStore` | Board metadata (title, description, tags, status, coverColor), with per-field save states; `LocalBoardMeta` persisted to localStorage via `writeLocalMeta` |
 | `useBoardTaskStore` | Tasks array with optimistic updates per field (title, priority, dates, assignee, stage) |
+| `useBoardFlowsStore` | Board-scoped flow CRUD: `fetchFlows`/`createFlow`/`deleteFlow`/`renameFlow`/`duplicateFlow`/`migrateFlow` (migrates a local-only flow to server-backed) |
 | `useLinkedResourcesStore` | Docs and external links for a board's right panel |
-| `useTaskStore` | General task store (separate from board tasks) |
-| `globalTaskStore` | App-wide task state |
+| `useTaskStore` | General task store (separate from board tasks); `moveTask(activeId, overId, fromList, toList)` for cross-column dnd-kit drag-drop |
+| `globalTaskStore` | Drives the global slide-in `GlobalTaskDetail` drawer from anywhere in the app |
 | `flowStore` | ReactFlow nodes/edges for the diagram canvas |
 | `flow/store.ts` | Connection line path state for editable edges (local to flow components) |
 | `useTemplateStore` | Template modal state: open/close, selected category, search query, recent template IDs (persisted to `"syncspace-recent-templates"` in localStorage) |
@@ -91,7 +130,9 @@ Heavy components are lazy-loaded via `next/dynamic()` to keep route chunks small
 `next.config.ts` has `experimental.optimizePackageImports: ["lucide-react", "recharts", "@xyflow/react"]` — only imported symbols are bundled, not the whole barrel.
 
 Every route has a `loading.tsx` skeleton for instant visual feedback during navigation:
-`/dashboard`, `/dashboard/boards`, `/dashboard/boards/[boardid]`, `/dashboard/history`, `/dashboard/notifications`, `/dashboard/organization`, `/dashboard/profile`, `/dashboard/settings`, `/flow`
+`/dashboard`, `/dashboard/boards`, `/dashboard/boards/[boardid]`, `/dashboard/boards/[boardid]/tasks`, `/dashboard/boards/[boardid]/flows`, `/dashboard/boards/[boardid]/flows/[flowId]`, `/dashboard/history`, `/dashboard/notifications`, `/dashboard/organization`, `/dashboard/profile`, `/dashboard/settings`, `/flow`, `/onboarding`
+
+`/`, `/signin`, `/signup`, `/invite`, and `/dashboard/organization/members` / `/roles` (fall back to the parent `organization/loading.tsx` Suspense boundary) have no dedicated `loading.tsx`.
 
 ### Dark Mode System
 
@@ -158,9 +199,34 @@ Miro/FigJam-style template picker triggered from the FlowHeader toolbar:
 - `TemplateModal.tsx` — full modal: categories sidebar + search bar + Recommended/Recent/Popular/All sections; calls `diagram.takeSnapshot()` then `diagram.uploadJson()` to apply
 - `src/app/store/useTemplateStore.ts` — Zustand store for `isOpen`, `selectedCategory`, `searchQuery`, `recentIds` (persisted to localStorage key `"syncspace-recent-templates"`)
 
+### Kanban / Drag-and-Drop
+
+Full `@dnd-kit` implementation, not just card dragging:
+- `src/app/components/kanban/DraggableTaskCard.tsx`, `DroppableColumn.tsx`, `SortablePipelineStage.tsx` — pipeline-stage columns themselves are sortable/reorderable, in addition to task cards
+- `BoardTaskFlow.tsx`, `ShortTaskCard.tsx`, `TaskListCard.tsx`, and `/dashboard/boards/[boardid]/tasks/page.tsx` all use `@dnd-kit`
+- `useTaskStore.moveTask` handles cross-column moves
+
+### Flow Canvas — Export, Shortcuts & Extras
+
+- **Export/import**: `DownloadImage.tsx` (PNG via `html-to-image`), `DownloadGif.tsx` (SVG-based via `html-to-image`, 1024x768), `DownloadJson.tsx`, `UploadJson.tsx`
+- **Keyboard shortcuts**: `KeyboardShortcuts.tsx` — full cheatsheet overlay (Ctrl+C/V copy-paste, Ctrl+Z/Shift+Z undo-redo, Ctrl+A select all, Delete, Shift+F zoom-to-fit-selection, G group 2+ nodes, Space+drag free-draw connection, Ctrl+/ toggle panel, Esc to close)
+- **JSON viewer**: `JsonViewer/JsonViewer.tsx` — syntax-highlighted (regex-based) inspector panel with copy-to-clipboard
+- **Icon picker**: `IconPicker/` — virtualized list via `react-window`
+- **Helper lines**: `HelperLines/` + `useHelperLines` hook — Figma-style snap/alignment guides while dragging nodes
+- **Draggable edge labels**: `useDraggableEdgeLabel` hook — GSAP Draggable-powered, computes point-at-length along the SVG path
+- **Undo/redo**: `useUndoRedo` hook — full history stack (max 100), Ctrl+Z/Ctrl+Shift+Z, `getSnapshotJson()` for export
+- **Shape library**: `components/shape/`, `shape-node/`, `shapes/` — circle, rectangle, diamond, hexagon, cylinder, parallelogram, triangle, round-rectangle, arrow-rectangle
+
+### Other Hooks (`src/app/hooks/`)
+
+- `useDiagram.tsx` — core diagram/canvas state hook (`diagram.takeSnapshot()`/`diagram.uploadJson()`)
+- `useLocalStorage.tsx` — generic localStorage-backed state hook
+- `useTouchDevice.ts` — touch-device detection
+- `useWindowSize.tsx` — responsive window-size tracking
+
 ### Permission System
 
-`src/app/hooks/useEditMode.ts` returns `EditPermissions` based on a `UserRole` (`"owner" | "editor" | "viewer"`). Currently hardcoded to `"owner"` at call sites — replace with real auth role when integrating a backend.
+`src/app/hooks/useEditMode.ts` returns `EditPermissions` based on `UserRole` (`"owner" | "admin" | "member" | "viewer"`), read from `useUserStore`'s real session role (falls back to `"viewer"` if unset). An optional `roleOverride` param lets call sites force a specific role.
 
 ### Path Alias
 
