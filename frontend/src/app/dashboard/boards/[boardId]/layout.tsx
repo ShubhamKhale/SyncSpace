@@ -3,6 +3,7 @@ import { usePathname, useParams } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import BoardSidebar from "@/app/components/BoardSidebar";
 import BoardLinkedResources from "@/app/components/BoardLinkedResources";
+import BoardAiChat from "@/app/components/BoardAiChat";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 export default function DashboardLayout({
@@ -35,6 +36,8 @@ export default function DashboardLayout({
 
   return (
     <>
+      <BoardAiChat boardId={boardId} />
+
       {/* If it's NOT a full-screen page, show the board layout */}
       {!isFullScreen ? (
         <div className="bg-[#F8F9FC] dark:bg-slate-900 h-screen flex overflow-hidden rounded-none md:rounded-2xl shadow-none md:shadow-lg">

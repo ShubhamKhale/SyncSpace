@@ -1,18 +1,20 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { FileText, Pencil } from "lucide-react";
+import { FileText, Pencil, Wand2 } from "lucide-react";
 import ExternalLinkIcon from "../icons/ExternalLinkIcon";
 import { useLinkedResourcesStore } from "@/app/store/useLinkedResourcesStore";
 import { LinkedResourcesSkeleton } from "./Skeleton";
 import EditLinkedResourcesModal from "./EditLinkedResourcesModal";
+import SummarizeModal from "./SummarizeModal";
 
 const BoardLinkedResources: React.FC<{ boardId?: string }> = ({ boardId }) => {
   const { loading, documentationLinks, links, fetchResources, saveLinkedResources } =
     useLinkedResourcesStore();
 
-  const [showModal, setShowModal] = useState(false);
-  const [isSaving, setIsSaving]   = useState(false);
+  const [showModal, setShowModal]         = useState(false);
+  const [isSaving, setIsSaving]           = useState(false);
+  const [showSummarize, setShowSummarize] = useState(false);
 
   useEffect(() => {
     if (boardId) fetchResources(boardId);
@@ -30,13 +32,22 @@ const BoardLinkedResources: React.FC<{ boardId?: string }> = ({ boardId }) => {
             <p className="text-xs font-semibold tracking-wider text-slate-500 dark:text-slate-400 uppercase">
               Board Documentation
             </p>
-            <button
-              onClick={() => setShowModal(true)}
-              title="Edit linked resources"
-              className="text-slate-400 hover:text-slate-600 hover:cursor-pointer transition"
-            >
-              <Pencil size={14} />
-            </button>
+            <div className="flex items-center gap-2.5">
+              <button
+                onClick={() => setShowSummarize(true)}
+                title="Summarize a doc"
+                className="text-slate-400 hover:text-indigo-500 hover:cursor-pointer transition"
+              >
+                <Wand2 size={14} />
+              </button>
+              <button
+                onClick={() => setShowModal(true)}
+                title="Edit linked resources"
+                className="text-slate-400 hover:text-slate-600 hover:cursor-pointer transition"
+              >
+                <Pencil size={14} />
+              </button>
+            </div>
           </div>
 
           <ul className="space-y-2 text-sm">
@@ -127,6 +138,9 @@ const BoardLinkedResources: React.FC<{ boardId?: string }> = ({ boardId }) => {
           onClose={() => setShowModal(false)}
         />
       )}
+
+      {/* Summarize Modal */}
+      {showSummarize && <SummarizeModal onClose={() => setShowSummarize(false)} />}
     </div>
   );
 };
