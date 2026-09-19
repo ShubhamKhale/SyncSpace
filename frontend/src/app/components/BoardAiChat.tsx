@@ -75,9 +75,14 @@ const BoardAiChat: React.FC<{ boardId?: string }> = ({ boardId }) => {
           <div className="absolute right-0 top-0 h-full w-full max-w-2xl bg-white dark:bg-slate-800 border-l border-slate-200 dark:border-slate-700 shadow-2xl flex flex-col pointer-events-auto">
             {/* Header */}
             <div className="flex items-center justify-between px-4 py-3.5 border-b border-slate-200 dark:border-slate-700">
-              <div className="flex items-center gap-2">
-                <Sparkles size={16} className="text-indigo-500" />
-                <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">Ask AI about this board</span>
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-indigo-500 flex items-center justify-center flex-shrink-0">
+                  <Sparkles size={15} className="text-white" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 leading-tight">Ask AI about this board</p>
+                  <p className="text-xs text-slate-400 dark:text-slate-500">Grounded in your live tasks &amp; activity</p>
+                </div>
               </div>
               <button
                 onClick={() => setIsOpen(false)}
@@ -90,9 +95,12 @@ const BoardAiChat: React.FC<{ boardId?: string }> = ({ boardId }) => {
             {/* Messages */}
             <div ref={listRef} className="flex-1 overflow-y-auto scrollbar-hide px-4 py-4 space-y-3">
               {messages.length === 0 && !loading && (
-                <p className="text-xs text-slate-400 dark:text-slate-500 leading-relaxed">
-                  Ask anything about this board — tasks, priorities, status, linked docs. The AI answers using this board&apos;s current data.
-                </p>
+                <div className="bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-500/20 rounded-xl px-3.5 py-3">
+                  <p className="text-xs text-indigo-900 dark:text-indigo-300 leading-relaxed">
+                    Try asking things like <span className="italic">&ldquo;what&apos;s blocked right now&rdquo;</span> or{" "}
+                    <span className="italic">&ldquo;summarize progress since Monday.&rdquo;</span> Answers use this board&apos;s real tasks and history.
+                  </p>
+                </div>
               )}
 
               {messages.map((m, i) =>

@@ -44,8 +44,10 @@ export default function SummarizeModal({ onClose }: Props) {
       <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg w-[720px] max-w-[92vw] max-h-[88vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 dark:border-slate-700">
-          <div className="flex items-center gap-2">
-            <Wand2 size={16} className="text-indigo-500" />
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-indigo-500 flex items-center justify-center flex-shrink-0">
+              <Wand2 size={15} className="text-white" />
+            </div>
             <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">Summarize text</span>
           </div>
           <button

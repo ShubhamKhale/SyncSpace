@@ -10,7 +10,6 @@ import { useRouter } from "next/navigation";
 import { storeAuthTokens, API } from "@/lib/api";
 import { useUserStore, User } from "@/app/store/useUserStore";
 
-
 const Page = () => {
   const router = useRouter();
   const setUser = useUserStore((s) => s.setUser);
@@ -57,165 +56,177 @@ const Page = () => {
     }
   };
 
+  const inputCls =
+    "w-full px-3 py-2.5 mt-1.5 text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500";
+
   return (
-    <div className="grid pt-3 py-12 bg-[var(--primary-background-color)] h-screen place-items-center">
-      <div className="flex items-center space-x-3">
-        <p className="text-2xl font-bold text-[var(--primary-button-background-color)]">
-          SyncSpace
-        </p>
-        <AppLogo />
+    <div className="min-h-screen grid md:grid-cols-2 bg-white dark:bg-slate-900">
+      {/* Left panel */}
+      <div className="hidden md:flex relative flex-col justify-between p-12 overflow-hidden bg-gradient-to-br from-indigo-50 via-indigo-50 to-violet-50 dark:from-slate-800 dark:via-slate-800 dark:to-slate-900">
+        <div className="pointer-events-none absolute -top-16 right-0 w-80 h-80 rounded-full bg-indigo-300/30 dark:bg-indigo-500/10 blur-3xl" />
+
+        <div className="relative inline-flex items-center gap-2.5">
+          <span className="w-7 h-7 rounded-lg bg-indigo-500" />
+          <p className="text-slate-900 dark:text-slate-100 text-lg font-bold">SyncSpace</p>
+        </div>
+
+        <div className="relative space-y-4 max-w-md">
+          <p className="text-2xl font-semibold text-slate-800 dark:text-slate-100 leading-snug">
+            &ldquo;Onboarding our whole design + eng org took less than ten minutes. It just clicked.&rdquo;
+          </p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Marcus Ito — Head of Product, Loom Bay</p>
+        </div>
+
+        <div className="relative flex items-center gap-10">
+          <div>
+            <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">2,400+</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">Teams onboard</p>
+          </div>
+          <div>
+            <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">98.9%</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">Uptime SLA</p>
+          </div>
+          <div>
+            <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">4.8/5</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">Average rating</p>
+          </div>
+        </div>
       </div>
-      <p className="mt-2 text-2xl text-[var(--primary-text-color)]">
-        Create your account
-      </p>
-      <p className="mt-1 text-sm text-[var(--secondary-text-color)]">
-        Already have an account?{" "}
-        <Link href="/signin">
-          <span className="ml-3 hover:underline hover:cursor-pointer text-[var(--primary-button-background-color)]">
-            Sign in
-          </span>
-        </Link>
-      </p>
 
-      <div className="mt-3 px-10 py-10 flex flex-col rounded-lg bg-white">
-        <div
-          onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
-          className="rounded-md hover:cursor-pointer py-2 space-x-3 flex items-center justify-center border border-[#D1D5DB]"
-        >
-          <GoogleIcon width={20} height={20} />
-          <p className="ml-2 font-medium text-sm">Continue with Google</p>
-        </div>
-        <div
-          onClick={() => signIn("github")}
-          className="mt-5 rounded-md hover:cursor-pointer py-2 space-x-3 flex items-center justify-center border border-[#D1D5DB]"
-        >
-          <GithubIcon width={20} height={20} />
-          <p className="ml-2 font-medium text-sm">Continue with Github</p>
-        </div>
-        <div className="flex items-center my-6">
-          <div className="flex-grow h-px bg-[#D1D5DB]"></div>
-          <span className="mx-4 text-[var(--tertiary-text-color)] text-sm whitespace-nowrap">
-            Or continue with email
-          </span>
-          <div className="flex-grow h-px bg-[#D1D5DB]"></div>
+      {/* Right panel — form */}
+      <div className="flex flex-col justify-center px-6 sm:px-12 lg:px-20 py-16">
+        <div className="md:hidden inline-flex items-center gap-3 mb-8">
+          <p className="text-2xl font-bold text-indigo-500">SyncSpace</p>
+          <AppLogo />
         </div>
 
-        <form onSubmit={handleSignUp} className="mt-2 space-y-5">
-          {error && (
-            <p className="text-sm text-red-500 bg-red-50 px-3 py-2 rounded-md">
-              {error}
-            </p>
-          )}
-          <div className="flex items-center justify-between space-x-5">
-            <div>
+        <div className="max-w-md w-full mx-auto md:mx-0 space-y-6">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Create your account</h1>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Free for teams up to 10. No credit card required.</p>
+          </div>
+
+          <div className="space-y-3">
+            <button
+              onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
+              className="w-full rounded-lg hover:cursor-pointer py-2.5 flex items-center justify-center gap-3 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+            >
+              <GoogleIcon width={20} height={20} />
+              <p className="font-medium text-sm">Sign up with Google</p>
+            </button>
+            <button
+              onClick={() => signIn("github")}
+              className="w-full rounded-lg hover:cursor-pointer py-2.5 flex items-center justify-center gap-3 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+            >
+              <GithubIcon width={20} height={20} />
+              <p className="font-medium text-sm">Sign up with GitHub</p>
+            </button>
+          </div>
+
+          <div className="flex items-center">
+            <div className="flex-grow h-px bg-slate-200 dark:bg-slate-700" />
+            <span className="mx-4 text-slate-400 dark:text-slate-500 text-xs whitespace-nowrap">
+              or use your email
+            </span>
+            <div className="flex-grow h-px bg-slate-200 dark:bg-slate-700" />
+          </div>
+
+          <form onSubmit={handleSignUp} className="space-y-4">
+            {error && (
+              <p className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-3 py-2 rounded-md">
+                {error}
+              </p>
+            )}
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-sm text-[var(--quaternary-text-color)]">
-                  Full Name
-                </p>
+                <label className="text-sm text-slate-700 dark:text-slate-300 font-medium">Full name</label>
                 <input
                   type="text"
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Enter your full name"
-                  className="w-full px-3 py-2 mt-1 placeholder:text-[var(--placeholder-text-color)] border border-[#D1D5DB] rounded-md focus:outline-none focus:ring-1 focus:ring-[var(--quaternary-text-color)] focus:border-[var(--primary-button-background-color)]"
+                  className={inputCls}
                 />
               </div>
-              <div className="mt-4">
-                <p className="text-sm text-[var(--quaternary-text-color)]">
-                  Email address
-                </p>
+              <div>
+                <label className="text-sm text-slate-700 dark:text-slate-300 font-medium">Password</label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Create a password"
+                    className={`${inputCls} pr-10`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-[42%] text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:cursor-pointer"
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+              </div>
+              <div>
+                <label className="text-sm text-slate-700 dark:text-slate-300 font-medium">Email address</label>
                 <input
                   type="email"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Enter your email address"
-                  className="w-full px-3 py-2 mt-1 placeholder:text-[var(--placeholder-text-color)] border border-[#D1D5DB] rounded-md focus:outline-none focus:ring-1 focus:ring-[var(--quaternary-text-color)] focus:border-[var(--primary-button-background-color)]"
+                  className={inputCls}
                 />
+              </div>
+              <div>
+                <label className="text-sm text-slate-700 dark:text-slate-300 font-medium">Confirm password</label>
+                <div className="relative">
+                  <input
+                    type={showConfirmPassword ? "text" : "password"}
+                    required
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Confirm your password"
+                    className={`${inputCls} pr-10`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-[42%] text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:cursor-pointer"
+                  >
+                    {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
               </div>
             </div>
 
-            <div>
-              <div className="relative">
-                <p className="text-sm text-[var(--quaternary-text-color)]">
-                  Password
-                </p>
-                <input
-                  type={showPassword ? "text" : "password"}
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Create a password"
-                  className="w-full px-3 py-2 mt-1 placeholder:text-[var(--placeholder-text-color)] border border-[#D1D5DB] rounded-md focus:outline-none focus:ring-1 focus:ring-[var(--quaternary-text-color)] focus:border-[var(--primary-button-background-color)] pr-10"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-[38px] text-gray-500 hover:text-gray-700 hover:cursor-pointer"
-                >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
-              </div>
-
-              <div className="relative mt-4">
-                <p className="text-sm text-[var(--quaternary-text-color)]">
-                  Confirm Password
-                </p>
-                <input
-                  type={showConfirmPassword ? "text" : "password"}
-                  required
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="Confirm your password"
-                  className="w-full px-3 py-2 mt-1 placeholder:text-[var(--placeholder-text-color)] border border-[#D1D5DB] rounded-md focus:outline-none focus:ring-1 focus:ring-[var(--quaternary-text-color)] focus:border-[var(--primary-button-background-color)] pr-10"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-[38px] text-gray-500 hover:text-gray-700 hover:cursor-pointer"
-                >
-                  {showConfirmPassword ? (
-                    <EyeOff size={18} />
-                  ) : (
-                    <Eye size={18} />
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center space-x-2 mb-4">
-            <label className="flex items-center hover:cursor-pointer text-sm text-[var(--quaternary-text-color)]">
-              <input
-                type="checkbox"
-                required
-                className="mr-2 h-4 w-4 hover:cursor-pointer"
-              />
-              I agree to the
+            <label className="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-300 hover:cursor-pointer">
+              <input type="checkbox" required className="mt-0.5 h-4 w-4 hover:cursor-pointer accent-indigo-500" />
+              <span>
+                I agree to the{" "}
+                <a href="#" className="text-indigo-500 hover:underline">Terms of Service</a> and{" "}
+                <a href="#" className="text-indigo-500 hover:underline">Privacy Policy</a>
+              </span>
             </label>
-            <a
-              href="#"
-              className="text-sm text-[var(--primary-button-background-color)] hover:underline"
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-2.5 rounded-lg bg-indigo-500 hover:bg-indigo-600 text-white font-semibold text-sm transition disabled:opacity-60"
             >
-              Terms and Services
-            </a>
-            <p className="text-sm text-[var(--quaternary-text-color)]">and</p>
-            <a
-              href="#"
-              className="text-sm text-[var(--primary-button-background-color)] hover:underline"
-            >
-              Privacy Policy
-            </a>
-          </div>
-          <button
-            type="submit"
-            disabled={loading}
-            className="rounded-md hover:cursor-pointer w-full px-3 py-2 bg-[var(--primary-button-background-color)] text-white hover:bg-white hover:text-[var(--primary-button-background-color)] hover:border hover:border-[var(--primary-button-background-color)] text-center disabled:opacity-60"
-          >
-            {loading ? "Creating account…" : "Sign Up"}
-          </button>
-        </form>
+              {loading ? "Creating account…" : "Create Account"}
+            </button>
+          </form>
+
+          <p className="text-center text-sm text-slate-500 dark:text-slate-400">
+            Already have an account?{" "}
+            <Link href="/signin" className="text-indigo-500 hover:underline font-medium">
+              Sign in
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );

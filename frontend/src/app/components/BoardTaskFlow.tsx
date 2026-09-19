@@ -58,6 +58,14 @@ const STAGE_BORDER: Record<string, string> = {
   Deployment:  "border-l-teal-500",
 };
 
+const STAGE_TOP_BORDER: Record<string, string> = {
+  Planning:    "border-t-purple-500",
+  Design:      "border-t-blue-500",
+  Development: "border-t-amber-400",
+  QA:          "border-t-green-500",
+  Deployment:  "border-t-teal-500",
+};
+
 const STAGE_EMPTY: Record<string, { Icon: LucideIcon; bg: string; icon: string }> = {
   Planning:    { Icon: BookOpen,    bg: "bg-purple-50 dark:bg-purple-900/20", icon: "text-purple-400" },
   Design:      { Icon: Pen,         bg: "bg-blue-50 dark:bg-blue-900/20",     icon: "text-blue-400"   },
@@ -184,7 +192,7 @@ const BoardTaskFlow: React.FC<{ boardId?: string }> = ({ boardId }) => {
               onClick={() => setActiveView("kanban")}
               className={`flex items-center gap-1 sm:gap-1.5 border px-2 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition hover:cursor-pointer ${
                 activeView === "kanban"
-                  ? "bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-400"
+                  ? "bg-indigo-50 dark:bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border-indigo-400"
                   : "text-slate-600 dark:text-slate-300 border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700"
               }`}
             >
@@ -195,7 +203,7 @@ const BoardTaskFlow: React.FC<{ boardId?: string }> = ({ boardId }) => {
               onClick={() => setActiveView("timeline")}
               className={`flex items-center gap-1 sm:gap-1.5 border px-2 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition hover:cursor-pointer ${
                 activeView === "timeline"
-                  ? "bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-400"
+                  ? "bg-indigo-50 dark:bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border-indigo-400"
                   : "text-slate-600 dark:text-slate-300 border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700"
               }`}
             >
@@ -206,7 +214,7 @@ const BoardTaskFlow: React.FC<{ boardId?: string }> = ({ boardId }) => {
               onClick={() => setActiveView("matrix")}
               className={`flex items-center gap-1 sm:gap-1.5 border px-2 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition hover:cursor-pointer ${
                 activeView === "matrix"
-                  ? "bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-400"
+                  ? "bg-indigo-50 dark:bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border-indigo-400"
                   : "text-slate-600 dark:text-slate-300 border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700"
               }`}
             >
@@ -229,7 +237,7 @@ const BoardTaskFlow: React.FC<{ boardId?: string }> = ({ boardId }) => {
                 <div className="w-px h-5 bg-slate-300 dark:bg-slate-600 mx-1" />
                 <Link
                   href={`/dashboard/boards/${boardId}/tasks`}
-                  className="flex items-center gap-1 sm:gap-1.5 border px-2 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition hover:cursor-pointer bg-blue-600 text-white border-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:border-blue-500 dark:hover:bg-blue-600"
+                  className="flex items-center gap-1 sm:gap-1.5 border px-2 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition hover:cursor-pointer bg-indigo-500 text-white border-indigo-500 hover:bg-indigo-600 dark:hover:bg-indigo-600"
                 >
                   <ExternalLink size={15} />
                   All Tasks
@@ -291,6 +299,19 @@ const BoardTaskFlow: React.FC<{ boardId?: string }> = ({ boardId }) => {
             triggerClassName="border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 rounded-md text-sm px-2 py-1 text-slate-700 dark:text-slate-200 whitespace-nowrap"
             // dropdownClassName="min-w-[110px]"
           />
+          {(phaseFilter !== "Phase" || priorityFilter !== "Priority" || contributorFilter !== "Contributor" || labelFilter !== "Label") && (
+            <button
+              onClick={() => {
+                setPhaseFilter("Phase");
+                setPriorityFilter("Priority");
+                setContributorFilter("Contributor");
+                setLabelFilter("Label");
+              }}
+              className="ml-auto shrink-0 text-sm font-medium text-indigo-500 hover:text-indigo-600 hover:cursor-pointer whitespace-nowrap"
+            >
+              Clear filters
+            </button>
+          )}
         </div>
       </div>
 
@@ -318,52 +339,43 @@ const BoardTaskFlow: React.FC<{ boardId?: string }> = ({ boardId }) => {
                   onDragCancel={() => setActiveStageName(null)}
                 >
                   <SortableContext items={stageOrder} strategy={horizontalListSortingStrategy}>
-                    <div className="flex items-center justify-center gap-4">
-                      {stages.map((stage, index) => (
+                    <div className="flex items-center gap-3">
+                      {stages.map((stage) => (
                         <SortablePipelineStage
                           key={stage.name}
                           name={stage.name}
-                          color={stage.color}
+                          topBorderClass={STAGE_TOP_BORDER[stage.name] ?? "border-t-slate-400"}
                           count={stage.count}
-                          isLast={index === stages.length - 1}
                         />
                       ))}
                     </div>
                   </SortableContext>
                   <DragOverlay>
                     {activeStage && (
-                      <div className="flex flex-col items-center opacity-90 scale-105">
-                        <div
-                          className={`w-12 h-12 rounded-full ${activeStage.color} text-white flex items-center justify-center font-semibold shadow-xl ring-2 ring-white dark:ring-slate-600`}
-                        >
-                          {activeStage.count}
-                        </div>
-                        <span className="text-xs mt-2 text-gray-600 dark:text-slate-300 font-medium">
+                      <div
+                        className={`opacity-90 scale-105 bg-slate-50 dark:bg-slate-900/40 rounded-lg border-t-2 ${STAGE_TOP_BORDER[activeStage.name] ?? "border-t-slate-400"} px-4 py-3 min-w-[110px] shadow-xl`}
+                      >
+                        <p className="text-2xl font-bold text-slate-800 dark:text-slate-100">{activeStage.count}</p>
+                        <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mt-0.5">
                           {activeStage.name}
-                        </span>
+                        </p>
                       </div>
                     )}
                   </DragOverlay>
                 </DndContext>
               ) : (
                 // Static pipeline for viewers
-                <div className="flex items-center justify-center gap-4">
-                  {stages.map((stage, index) => (
-                    <React.Fragment key={stage.name}>
-                      <div className="flex flex-col items-center">
-                        <div
-                          className={`w-12 h-12 rounded-full ${stage.color} text-white flex items-center justify-center font-semibold shadow-md`}
-                        >
-                          {stage.count}
-                        </div>
-                        <span className="text-xs mt-2 text-gray-600 dark:text-slate-300 font-medium">
-                          {stage.name}
-                        </span>
-                      </div>
-                      {index !== stages.length - 1 && (
-                        <span className="text-gray-400 text-lg">→</span>
-                      )}
-                    </React.Fragment>
+                <div className="flex items-center gap-3">
+                  {stages.map((stage) => (
+                    <div
+                      key={stage.name}
+                      className={`bg-slate-50 dark:bg-slate-900/40 rounded-lg border-t-2 ${STAGE_TOP_BORDER[stage.name] ?? "border-t-slate-400"} px-4 py-3 min-w-[110px]`}
+                    >
+                      <p className="text-2xl font-bold text-slate-800 dark:text-slate-100">{stage.count}</p>
+                      <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mt-0.5">
+                        {stage.name}
+                      </p>
+                    </div>
                   ))}
                 </div>
               )}

@@ -1,42 +1,33 @@
 "use client";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { ArrowRight } from "lucide-react";
 
 interface Props {
   name: string;
-  color: string;
+  topBorderClass: string;
   count: number;
-  isLast: boolean;
 }
 
-export function SortablePipelineStage({ name, color, count, isLast }: Props) {
+export function SortablePipelineStage({ name, topBorderClass, count }: Props) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: name });
 
   return (
-    <div className="flex items-center">
-      <div
-        ref={setNodeRef}
-        style={{
-          transform: CSS.Transform.toString(transform),
-          transition,
-          opacity: isDragging ? 0 : 1,
-        }}
-        className="flex flex-col items-center cursor-grab active:cursor-grabbing select-none"
-        {...attributes}
-        {...listeners}
-      >
-        <div
-          className={`w-12 h-12 rounded-full ${color} text-white flex items-center justify-center font-semibold shadow-md`}
-        >
-          {count}
-        </div>
-        <span className="text-xs mt-2 text-gray-600 dark:text-slate-300 font-medium">
-          {name}
-        </span>
-      </div>
-      {!isLast && <ArrowRight size={20} className="text-gray-400 mx-2 flex-shrink-0" />}
+    <div
+      ref={setNodeRef}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0 : 1,
+      }}
+      className={`cursor-grab active:cursor-grabbing select-none bg-slate-50 dark:bg-slate-900/40 rounded-lg border-t-2 ${topBorderClass} px-4 py-3 min-w-[110px]`}
+      {...attributes}
+      {...listeners}
+    >
+      <p className="text-2xl font-bold text-slate-800 dark:text-slate-100">{count}</p>
+      <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mt-0.5">
+        {name}
+      </p>
     </div>
   );
 }

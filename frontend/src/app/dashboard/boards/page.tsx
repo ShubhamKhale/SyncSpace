@@ -16,7 +16,20 @@ interface Board {
   cover_color?: string;
   member_count?: number;
   updated_at?: string;
+  status?: "active" | "on-hold" | "archived";
 }
+
+const STATUS_STYLES: Record<string, string> = {
+  active: "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400",
+  "on-hold": "bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400",
+  archived: "bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400",
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  active: "Active",
+  "on-hold": "On Hold",
+  archived: "Archived",
+};
 
 const ROWS_OPTIONS = [6, 12, 24];
 
@@ -84,7 +97,7 @@ export default function Boards() {
         </div>
         <button
           onClick={() => setShowAddBoard(true)}
-          className="flex items-center gap-2 px-4 py-2.5 bg-[#6366F1] hover:bg-[#4F46E5] text-white text-sm font-semibold rounded-lg transition-colors shadow-sm"
+          className="flex items-center gap-2 px-4 py-2.5 bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-semibold rounded-lg transition-colors shadow-sm"
         >
           <Plus size={16} />
           New Board
@@ -107,13 +120,13 @@ export default function Boards() {
           <div className="flex items-center bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
             <button
               onClick={() => setIsGridView(true)}
-              className={`p-2.5 transition-colors ${isGridView ? "bg-[#EEF2FF] text-[#6366F1]" : "text-slate-400 hover:text-slate-600"}`}
+              className={`p-2.5 transition-colors ${isGridView ? "bg-indigo-50 dark:bg-indigo-500/15 text-indigo-500" : "text-slate-400 hover:text-slate-600"}`}
             >
               <LayoutGrid size={18} />
             </button>
             <button
               onClick={() => setIsGridView(false)}
-              className={`p-2.5 transition-colors ${!isGridView ? "bg-[#EEF2FF] text-[#6366F1]" : "text-slate-400 hover:text-slate-600"}`}
+              className={`p-2.5 transition-colors ${!isGridView ? "bg-indigo-50 dark:bg-indigo-500/15 text-indigo-500" : "text-slate-400 hover:text-slate-600"}`}
             >
               <List size={18} />
             </button>
@@ -235,45 +248,36 @@ function BoardCard({ board, index }: { board: Board; index: number }) {
   const color = boardColor(board, index);
   const updatedTs = board.updatedAt ?? board.updated_at;
   const members = board.memberCount ?? board.member_count ?? 0;
+  const status = board.status ?? "active";
 
   return (
-    <div className="group relative bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+    <div className="relative bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm hover:shadow-md transition-shadow cursor-pointer">
       <Link href={`/dashboard/boards/${board.id}`} className="block">
-        {/* Color header */}
-        <div className="h-36 w-full relative flex items-center justify-center" style={{ backgroundColor: color + "22" }}>
-          <div className="w-14 h-14 rounded-xl flex items-center justify-center" style={{ backgroundColor: color + "33" }}>
-            <span className="text-2xl font-bold" style={{ color }}>{board.title[0]?.toUpperCase()}</span>
+        <div className="flex items-start justify-between mb-4">
+          <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: color }}>
+            <span className="text-base font-bold text-white">{board.title[0]?.toUpperCase()}</span>
           </div>
+          <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${STATUS_STYLES[status]}`}>
+            {STATUS_LABELS[status]}
+          </span>
         </div>
-        {/* Card body */}
-        <div className="px-4 pt-3 pb-4">
-          <div className="flex items-start gap-3">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: color + "22" }}>
-              <span className="text-sm font-bold" style={{ color }}>{board.title[0]?.toUpperCase()}</span>
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-semibold text-sm text-slate-800 dark:text-slate-100 truncate">{board.title}</p>
-              <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5 line-clamp-2 leading-snug">
-                {board.description || "No description"}
-              </p>
-            </div>
+
+        <p className="font-semibold text-base text-slate-800 dark:text-slate-100">{board.title}</p>
+        <p className="text-sm text-slate-400 dark:text-slate-500 mt-1 line-clamp-2 leading-snug">
+          {board.description || "No description"}
+        </p>
+
+        <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between text-xs text-slate-400 dark:text-slate-500">
+          <div className="flex items-center gap-1.5">
+            <Users size={12} />
+            <span>{members} member{members !== 1 ? "s" : ""}</span>
           </div>
-          <div className="mt-3 flex items-center justify-between text-xs text-slate-400 dark:text-slate-500">
-            <div className="flex items-center gap-1.5">
-              <Clock size={12} />
-              <span>{updatedTs ? formatTimeAgo(new Date(updatedTs).getTime() / 1000) : "—"}</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Users size={12} />
-              <span>{members}</span>
-            </div>
+          <div className="flex items-center gap-1.5">
+            <Clock size={12} />
+            <span>{updatedTs ? `Updated ${formatTimeAgo(new Date(updatedTs).getTime() / 1000)}` : "—"}</span>
           </div>
         </div>
       </Link>
-      {/* 3-dot menu */}
-      <button className="absolute top-3 right-3 w-7 h-7 rounded-md bg-white/80 dark:bg-slate-700/80 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white dark:hover:bg-slate-700 shadow-sm">
-        <MoreVertical size={14} className="text-slate-500" />
-      </button>
     </div>
   );
 }

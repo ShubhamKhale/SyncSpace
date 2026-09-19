@@ -70,7 +70,11 @@ export default function DashboardLayout({
         <div className="mt-5 px-3 space-y-1">
           {navGroups.map((group, gi) => (
             <div key={gi}>
-              {gi > 0 && <div className="my-2 border-t border-[var(--sidebar-border-color)]" />}
+              {gi > 0 && (
+                <p className="mt-4 mb-1.5 px-3 text-[10px] font-semibold tracking-wider text-slate-400 dark:text-slate-500 uppercase">
+                  {gi === 1 ? "Workspace" : "Account"}
+                </p>
+              )}
               <div className="space-y-0.5">
                 {group.map(({ href, label, Icon }) => {
                   const isActive =
