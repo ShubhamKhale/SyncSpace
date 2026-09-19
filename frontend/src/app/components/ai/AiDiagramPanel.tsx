@@ -3,13 +3,13 @@
 import { useEffect, useRef, useState } from "react";
 import { X, Sparkles, AlertTriangle } from "lucide-react";
 import PromptInput from "./PromptInput";
-import ModelLoader from "./ModelLoader";
 import GenerationProgress from "./GenerationProgress";
-import { validate } from "@/app/lib/diagram-validator";
+import { validate, LogicalGraph } from "@/app/lib/diagram-validator";
 import { assignPositions } from "@/app/lib/layout";
 import { convertToReactFlow } from "@/app/lib/reactflow-converter";
+import { apiFetch } from "@/lib/api";
 
-type Status = "idle" | "loading-model" | "generating" | "error";
+type Status = "idle" | "generating" | "error";
 
 interface AiDiagramPanelProps {
   isOpen: boolean;
@@ -23,8 +23,6 @@ interface AiDiagramPanelProps {
 export default function AiDiagramPanel({ isOpen, onClose, diagram }: AiDiagramPanelProps) {
   const [prompt, setPrompt] = useState("");
   const [status, setStatus] = useState<Status>("idle");
-  const [modelProgress, setModelProgress] = useState(0);
-  const [modelText, setModelText] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -47,22 +45,14 @@ export default function AiDiagramPanel({ isOpen, onClose, diagram }: AiDiagramPa
   const handleGenerate = async () => {
     if (!prompt.trim()) return;
 
-    setStatus("loading-model");
-    setModelProgress(0);
-    setModelText("Initializing…");
+    setStatus("generating");
     setErrorMsg("");
 
     try {
-      // Dynamic import keeps WebLLM WASM out of the initial bundle
-      const { generateDiagram } = await import("@/app/lib/webllm/generator");
-
-      const rawGraph = await generateDiagram(prompt, (p, t) => {
-        setModelProgress(p);
-        setModelText(t);
-        if (p >= 100) setStatus("generating");
+      const rawGraph = await apiFetch<LogicalGraph>("/api/ai/generate-diagram", {
+        method: "POST",
+        body: JSON.stringify({ prompt }),
       });
-
-      setStatus("generating");
 
       const result = validate(rawGraph);
       if (!result.valid || !result.graph) {
@@ -83,7 +73,7 @@ export default function AiDiagramPanel({ isOpen, onClose, diagram }: AiDiagramPa
     }
   };
 
-  const isLoading = status === "loading-model" || status === "generating";
+  const isLoading = status === "generating";
 
   if (!isOpen) return null;
 
@@ -115,8 +105,8 @@ export default function AiDiagramPanel({ isOpen, onClose, diagram }: AiDiagramPa
         <div className="flex-1 overflow-y-auto px-5 py-5 flex flex-col gap-5">
           {/* Description */}
           <p className="text-xs text-gray-400 leading-relaxed">
-            Describe any architecture, process, or system in plain English. The AI runs locally in
-            your browser via CPU — no GPU needed, no data leaves your machine.
+            Describe any architecture, process, or system in plain English. The AI searches the web
+            and grounds the diagram in current, accurate information.
           </p>
 
           {/* Prompt input (always visible) */}
@@ -128,10 +118,6 @@ export default function AiDiagramPanel({ isOpen, onClose, diagram }: AiDiagramPa
           />
 
           {/* Status areas */}
-          {status === "loading-model" && (
-            <ModelLoader progress={modelProgress} text={modelText} />
-          )}
-
           {status === "generating" && <GenerationProgress />}
 
           {status === "error" && (
@@ -154,7 +140,7 @@ export default function AiDiagramPanel({ isOpen, onClose, diagram }: AiDiagramPa
         {/* Footer */}
         <div className="px-5 py-3 border-t border-gray-800">
           <p className="text-[10px] text-gray-600 text-center">
-            Powered by Qwen2.5-0.5B · Runs 100% in your browser · CPU only, no GPU needed
+            Powered by Groq · Grounded with live web search
           </p>
         </div>
       </div>

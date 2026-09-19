@@ -31,13 +31,11 @@ No test runner is configured. This is NOT a pure mock app — it's a client for 
 
 ### AI Diagram Generation
 
-Runs entirely client-side — no server call for inference:
-- `@huggingface/transformers` runs `onnx-community/Qwen2.5-0.5B-Instruct` (q4 quantized, CPU-only ONNX Runtime) in-browser.
-- `src/app/lib/webllm/` — `model.ts`/`client.ts` (model loading + progress callback), `generator.ts`, `parser.ts` (`extractJson`), `prompt.ts` (system prompt for diagram generation).
-- `src/app/lib/diagram-validator/` — validates the LLM's generated `LogicalGraph` JSON structure.
+Backend-proxied, web-search-grounded — `POST /api/ai/generate-diagram` (Go backend calls Groq's `groq/compound` model with built-in web search, returns a `LogicalGraph` JSON):
+- `src/app/lib/diagram-validator/` — validates the backend's `LogicalGraph` JSON structure (`{ title, nodes, edges }`).
 - `src/app/lib/layout/` — `assignPositions()`, auto-layout for generated nodes.
 - `src/app/lib/reactflow-converter/` — `convertToReactFlow()`, converts logical graph to React Flow nodes/edges.
-- `src/app/components/ai/AiDiagramPanel.tsx` — "Generate diagram with AI" side panel (prompt input, loading-model/generating/error states, Esc + click-outside to close); injects result via `diagram.uploadJson()`. Supporting UI: `PromptInput.tsx`, `ModelLoader.tsx`, `GenerationProgress.tsx`.
+- `src/app/components/ai/AiDiagramPanel.tsx` — "Generate diagram with AI" side panel (prompt input, generating/error states, Esc + click-outside to close); calls the backend via `apiFetch`, injects result via `diagram.uploadJson()`. Supporting UI: `PromptInput.tsx`, `GenerationProgress.tsx`.
 
 ## Tech Stack
 
@@ -48,7 +46,7 @@ Runs entirely client-side — no server call for inference:
 - **@xyflow/react** (v12) — flow/diagram canvas. Note: `reactflow` v11 is also still installed (partial migration leftover) — use `@xyflow/react` for new code.
 - **@dnd-kit** (`core`/`modifiers`/`sortable`/`utilities`) — kanban drag-and-drop, including sortable/reorderable pipeline-stage columns, not just card dragging
 - **Recharts** — analytics charts (`BoardActivity`, `TaskCompletionTrend`, `TaskDistribution`, `TeamContribution`, `PriorityPhaseMatrix`)
-- **@huggingface/transformers** — in-browser LLM inference for AI diagram generation
+- **react-markdown** + **remark-gfm** — renders AI chat/summarize/diagram-gen responses (tables, lists, bold) in `BoardAiChat.tsx`/`SummarizeModal.tsx`
 - **gsap** (+ Draggable plugin) — draggable edge labels on the flow canvas
 - **html-to-image** — PNG/GIF/SVG export of diagrams
 - **date-fns** — date formatting for editable date fields (date picker itself is hand-built, `CustomDatePicker.tsx`)
