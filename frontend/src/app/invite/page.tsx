@@ -3,8 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import AppLogo from "../icons/AppLogo";
-
-const API = process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:8080";
+import { API } from "@/lib/api";
 
 interface InviteInfo {
   org_name: string;

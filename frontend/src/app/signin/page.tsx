@@ -7,10 +7,9 @@ import { signIn } from "next-auth/react";
 import Link from "next/link";
 import { Eye, EyeOff } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { storeAuthTokens } from "@/lib/api";
+import { storeAuthTokens, API } from "@/lib/api";
 import { useUserStore, User } from "@/app/store/useUserStore";
 
-const API = process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:8080";
 
 const Page = () => {
   const router = useRouter();

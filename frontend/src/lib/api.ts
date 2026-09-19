@@ -1,6 +1,13 @@
 import { encryptPayload, decryptPayload } from "./crypto";
 
-const API = process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:8080";
+if (process.env.NODE_ENV === "production" && !process.env.NEXT_PUBLIC_API_BASE) {
+  // eslint-disable-next-line no-console
+  console.error(
+    "NEXT_PUBLIC_API_BASE is not set in production — API calls will hit localhost and fail. Set it in your deployment environment."
+  );
+}
+
+export const API = process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:8068";
 
 function getHeaders(
   extra: Record<string, string> = {}

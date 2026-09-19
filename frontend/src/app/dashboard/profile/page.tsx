@@ -1,7 +1,7 @@
 "use client";
 import Image from "next/image";
 import React, { useEffect, useRef, useState } from "react";
-import { apiFetch } from "@/lib/api";
+import { apiFetch, API } from "@/lib/api";
 import { Check, X } from "lucide-react";
 
 interface UserProfile {
@@ -59,7 +59,6 @@ export default function ProfilePage() {
     setAvatarUploading(true);
     try {
       const jwt = localStorage.getItem("ss_jwt");
-      const API = process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:8080";
       const form = new FormData();
       form.append("avatar", file);
       const res = await fetch(`${API}/api/user/avatar`, {

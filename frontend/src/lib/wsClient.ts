@@ -1,3 +1,10 @@
+if (process.env.NODE_ENV === "production" && !process.env.NEXT_PUBLIC_WS_BASE) {
+  // eslint-disable-next-line no-console
+  console.error(
+    "NEXT_PUBLIC_WS_BASE is not set in production — realtime features will try localhost and fail. Set it in your deployment environment."
+  );
+}
+
 const WS_BASE = process.env.NEXT_PUBLIC_WS_BASE ?? "ws://localhost:8068";
 
 export interface WSMessage {
