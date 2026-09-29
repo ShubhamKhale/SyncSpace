@@ -89,7 +89,7 @@ export default function DashboardLayout({
                             : "text-[#6B7280] dark:text-[#6B7194] hover:bg-slate-50 dark:hover:bg-[#181C30] hover:text-slate-800 dark:hover:text-[#C8CDE7] border-l-[3px] border-transparent"
                         }`}
                       >
-                        <Icon width={18} height={18} fill={isActive ? "#6366F1" : "#9CA3AF"} />
+                        <Icon width={18} height={18} fill={isActive ? "var(--color-indigo-500)" : "#9CA3AF"} />
                         <p className={`text-sm ${isActive ? "font-semibold" : "font-medium"}`}>{label}</p>
                       </div>
                     </Link>

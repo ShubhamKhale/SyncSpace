@@ -3,25 +3,61 @@
 
 @variant dark (&:where(.dark, .dark *));
 
+/* ─────────────────────────────────────────────────────────────────────────────
+   Graphite palette: redefine Tailwind's built-in indigo color scale to
+   Graphite's monochrome accent. Every existing bg-indigo, text-indigo,
+   border-indigo, ring-indigo, from-indigo and accent-indigo class across the
+   whole app reads this CSS variable at paint time, so this one block reskins
+   every use of the brand accent app-wide with no per-component edits.
+   Shades only cover what's actually used in code (50, 100, 300, 400, 500,
+   600, 700, 900). Dark mode's accent is genuinely near-white per Graphite's
+   spec, matching how the app uses text-indigo/border-indigo for emphasis —
+   but that breaks any *solid button* built as bg-indigo-500/600 + hardcoded
+   text-white, since the button background would also go white. The compound
+   selector further down (search "solid-accent buttons") forces those
+   specific elements back to dark text in dark mode instead.
+   ───────────────────────────────────────────────────────────────────────────── */
+@theme {
+  --color-indigo-50: #F4F4F5;
+  --color-indigo-100: #E4E4E7;
+  --color-indigo-300: #A1A1AA;
+  --color-indigo-400: #71717A;
+  --color-indigo-500: #18181B;
+  --color-indigo-600: #27272A;
+  --color-indigo-700: #3F3F46;
+  --color-indigo-900: #09090B;
+}
+
+.dark {
+  --color-indigo-50: #1F1F23;
+  --color-indigo-100: #27272A;
+  --color-indigo-300: #52525B;
+  --color-indigo-400: #71717A;
+  --color-indigo-500: #FAFAFA;
+  --color-indigo-600: #E4E4E7;
+  --color-indigo-700: #D4D4D8;
+  --color-indigo-900: #FAFAFA;
+}
+
 :root {
-  --background: #F8F9FC;
-  --foreground: #171717;
-  --primary-button-background-color: #6366f1;
-  --primary-background-color: #EEF2FF;
-  --secondary-background-color: #6B7280;
-  --tertiary-background-color: #F8F9FC;
-  --primary-text-color: #111827;
-  --secondary-text-color: #4B5563;
-  --tertiary-text-color: #6B7280;
-  --quaternary-text-color: #374151;
-  --fifth-text-color: #6366f1;
-  --sixth-text-color: #1F2937;
-  --danger-text-color: #991B1B;
-  --placeholder-text-color: #CCCCCC;
-  --sidebar-border-color: #E5E7EB;
-  --sidebar-option-background-color: #EEF2FF;
-  --sidebar-option-highlight-name-color: #2563EB;
-  --sidebar-option-name-color: #6B7280;
+  --background: #FAFAFA;
+  --foreground: #09090B;
+  --primary-button-background-color: #18181B;
+  --primary-background-color: #F0F0F2;
+  --secondary-background-color: #52525B;
+  --tertiary-background-color: #F4F4F5;
+  --primary-text-color: #09090B;
+  --secondary-text-color: #52525B;
+  --tertiary-text-color: #8A8A93;
+  --quaternary-text-color: #3F3F46;
+  --fifth-text-color: #18181B;
+  --sixth-text-color: #18181B;
+  --danger-text-color: #DC2626;
+  --placeholder-text-color: #B4B4B8;
+  --sidebar-border-color: #E4E4E7;
+  --sidebar-option-background-color: #F0F0F2;
+  --sidebar-option-highlight-name-color: #18181B;
+  --sidebar-option-name-color: #8A8A93;
 }
 
 /* primary secondary tertiary quaternary */  
@@ -33,24 +69,29 @@
 } */
 
 .dark {
-  --background: #0B0D17;
-  --foreground: #E4E7F5;
-  --primary-button-background-color: #6366f1;
-  --primary-background-color: #1A2550;
-  --secondary-background-color: #6B7194;
-  --tertiary-background-color: #111422;
-  --primary-text-color: #E4E7F5;
-  --secondary-text-color: #C8CDE7;
-  --tertiary-text-color: #9BA3C8;
-  --quaternary-text-color: #C8CDE7;
-  --fifth-text-color: #818cf8;
-  --sixth-text-color: #D4D8F0;
-  --danger-text-color: #FCA5A5;
-  --placeholder-text-color: #3A3F5C;
-  --sidebar-border-color: #1E2035;
-  --sidebar-option-background-color: #1A2550;
-  --sidebar-option-highlight-name-color: #7B9BF8;
-  --sidebar-option-name-color: #9BA3C8;
+  --background: #09090B;
+  --foreground: #FAFAFA;
+  /* This var does double duty as both a solid-button background AND plain
+     accent text color (wordmark, active tab underline) elsewhere in the app.
+     Graphite's real dark accent is near-white, which is correct for the text
+     use — the buttons that use this as a bg + hardcoded text-white are fixed
+     separately below (search "primary-button-background-color buttons"). */
+  --primary-button-background-color: #FAFAFA;
+  --primary-background-color: #1F1F23;
+  --secondary-background-color: #A1A1AA;
+  --tertiary-background-color: #18181B;
+  --primary-text-color: #FAFAFA;
+  --secondary-text-color: #A1A1AA;
+  --tertiary-text-color: #71717A;
+  --quaternary-text-color: #A1A1AA;
+  --fifth-text-color: #FAFAFA;
+  --sixth-text-color: #E4E4E7;
+  --danger-text-color: #F87171;
+  --placeholder-text-color: #52525B;
+  --sidebar-border-color: #232326;
+  --sidebar-option-background-color: #1F1F23;
+  --sidebar-option-highlight-name-color: #FAFAFA;
+  --sidebar-option-name-color: #71717A;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -58,34 +99,34 @@
    These rules come after @import "tailwindcss" so they win on equal specificity.
    ───────────────────────────────────────────────────────────────────────────── */
 
-/* Backgrounds */
-.dark\:bg-slate-900:where(.dark, .dark *) { background-color: #0B0D17; }
-.dark\:bg-slate-800:where(.dark, .dark *) { background-color: #111422; }
-.dark\:bg-slate-700:where(.dark, .dark *) { background-color: #181C30; }
-.dark\:bg-slate-600:where(.dark, .dark *) { background-color: #1E2238; }
+/* Backgrounds — canvas → surface → surfaceMuted → hover, Graphite neutrals */
+.dark\:bg-slate-900:where(.dark, .dark *) { background-color: #09090B; }
+.dark\:bg-slate-800:where(.dark, .dark *) { background-color: #111113; }
+.dark\:bg-slate-700:where(.dark, .dark *) { background-color: #18181B; }
+.dark\:bg-slate-600:where(.dark, .dark *) { background-color: #1F1F23; }
 
 /* Hover backgrounds */
-.dark\:hover\:bg-slate-900:where(.dark, .dark *):hover { background-color: #0B0D17; }
-.dark\:hover\:bg-slate-800:where(.dark, .dark *):hover { background-color: #111422; }
-.dark\:hover\:bg-slate-700:where(.dark, .dark *):hover { background-color: #181C30; }
-.dark\:hover\:bg-slate-600:where(.dark, .dark *):hover { background-color: #1E2238; }
+.dark\:hover\:bg-slate-900:where(.dark, .dark *):hover { background-color: #09090B; }
+.dark\:hover\:bg-slate-800:where(.dark, .dark *):hover { background-color: #111113; }
+.dark\:hover\:bg-slate-700:where(.dark, .dark *):hover { background-color: #18181B; }
+.dark\:hover\:bg-slate-600:where(.dark, .dark *):hover { background-color: #1F1F23; }
 
 /* Borders */
-.dark\:border-slate-700:where(.dark, .dark *) { border-color: #1E2035; }
-.dark\:border-slate-600:where(.dark, .dark *) { border-color: #252840; }
-.dark\:border-slate-500:where(.dark, .dark *) { border-color: #2E3355; }
+.dark\:border-slate-700:where(.dark, .dark *) { border-color: #232326; }
+.dark\:border-slate-600:where(.dark, .dark *) { border-color: #3F3F46; }
+.dark\:border-slate-500:where(.dark, .dark *) { border-color: #52525B; }
 
 /* Text */
-.dark\:text-slate-100:where(.dark, .dark *) { color: #E4E7F5; }
-.dark\:text-slate-200:where(.dark, .dark *) { color: #C8CDE7; }
-.dark\:text-slate-300:where(.dark, .dark *) { color: #9BA3C8; }
-.dark\:text-slate-400:where(.dark, .dark *) { color: #6B7194; }
-.dark\:text-slate-500:where(.dark, .dark *) { color: #4E5470; }
-.dark\:text-slate-600:where(.dark, .dark *) { color: #363C5A; }
+.dark\:text-slate-100:where(.dark, .dark *) { color: #FAFAFA; }
+.dark\:text-slate-200:where(.dark, .dark *) { color: #E4E4E7; }
+.dark\:text-slate-300:where(.dark, .dark *) { color: #A1A1AA; }
+.dark\:text-slate-400:where(.dark, .dark *) { color: #71717A; }
+.dark\:text-slate-500:where(.dark, .dark *) { color: #52525B; }
+.dark\:text-slate-600:where(.dark, .dark *) { color: #3F3F46; }
 
 /* Hover text */
-.dark\:hover\:text-slate-200:where(.dark, .dark *):hover { color: #C8CDE7; }
-.dark\:hover\:text-slate-100:where(.dark, .dark *):hover { color: #E4E7F5; }
+.dark\:hover\:text-slate-200:where(.dark, .dark *):hover { color: #E4E4E7; }
+.dark\:hover\:text-slate-100:where(.dark, .dark *):hover { color: #FAFAFA; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
@@ -110,30 +151,51 @@ button:disabled,
 }
 
 /* Placeholder */
-.dark\:placeholder-slate-500:where(.dark, .dark *)::placeholder { color: #4E5470; }
-.dark\:placeholder-slate-600:where(.dark, .dark *)::placeholder { color: #363C5A; }
+.dark\:placeholder-slate-500:where(.dark, .dark *)::placeholder { color: #52525B; }
+.dark\:placeholder-slate-600:where(.dark, .dark *)::placeholder { color: #3F3F46; }
 
 /* Opacity slate variants */
-.dark\:bg-slate-800\/60:where(.dark, .dark *) { background-color: rgb(17 20 34 / 0.6); }
-.dark\:bg-slate-800\/90:where(.dark, .dark *) { background-color: rgb(17 20 34 / 0.9); }
-.dark\:bg-slate-700\/80:where(.dark, .dark *) { background-color: rgb(24 28 48 / 0.8); }
-.dark\:bg-slate-700\/60:where(.dark, .dark *) { background-color: rgb(24 28 48 / 0.6); }
-.dark\:bg-slate-700\/50:where(.dark, .dark *) { background-color: rgb(24 28 48 / 0.5); }
+.dark\:bg-slate-800\/60:where(.dark, .dark *) { background-color: rgb(17 17 19 / 0.6); }
+.dark\:bg-slate-800\/90:where(.dark, .dark *) { background-color: rgb(17 17 19 / 0.9); }
+.dark\:bg-slate-700\/80:where(.dark, .dark *) { background-color: rgb(24 24 27 / 0.8); }
+.dark\:bg-slate-700\/60:where(.dark, .dark *) { background-color: rgb(24 24 27 / 0.6); }
+.dark\:bg-slate-700\/50:where(.dark, .dark *) { background-color: rgb(24 24 27 / 0.5); }
+.dark\:bg-slate-900\/40:where(.dark, .dark *) { background-color: rgb(9 9 11 / 0.6); }
 
-/* bg-white in dark mode → navy card surface */
-.dark .bg-white { background-color: #111422; }
+/* bg-white in dark mode → surface */
+.dark .bg-white { background-color: #111113; }
 
-/* Light page bg in dark mode */
-.dark .bg-\[\#F8F9FC\] { background-color: #0B0D17; }
-.dark .bg-\[\#F4F5FB\] { background-color: #0B0D17; }
+/* Light page bg in dark mode → canvas */
+.dark .bg-\[\#F8F9FC\] { background-color: #09090B; }
+.dark .bg-\[\#F4F5FB\] { background-color: #09090B; }
 
-/* EEF2FF (indigo tint) in dark mode → deep navy tint */
-.dark .bg-\[\#EEF2FF\] { background-color: #1A2550; }
+/* EEF2FF (accent tint) in dark mode → accentSoft */
+.dark .bg-\[\#EEF2FF\] { background-color: #1F1F23; }
 
-/* Other light bg shades → dark equivalents */
-.dark .bg-\[\#F8FAFC\] { background-color: #0F1220; }
-.dark .bg-slate-50 { background-color: #0F1220; }
-.dark .hover\:bg-slate-50:hover { background-color: #181C30; }
+/* Other light bg shades → surfaceMuted */
+.dark .bg-\[\#F8FAFC\] { background-color: #18181B; }
+.dark .bg-slate-50 { background-color: #18181B; }
+.dark .hover\:bg-slate-50:hover { background-color: #1F1F23; }
+
+/* Light-mode page shell background → Graphite canvas */
+.bg-\[\#F8F9FC\]:not(.dark *) { background-color: #FAFAFA; }
+
+/* Solid-accent buttons: bg-indigo-500/600/700 is white in dark mode (see the
+   @theme comment above), so any element built as bg-indigo-* + hardcoded
+   text-white needs its text forced dark in dark mode or it disappears.
+   Buttons still mid-disabled (bg swaps to slate-300/700 via disabled:) are
+   excluded — those already contrast fine against white text. */
+.dark .bg-indigo-500.text-white:not(:disabled),
+.dark .bg-indigo-600.text-white:not(:disabled),
+.dark .bg-indigo-700.text-white:not(:disabled) {
+  color: #09090B;
+}
+
+/* Same fix for the handful of primary-button-background-color buttons that
+   use the CSS var directly instead of a Tailwind indigo class. */
+.dark .bg-\[var\(--primary-button-background-color\)\].text-white:not(:disabled) {
+  color: #09090B;
+}
 
 /* body {
   background: var(--background);

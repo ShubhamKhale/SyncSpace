@@ -62,7 +62,7 @@ const Page = () => {
   return (
     <div className="min-h-screen grid md:grid-cols-2 bg-white dark:bg-slate-900">
       {/* Left panel */}
-      <div className="hidden md:flex relative flex-col justify-between p-12 overflow-hidden bg-gradient-to-br from-indigo-50 via-indigo-50 to-violet-50 dark:from-slate-800 dark:via-slate-800 dark:to-slate-900">
+      <div className="hidden md:flex relative flex-col justify-between p-12 overflow-hidden bg-gradient-to-br from-indigo-50 via-indigo-50 to-indigo-100 dark:from-slate-800 dark:via-slate-800 dark:to-slate-900">
         <div className="pointer-events-none absolute -top-16 right-0 w-80 h-80 rounded-full bg-indigo-300/30 dark:bg-indigo-500/10 blur-3xl" />
 
         <div className="relative inline-flex items-center gap-2.5">

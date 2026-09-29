@@ -1,0 +1,367 @@
+<title>SyncSpace Theme Polish</title>
+<style>
+  :root {
+    --font-sans: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+
+    /* Light — warmed neutrals, slight indigo hue bias instead of pure gray */
+    --bg: #F7F7FC;
+    --card: #FFFFFF;
+    --sunken: #F0F1F8;
+    --raised: #FFFFFF;
+    --hover: #ECEDF7;
+    --border: #E3E4F0;
+    --border-strong: #CBCEE3;
+    --ink-1: #15162B;
+    --ink-2: #4A4C68;
+    --ink-3: #7C7E9C;
+    --brand: #6366F1;
+    --brand-hover: #4F46E5;
+    --brand-tint: #EEEEFC;
+    --shadow-sm: 0 1px 2px rgba(30,32,74,0.05);
+    --shadow-md: 0 4px 12px -2px rgba(30,32,74,0.08), 0 2px 4px -2px rgba(30,32,74,0.04);
+
+    --stage-planning: #8B5CF6;
+    --stage-design: #3B82F6;
+    --stage-dev: #F59E0B;
+    --stage-qa: #22C55E;
+    --stage-deploy: #14B8A6;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --bg: #0C0D16;
+      --card: #141623;
+      --sunken: #0A0B12;
+      --raised: #1B1E30;
+      --hover: #22263C;
+      --border: #262A42;
+      --border-strong: #363B5C;
+      --ink-1: #EDEEF9;
+      --ink-2: #B7BAD6;
+      --ink-3: #7E82A8;
+      --brand: #818CF8;
+      --brand-hover: #6366F1;
+      --brand-tint: #1E2247;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.4);
+      --shadow-md: 0 4px 16px -4px rgba(0,0,0,0.5), 0 2px 6px -2px rgba(0,0,0,0.3);
+      --stage-planning: #A78BFA;
+      --stage-design: #60A5FA;
+      --stage-dev: #FBBF24;
+      --stage-qa: #4ADE80;
+      --stage-deploy: #2DD4BF;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #0C0D16;
+    --card: #141623;
+    --sunken: #0A0B12;
+    --raised: #1B1E30;
+    --hover: #22263C;
+    --border: #262A42;
+    --border-strong: #363B5C;
+    --ink-1: #EDEEF9;
+    --ink-2: #B7BAD6;
+    --ink-3: #7E82A8;
+    --brand: #818CF8;
+    --brand-hover: #6366F1;
+    --brand-tint: #1E2247;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.4);
+    --shadow-md: 0 4px 16px -4px rgba(0,0,0,0.5), 0 2px 6px -2px rgba(0,0,0,0.3);
+    --stage-planning: #A78BFA;
+    --stage-design: #60A5FA;
+    --stage-dev: #FBBF24;
+    --stage-qa: #4ADE80;
+    --stage-deploy: #2DD4BF;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--ink-1);
+    font-family: var(--font-sans);
+    padding-inline: 20px;
+    padding-block: 24px;
+  }
+
+  .toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+  .toolbar h1 { font-size: 18px; margin: 0; }
+  .toolbar p { margin: 2px 0 0; color: var(--ink-3); font-size: 13px; }
+  .theme-toggle {
+    display: flex;
+    gap: 6px;
+    background: var(--sunken);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 4px;
+  }
+  .theme-toggle button {
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 6px 14px;
+    border-radius: 7px;
+    border: none;
+    background: transparent;
+    color: var(--ink-3);
+    cursor: pointer;
+  }
+  .theme-toggle button.active {
+    background: var(--card);
+    color: var(--ink-1);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 20px;
+  }
+
+  .panel {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+  }
+  .panel-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--ink-2);
+  }
+  .panel-body { padding: 16px; }
+
+  /* Boards list card */
+  .board-card {
+    background: var(--raised);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: var(--shadow-sm);
+  }
+  .board-card + .board-card { margin-top: 12px; }
+  .board-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .board-icon {
+    width: 36px; height: 36px; border-radius: 9px;
+    background: var(--brand);
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-weight: 700; font-size: 14px;
+  }
+  .pill {
+    font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 999px;
+    background: color-mix(in srgb, #22C55E 15%, transparent);
+    color: #16A34A;
+  }
+  :root[data-theme="dark"] .pill, @media (prefers-color-scheme: dark) { }
+  .board-title { font-size: 14px; font-weight: 700; margin: 0; }
+  .board-desc { font-size: 12px; color: var(--ink-3); margin: 3px 0 0; }
+  .board-footer {
+    margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 11px; color: var(--ink-3);
+  }
+
+  /* Stage stat boxes */
+  .stages { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+  .stage-box {
+    background: var(--sunken);
+    border-radius: 10px;
+    padding: 10px 14px;
+    min-width: 92px;
+    border-top: 2px solid var(--stage-c);
+  }
+  .stage-box .n { font-size: 20px; font-weight: 800; line-height: 1.1; }
+  .stage-box .l { font-size: 10px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-3); margin-top: 2px; }
+
+  .kanban-col {
+    background: var(--raised);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--stage-c);
+    border-radius: 10px;
+    padding: 12px;
+  }
+  .kanban-col + .kanban-col { margin-top: 10px; }
+  .kanban-col h4 { margin: 0 0 8px; font-size: 12px; font-weight: 700; }
+  .task-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 12px;
+    box-shadow: var(--shadow-sm);
+  }
+  .task-card + .task-card { margin-top: 8px; }
+  .task-priority { font-size: 10px; font-weight: 700; margin-top: 4px; }
+
+  /* AI chat */
+  .chat-empty {
+    background: var(--brand-tint);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px;
+    font-size: 12px;
+    color: var(--ink-2);
+    line-height: 1.5;
+  }
+  .bubble-user {
+    background: var(--brand);
+    color: #fff;
+    border-radius: 12px 12px 4px 12px;
+    padding: 10px 12px;
+    font-size: 12px;
+    max-width: 80%;
+    margin-left: auto;
+    margin-top: 10px;
+  }
+  .bubble-ai {
+    background: var(--sunken);
+    border-radius: 12px 12px 12px 4px;
+    padding: 10px 12px;
+    font-size: 12px;
+    max-width: 90%;
+    margin-top: 10px;
+  }
+  .chat-input {
+    display: flex; gap: 8px; margin-top: 14px;
+  }
+  .chat-input input {
+    flex: 1;
+    font-family: inherit;
+    font-size: 12px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border-strong);
+    background: var(--card);
+    color: var(--ink-1);
+  }
+  .chat-input button {
+    width: 34px; height: 34px; border-radius: 8px; border: none;
+    background: var(--brand); color: #fff; font-size: 14px; cursor: pointer;
+  }
+
+  .swatches { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+  .swatch { text-align: center; font-size: 10px; color: var(--ink-3); }
+  .swatch .chip { width: 44px; height: 44px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 4px; }
+</style>
+
+<div class="toolbar">
+  <div>
+    <h1>SyncSpace &mdash; Theme Polish</h1>
+    <p>Surface hierarchy + neutral warmth refinement, same indigo brand hue</p>
+  </div>
+  <div class="theme-toggle">
+    <button id="btnLight" class="active" onclick="setTheme('light')">Light</button>
+    <button id="btnDark" onclick="setTheme('dark')">Dark</button>
+  </div>
+</div>
+
+<div class="grid">
+
+  <div class="panel">
+    <div class="panel-header">Boards list</div>
+    <div class="panel-body">
+      <div class="board-card">
+        <div class="board-top">
+          <div class="board-icon">P</div>
+          <span class="pill">Active</span>
+        </div>
+        <p class="board-title">Product Roadmap</p>
+        <p class="board-desc">Q1 planning and architecture reviews</p>
+        <div class="board-footer">
+          <span>3 members</span>
+          <span>Updated 2h ago</span>
+        </div>
+      </div>
+      <div class="board-card">
+        <div class="board-top">
+          <div class="board-icon" style="background:var(--stage-design)">M</div>
+          <span class="pill" style="background:color-mix(in srgb, var(--stage-dev) 18%, transparent); color:var(--stage-dev)">On Hold</span>
+        </div>
+        <p class="board-title">Marketing Site Revamp</p>
+        <p class="board-desc">Landing page refresh</p>
+        <div class="board-footer">
+          <span>2 members</span>
+          <span>Updated 5h ago</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-header">Board detail &mdash; kanban</div>
+    <div class="panel-body">
+      <div class="stages">
+        <div class="stage-box" style="--stage-c:var(--stage-planning)"><div class="n">3</div><div class="l">Planning</div></div>
+        <div class="stage-box" style="--stage-c:var(--stage-design)"><div class="n">2</div><div class="l">Design</div></div>
+        <div class="stage-box" style="--stage-c:var(--stage-dev)"><div class="n">1</div><div class="l">Dev</div></div>
+      </div>
+      <div class="kanban-col" style="--stage-c:var(--stage-planning)">
+        <h4>Planning (2)</h4>
+        <div class="task-card">
+          Audit legacy auth dependencies
+          <div class="task-priority" style="color:#DC2626">High</div>
+        </div>
+        <div class="task-card">
+          Draft rollback plan for billing service
+          <div class="task-priority" style="color:#D97706">Medium</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-header">Ask AI drawer</div>
+    <div class="panel-body">
+      <div class="chat-empty">
+        Try asking things like <em>&ldquo;what&rsquo;s blocked right now&rdquo;</em> or <em>&ldquo;summarize progress since Monday.&rdquo;</em>
+      </div>
+      <div class="bubble-user">What's the status of the Q3 migration?</div>
+      <div class="bubble-ai">Nothing is blocked right now. DB pooling review has sat in review for 3 days.</div>
+      <div class="chat-input">
+        <input placeholder="Ask a question about this board&hellip;" />
+        <button>&#10148;</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-header">Surface hierarchy (dark mode fix)</div>
+    <div class="panel-body">
+      <p style="font-size:12px; color:var(--ink-3); margin:0 0 4px">Old dark mode: 2 flat tones (bg/card). New: 4 distinct layers.</p>
+      <div class="swatches">
+        <div class="swatch"><div class="chip" style="background:var(--sunken)"></div>sunken</div>
+        <div class="swatch"><div class="chip" style="background:var(--bg)"></div>bg</div>
+        <div class="swatch"><div class="chip" style="background:var(--card)"></div>card</div>
+        <div class="swatch"><div class="chip" style="background:var(--raised)"></div>raised</div>
+        <div class="swatch"><div class="chip" style="background:var(--hover)"></div>hover</div>
+        <div class="swatch"><div class="chip" style="background:var(--brand)"></div>brand</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  function setTheme(t) {
+    document.documentElement.setAttribute('data-theme', t);
+    document.getElementById('btnLight').classList.toggle('active', t === 'light');
+    document.getElementById('btnDark').classList.toggle('active', t === 'dark');
+    try { localStorage.setItem('theme-polish-theme', t); } catch (e) {}
+  }
+  try {
+    var saved = localStorage.getItem('theme-polish-theme');
+    if (saved) setTheme(saved);
+  } catch (e) {}
+</script>

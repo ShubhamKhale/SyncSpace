@@ -1,0 +1,526 @@
+<title>SyncSpace Palette Review</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;600;700;800&display=swap');
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: rgb(var(--canvas));
+    color: rgb(var(--ink));
+    font-family: var(--font);
+    transition: background .15s, color .15s;
+  }
+
+  /* ── Switcher bar ───────────────────────────────────────────── */
+  .switcher {
+    position: sticky; top: 0; z-index: 100;
+    display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+    padding: 10px 20px;
+    background: rgb(var(--surface));
+    border-bottom: 1px solid rgb(var(--line));
+  }
+  .switcher .brand { font-weight: 800; font-size: 14px; margin-right: 8px; }
+  .seg { display: flex; gap: 4px; background: rgb(var(--surface-muted)); border-radius: 10px; padding: 3px; }
+  .seg button {
+    font-family: inherit; font-size: 12px; font-weight: 600; padding: 6px 12px;
+    border: none; border-radius: 7px; background: transparent; color: rgb(var(--ink-subtle)); cursor: pointer;
+  }
+  .seg button.active { background: rgb(var(--surface)); color: rgb(var(--ink)); box-shadow: var(--shadow); }
+  .screen-tabs { display: flex; gap: 4px; flex-wrap: wrap; margin-left: auto; }
+  .screen-tabs button {
+    font-family: inherit; font-size: 12px; font-weight: 600; padding: 6px 11px;
+    border: 1px solid rgb(var(--line)); border-radius: 8px; background: rgb(var(--surface)); color: rgb(var(--ink-muted)); cursor: pointer;
+  }
+  .screen-tabs button.active { background: rgb(var(--accent-soft)); color: rgb(var(--accent-text)); border-color: rgb(var(--accent) / 0.4); }
+
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  a { color: inherit; text-decoration: none; }
+  button { cursor: pointer; }
+
+  /* ── generic bits ───────────────────────────────────────────── */
+  .card {
+    background: rgb(var(--surface));
+    border: 1px solid rgb(var(--line));
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+  }
+  .btn-primary {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgb(var(--accent)); color: rgb(var(--accent-fg));
+    font-weight: 600; font-size: 14px; padding: 10px 18px; border-radius: 10px; border: none;
+  }
+  .btn-outline {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgb(var(--surface)); color: rgb(var(--ink));
+    border: 1px solid rgb(var(--line)); font-weight: 600; font-size: 14px; padding: 9px 17px; border-radius: 10px;
+  }
+  .pill { font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 999px; }
+  .input {
+    font-family: inherit; font-size: 13px; width: 100%;
+    background: rgb(var(--surface)); border: 1px solid rgb(var(--line)); border-radius: 10px;
+    padding: 10px 12px; color: rgb(var(--ink));
+  }
+  .input::placeholder { color: rgb(var(--ink-subtle)); }
+  .muted { color: rgb(var(--ink-muted)); }
+  .subtle { color: rgb(var(--ink-subtle)); }
+
+  /* ── Landing ────────────────────────────────────────────────── */
+  .landing-nav { display: flex; align-items: center; justify-content: space-between; padding: 16px 32px; }
+  .hero { padding: 48px 32px 64px; display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center; max-width: 1200px; margin: 0 auto; }
+  .hero h1 { font-size: 44px; font-weight: 800; line-height: 1.1; margin: 0 0 16px; letter-spacing: -0.01em; }
+  .badge-pill { display: inline-flex; align-items: center; gap: 6px; background: rgb(var(--accent-soft)); color: rgb(var(--accent-text)); font-size: 12px; font-weight: 600; padding: 6px 12px; border-radius: 999px; margin-bottom: 16px; }
+  .feature-grid { max-width: 1200px; margin: 0 auto; padding: 0 32px 64px; display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; }
+  .feature-card { padding: 20px; }
+  .feature-icon { width: 36px; height: 36px; border-radius: 10px; background: rgb(var(--accent-soft)); color: rgb(var(--accent-text)); display: flex; align-items: center; justify-content: center; font-size: 16px; margin-bottom: 10px; }
+
+  /* ── Auth split ─────────────────────────────────────────────── */
+  .auth-wrap { display: grid; grid-template-columns: 1fr 1fr; min-height: 620px; }
+  .auth-side { background: rgb(var(--surface-muted)); padding: 48px; display: flex; flex-direction: column; justify-content: space-between; }
+  .auth-quote { font-size: 22px; font-weight: 600; line-height: 1.4; max-width: 380px; }
+  .auth-form { padding: 48px 64px; max-width: 420px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; justify-content: center; }
+  .auth-form h1 { font-size: 24px; font-weight: 700; margin: 0 0 4px; }
+  .oauth-btn { display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; padding: 10px; border: 1px solid rgb(var(--line)); border-radius: 10px; background: rgb(var(--surface)); font-size: 13px; font-weight: 600; }
+  .divider { display: flex; align-items: center; gap: 10px; font-size: 11px; color: rgb(var(--ink-subtle)); }
+  .divider .line { flex: 1; height: 1px; background: rgb(var(--line)); }
+  .field label { font-size: 13px; font-weight: 600; display: block; margin-bottom: 6px; }
+  .stat-row { display: flex; gap: 32px; }
+  .stat-row .n { font-size: 22px; font-weight: 800; }
+  .stat-row .l { font-size: 11px; color: rgb(var(--ink-subtle)); }
+
+  /* ── Onboarding ─────────────────────────────────────────────── */
+  .onb-wrap { max-width: 460px; margin: 60px auto; display: flex; flex-direction: column; align-items: center; gap: 32px; }
+  .steps { display: flex; align-items: center; }
+  .step-circle { width: 30px; height: 30px; border-radius: 999px; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; }
+  .step-line { width: 60px; height: 1px; margin: 0 6px 18px; }
+  .onb-card { padding: 28px; width: 100%; }
+
+  /* ── App shell (dashboard/boards/board-detail) ─────────────── */
+  .app-shell { display: flex; min-height: 640px; }
+  .app-sidebar { width: 240px; flex-shrink: 0; background: rgb(var(--surface)); border-right: 1px solid rgb(var(--line)); display: flex; flex-direction: column; justify-content: space-between; }
+  .app-sidebar .brand { display: flex; align-items: center; gap: 10px; padding: 18px 20px; }
+  .app-sidebar .mark { width: 30px; height: 30px; border-radius: 9px; background: rgb(var(--accent)); color: rgb(var(--accent-fg)); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; }
+  .nav-group { padding: 0 12px; margin-top: 16px; }
+  .nav-label { font-size: 10px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: rgb(var(--ink-subtle)); padding: 0 10px; margin-bottom: 6px; }
+  .nav-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 9px; font-size: 13px; font-weight: 500; color: rgb(var(--ink-muted)); }
+  .nav-item.active { background: rgb(var(--accent-soft)); color: rgb(var(--accent-text)); font-weight: 600; }
+  .app-main { flex: 1; padding: 28px 32px; min-width: 0; }
+  .app-main h1 { font-size: 24px; font-weight: 700; margin: 0 0 4px; }
+
+  .stats-strip { display: grid; grid-template-columns: repeat(5,1fr); overflow: hidden; margin-top: 20px; }
+  .stats-strip .stat { border-left: 1px solid rgb(var(--line)); border-top: 1px solid rgb(var(--line)); margin-left: -1px; margin-top: -1px; padding: 16px; }
+  .stats-strip .stat .top { display: flex; align-items: center; justify-content: space-between; }
+  .stats-strip .stat .val { font-size: 24px; font-weight: 700; margin-top: 8px; }
+
+  .panel-grid { display: grid; grid-template-columns: 3fr 2fr; gap: 16px; margin-top: 20px; }
+  .panel { padding: 18px; }
+  .panel h2 { font-size: 14px; font-weight: 700; margin: 0; }
+  .panel .sub { font-size: 12px; color: rgb(var(--ink-subtle)); margin: 2px 0 0; }
+  .chart-placeholder { height: 140px; margin-top: 14px; border-radius: 8px; background: rgb(var(--surface-muted)); display: flex; align-items: end; gap: 6px; padding: 12px; }
+  .chart-placeholder .bar { flex: 1; border-radius: 4px 4px 0 0; }
+
+  /* Boards list */
+  .boards-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; margin-top: 20px; }
+  .board-card { padding: 16px; }
+  .board-icon { width: 34px; height: 34px; border-radius: 9px; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 13px; margin-bottom: 10px; }
+  .board-foot { margin-top: 12px; padding-top: 10px; border-top: 1px solid rgb(var(--line)); display: flex; justify-content: space-between; font-size: 11px; color: rgb(var(--ink-subtle)); }
+
+  /* Board detail kanban */
+  .board-tabs { display: flex; gap: 8px; margin: 14px 0; }
+  .board-tabs button { font-size: 12px; font-weight: 600; padding: 6px 12px; border-radius: 8px; border: 1px solid rgb(var(--line)); background: rgb(var(--surface)); color: rgb(var(--ink-muted)); }
+  .board-tabs button.active { background: rgb(var(--accent-soft)); color: rgb(var(--accent-text)); border-color: rgb(var(--accent)/.4); }
+  .stage-row { display: flex; gap: 10px; margin: 14px 0 18px; flex-wrap: wrap; }
+  .stage-box { background: rgb(var(--surface-muted)); border-radius: 10px; padding: 10px 14px; min-width: 90px; border-top: 2px solid; }
+  .stage-box .n { font-size: 20px; font-weight: 800; }
+  .stage-box .l { font-size: 10px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: rgb(var(--ink-subtle)); margin-top: 2px; }
+  .kanban-cols { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; }
+  .kanban-col { padding: 12px; border-left-width: 3px; border-left-style: solid; }
+  .kanban-col h4 { font-size: 12px; font-weight: 700; margin: 0 0 10px; }
+  .task-card { background: rgb(var(--canvas)); border: 1px solid rgb(var(--line)); border-radius: 8px; padding: 9px 10px; font-size: 12px; margin-bottom: 8px; }
+  .task-priority { font-size: 10px; font-weight: 700; margin-top: 5px; }
+
+  /* AI drawer */
+  .ai-drawer { max-width: 420px; margin-left: auto; }
+  .ai-header { display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-bottom: 1px solid rgb(var(--line)); }
+  .ai-icon { width: 30px; height: 30px; border-radius: 9px; background: rgb(var(--accent)); color: rgb(var(--accent-fg)); display: flex; align-items: center; justify-content: center; }
+  .ai-body { padding: 14px 16px; min-height: 260px; }
+  .ai-suggest { background: rgb(var(--accent-soft)); border-radius: 10px; padding: 12px; font-size: 12px; color: rgb(var(--accent-text)); line-height: 1.5; }
+  .bubble-user { background: rgb(var(--accent)); color: rgb(var(--accent-fg)); border-radius: 12px 12px 4px 12px; padding: 10px 12px; font-size: 12px; max-width: 80%; margin-left: auto; margin-top: 12px; }
+  .bubble-ai { background: rgb(var(--surface-muted)); border-radius: 12px 12px 12px 4px; padding: 10px 12px; font-size: 12px; max-width: 88%; margin-top: 12px; }
+  .ai-input-row { display: flex; gap: 8px; padding: 12px 16px; border-top: 1px solid rgb(var(--line)); }
+</style>
+
+<div class="switcher">
+  <span class="brand">🎨 Palette Review</span>
+  <div class="seg" id="variantSeg">
+    <button data-variant="mist" class="active">Indigo Mist</button>
+    <button data-variant="graphite">Graphite</button>
+    <button data-variant="sandstone">Sandstone</button>
+  </div>
+  <div class="seg" id="modeSeg">
+    <button data-mode="light" class="active">Light</button>
+    <button data-mode="dark">Dark</button>
+  </div>
+  <div class="screen-tabs" id="screenTabs">
+    <button data-screen="landing" class="active">Landing</button>
+    <button data-screen="auth">Sign in/up</button>
+    <button data-screen="onboarding">Onboarding</button>
+    <button data-screen="dashboard">Dashboard</button>
+    <button data-screen="boards">Boards</button>
+    <button data-screen="board-detail">Board detail</button>
+    <button data-screen="ai">Ask AI</button>
+  </div>
+</div>
+
+<!-- ============ LANDING ============ -->
+<section class="screen active" id="screen-landing">
+  <nav class="landing-nav">
+    <div style="display:flex;align-items:center;gap:10px;font-weight:800">
+      <span style="width:28px;height:28px;border-radius:8px;background:rgb(var(--accent));display:inline-block"></span>
+      SyncSpace
+    </div>
+    <div style="display:flex;gap:28px;font-size:13px;font-weight:600" class="muted">
+      <span>Home</span><span>Features</span><span>Pricing</span>
+    </div>
+    <div style="display:flex;gap:12px;align-items:center">
+      <span style="font-size:13px;font-weight:600">Sign In</span>
+      <button class="btn-primary">Get Started Free</button>
+    </div>
+  </nav>
+  <div class="hero">
+    <div>
+      <span class="badge-pill">✦ Now with AI-generated diagrams</span>
+      <h1>Where your team plans, builds, and <span style="color:rgb(var(--accent))">draws it out</span>.</h1>
+      <p class="muted" style="font-size:15px;max-width:420px;margin:0 0 22px">Kanban boards and flow diagrams in one workspace — with live cursors, presence, and AI that turns a prompt into a working architecture diagram in seconds.</p>
+      <div style="display:flex;gap:12px">
+        <button class="btn-primary">Start for free →</button>
+        <button class="btn-outline">▷ Watch demo</button>
+      </div>
+    </div>
+    <div class="card" style="padding:18px">
+      <p style="font-weight:700;font-size:14px;margin:0 0 12px">Q3 Platform Migration</p>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+        <div style="background:rgb(var(--surface-muted));border-radius:8px;padding:10px">
+          <p class="subtle" style="font-size:10px;font-weight:700;text-transform:uppercase;margin:0 0 6px">Backlog</p>
+          <div class="card" style="padding:8px;font-size:11px">Audit legacy auth deps<br><span style="color:rgb(var(--danger));font-weight:700;font-size:10px">High</span></div>
+        </div>
+        <div style="background:rgb(var(--surface-muted));border-radius:8px;padding:10px">
+          <p class="subtle" style="font-size:10px;font-weight:700;text-transform:uppercase;margin:0 0 6px">In Progress</p>
+          <div class="card" style="padding:8px;font-size:11px">Migrate to new cluster<br><span style="color:rgb(var(--warning));font-weight:700;font-size:10px">Med</span></div>
+        </div>
+        <div style="background:rgb(var(--surface-muted));border-radius:8px;padding:10px">
+          <p class="subtle" style="font-size:10px;font-weight:700;text-transform:uppercase;margin:0 0 6px">Done</p>
+          <div class="card" style="padding:8px;font-size:11px">Provision staging<br><span style="color:rgb(var(--success));font-weight:700;font-size:10px">Low</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="feature-grid">
+    <div class="card feature-card"><div class="feature-icon">⚡</div><p style="font-weight:700;font-size:14px;margin:0 0 4px">Real-time Collaboration</p><p class="subtle" style="font-size:12px;margin:0">See changes instantly as your team edits together.</p></div>
+    <div class="card feature-card"><div class="feature-icon">👁</div><p style="font-weight:700;font-size:14px;margin:0 0 4px">Presence Awareness</p><p class="subtle" style="font-size:12px;margin:0">Know who's online, see live cursors.</p></div>
+    <div class="card feature-card"><div class="feature-icon">✦</div><p style="font-weight:700;font-size:14px;margin:0 0 4px">AI Diagram Generation</p><p class="subtle" style="font-size:12px;margin:0">Prompt to a working, editable diagram.</p></div>
+  </div>
+</section>
+
+<!-- ============ AUTH ============ -->
+<section class="screen" id="screen-auth">
+  <div class="auth-wrap">
+    <div class="auth-side">
+      <div style="display:flex;align-items:center;gap:10px;font-weight:800">
+        <span style="width:28px;height:28px;border-radius:8px;background:rgb(var(--accent));display:inline-block"></span>
+        SyncSpace
+      </div>
+      <div>
+        <p class="auth-quote">&ldquo;We replaced three tools with SyncSpace. Our architecture reviews are now 20 minutes instead of a full afternoon.&rdquo;</p>
+        <p class="subtle" style="font-size:13px;margin-top:12px">Dana Ruiz — Eng Lead, Fielding Labs</p>
+      </div>
+      <div class="stat-row">
+        <div><div class="n">2,400+</div><div class="l">Teams onboard</div></div>
+        <div><div class="n">98.9%</div><div class="l">Uptime SLA</div></div>
+        <div><div class="n">4.8/5</div><div class="l">Average rating</div></div>
+      </div>
+    </div>
+    <div class="auth-form">
+      <h1>Welcome back</h1>
+      <p class="subtle" style="font-size:13px;margin:0 0 8px">Sign in to pick up where your team left off.</p>
+      <button class="oauth-btn">🔵 Continue with Google</button>
+      <button class="oauth-btn">⚫ Continue with GitHub</button>
+      <div class="divider"><span class="line"></span>or continue with email<span class="line"></span></div>
+      <div class="field"><label>Email address</label><input class="input" placeholder="Enter your email address"></div>
+      <div class="field"><label>Password</label><input class="input" placeholder="Enter your password" type="password"></div>
+      <button class="btn-primary" style="justify-content:center;width:100%">Sign In</button>
+      <p class="subtle" style="text-align:center;font-size:12px">Don't have an account? <span style="color:rgb(var(--accent-text));font-weight:600">Sign up free</span></p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ONBOARDING ============ -->
+<section class="screen" id="screen-onboarding">
+  <div class="onb-wrap">
+    <div style="display:flex;align-items:center;gap:10px;font-weight:800">
+      <span style="width:28px;height:28px;border-radius:8px;background:rgb(var(--accent));display:inline-block"></span>
+      SyncSpace
+    </div>
+    <div class="steps">
+      <div style="display:flex;flex-direction:column;align-items:center">
+        <div class="step-circle" style="background:rgb(var(--accent));color:rgb(var(--accent-fg))">1</div>
+        <span style="font-size:11px;font-weight:700;color:rgb(var(--accent-text));margin-top:4px">Create Org</span>
+      </div>
+      <div class="step-line" style="background:rgb(var(--line))"></div>
+      <div style="display:flex;flex-direction:column;align-items:center">
+        <div class="step-circle" style="background:rgb(var(--surface-muted));color:rgb(var(--ink-subtle))">2</div>
+        <span class="subtle" style="font-size:11px;margin-top:4px">Invite Team</span>
+      </div>
+      <div class="step-line" style="background:rgb(var(--line))"></div>
+      <div style="display:flex;flex-direction:column;align-items:center">
+        <div class="step-circle" style="background:rgb(var(--surface-muted));color:rgb(var(--ink-subtle))">3</div>
+        <span class="subtle" style="font-size:11px;margin-top:4px">First Board</span>
+      </div>
+    </div>
+    <div class="card onb-card">
+      <p style="font-weight:700;font-size:17px;margin:0 0 4px">Name your organization</p>
+      <p class="subtle" style="font-size:13px;margin:0 0 16px">This is the workspace your whole team will share.</p>
+      <div class="field"><label>Organization name</label><input class="input" placeholder="e.g. Acme Corp"></div>
+      <button class="btn-primary" style="justify-content:center;width:100%;margin-top:16px">Create Organization →</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============ DASHBOARD (real Magic Patterns layout) ============ -->
+<section class="screen" id="screen-dashboard">
+  <div class="app-shell">
+    <aside class="app-sidebar">
+      <div>
+        <div class="brand"><span class="mark">☁</span>SyncSpace</div>
+        <div class="nav-group">
+          <div class="nav-item active">▦ Dashboard</div>
+          <div class="nav-item">📁 Boards</div>
+        </div>
+        <div class="nav-group"><div class="nav-label">Workspace</div>
+          <div class="nav-item">🕐 History</div>
+          <div class="nav-item">🔔 Notifications</div>
+          <div class="nav-item">🏢 Organization</div>
+        </div>
+        <div class="nav-group"><div class="nav-label">Account</div>
+          <div class="nav-item">⚙ Settings</div>
+          <div class="nav-item">👤 Profile</div>
+        </div>
+      </div>
+      <div style="padding:14px;border-top:1px solid rgb(var(--line))">
+        <div style="display:flex;gap:10px;align-items:center">
+          <span style="width:32px;height:32px;border-radius:999px;background:rgb(var(--accent-soft));color:rgb(var(--accent-text));display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700">SK</span>
+          <div><p style="font-size:12px;font-weight:700;margin:0">Shubham Khale</p><p class="subtle" style="font-size:10px;margin:0">shubham@syncspace.dev</p></div>
+        </div>
+      </div>
+    </aside>
+    <main class="app-main">
+      <h1>Good evening, Shubham</h1>
+      <p class="subtle" style="font-size:13px;margin:0">Here's what's happening in your workspace today.</p>
+
+      <div class="card stats-strip">
+        <div class="stat"><div class="top"><span class="muted" style="font-size:12px">Total Boards</span></div><div class="val">12</div><p class="subtle" style="font-size:11px;margin:4px 0 0"><span style="color:rgb(var(--success));font-weight:600">↗ +14%</span> from last month</p></div>
+        <div class="stat"><div class="top"><span class="muted" style="font-size:12px">In Progress</span></div><div class="val">18</div><p class="subtle" style="font-size:11px;margin:4px 0 0"><span style="color:rgb(var(--success));font-weight:600">↗ +6%</span> from last month</p></div>
+        <div class="stat"><div class="top"><span class="muted" style="font-size:12px">Completed</span></div><div class="val">46</div><p class="subtle" style="font-size:11px;margin:4px 0 0"><span style="color:rgb(var(--success));font-weight:600">↗ +22%</span> from last month</p></div>
+        <div class="stat"><div class="top"><span class="muted" style="font-size:12px">Due Soon</span></div><div class="val">5</div><p class="subtle" style="font-size:11px;margin:4px 0 0"><span style="color:rgb(var(--warning));font-weight:600">↘ −2</span> from last week</p></div>
+        <div class="stat"><div class="top"><span class="muted" style="font-size:12px">Team Members</span></div><div class="val">8</div><p class="subtle" style="font-size:11px;margin:4px 0 0">0% new this month</p></div>
+      </div>
+
+      <div class="panel-grid">
+        <div class="card panel">
+          <h2>Task completion trend</h2><p class="sub">Created vs. completed tasks</p>
+          <div class="chart-placeholder" id="trendChart"></div>
+        </div>
+        <div class="card panel">
+          <h2>Distribution by category</h2><p class="sub">Open tasks across boards</p>
+          <div class="chart-placeholder" id="categoryChart"></div>
+        </div>
+      </div>
+    </main>
+  </div>
+</section>
+
+<!-- ============ BOARDS LIST ============ -->
+<section class="screen" id="screen-boards">
+  <div class="app-shell">
+    <aside class="app-sidebar">
+      <div>
+        <div class="brand"><span class="mark">☁</span>SyncSpace</div>
+        <div class="nav-group">
+          <div class="nav-item">▦ Dashboard</div>
+          <div class="nav-item active">📁 Boards</div>
+        </div>
+      </div>
+    </aside>
+    <main class="app-main">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div><h1>My Boards</h1><p class="subtle" style="font-size:13px;margin:0">Create, manage and collaborate on your project boards.</p></div>
+        <button class="btn-primary">+ New Board</button>
+      </div>
+      <div class="boards-grid">
+        <div class="card board-card">
+          <div style="display:flex;justify-content:space-between"><div class="board-icon" style="background:rgb(var(--accent))">P</div><span class="pill" style="background:rgb(var(--success-soft));color:rgb(var(--success))">Active</span></div>
+          <p style="font-weight:700;font-size:14px;margin:0">Product Roadmap</p>
+          <p class="subtle" style="font-size:12px;margin:2px 0 0">Q1 planning and architecture reviews</p>
+          <div class="board-foot"><span>3 members</span><span>Updated 2h ago</span></div>
+        </div>
+        <div class="card board-card">
+          <div style="display:flex;justify-content:space-between"><div class="board-icon" style="background:rgb(var(--plum))">M</div><span class="pill" style="background:rgb(var(--warning-soft));color:rgb(var(--warning))">On Hold</span></div>
+          <p style="font-weight:700;font-size:14px;margin:0">Marketing Site Revamp</p>
+          <p class="subtle" style="font-size:12px;margin:2px 0 0">Landing page refresh</p>
+          <div class="board-foot"><span>2 members</span><span>Updated 5h ago</span></div>
+        </div>
+        <div class="card board-card" style="display:flex;flex-direction:column;align-items:center;justify-content:center;border-style:dashed">
+          <p style="font-weight:700;font-size:13px;margin:0">+ Start a new board</p>
+        </div>
+      </div>
+    </main>
+  </div>
+</section>
+
+<!-- ============ BOARD DETAIL ============ -->
+<section class="screen" id="screen-board-detail">
+  <div class="app-shell">
+    <aside class="app-sidebar">
+      <div><div class="brand"><span class="mark">☁</span>SyncSpace</div></div>
+    </aside>
+    <main class="app-main">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h1 style="font-size:20px">Product Roadmap</h1>
+        <button class="btn-primary">+ New Task</button>
+      </div>
+      <div class="board-tabs">
+        <button class="active">Kanban</button><button>Timeline</button><button>Matrix</button><button>Flows</button>
+      </div>
+      <div class="stage-row">
+        <div class="stage-box" style="border-color:var(--chart-1)"><div class="n">3</div><div class="l">Planning</div></div>
+        <div class="stage-box" style="border-color:var(--chart-2)"><div class="n">2</div><div class="l">Design</div></div>
+        <div class="stage-box" style="border-color:var(--chart-3)"><div class="n">1</div><div class="l">Development</div></div>
+        <div class="stage-box" style="border-color:var(--chart-4)"><div class="n">0</div><div class="l">QA</div></div>
+        <div class="stage-box" style="border-color:var(--chart-5)"><div class="n">3</div><div class="l">Deployment</div></div>
+      </div>
+      <div class="kanban-cols">
+        <div class="card kanban-col" style="border-left-color:var(--chart-1)">
+          <h4>Planning (2)</h4>
+          <div class="task-card">Audit legacy auth dependencies<div class="task-priority" style="color:rgb(var(--danger))">High</div></div>
+          <div class="task-card">Draft rollback plan for billing<div class="task-priority" style="color:rgb(var(--warning))">Medium</div></div>
+        </div>
+        <div class="card kanban-col" style="border-left-color:var(--chart-2)">
+          <h4>Design (1)</h4>
+          <div class="task-card">Design onboarding flow<div class="task-priority" style="color:rgb(var(--danger))">High</div></div>
+        </div>
+        <div class="card kanban-col" style="border-left-color:var(--chart-5)">
+          <h4>Deployment (1)</h4>
+          <div class="task-card">Provision staging cluster<div class="task-priority" style="color:rgb(var(--success))">Low</div></div>
+        </div>
+      </div>
+    </main>
+  </div>
+</section>
+
+<!-- ============ AI DRAWER ============ -->
+<section class="screen" id="screen-ai">
+  <div style="min-height:560px;background:rgb(var(--surface-muted));padding:24px;display:flex;justify-content:flex-end">
+    <div class="card ai-drawer" style="width:100%">
+      <div class="ai-header">
+        <span class="ai-icon">✦</span>
+        <div><p style="font-weight:700;font-size:13px;margin:0">Ask AI about this board</p><p class="subtle" style="font-size:11px;margin:0">Grounded in your live tasks &amp; activity</p></div>
+      </div>
+      <div class="ai-body">
+        <div class="ai-suggest">Try asking things like <em>&ldquo;what's blocked right now&rdquo;</em> or <em>&ldquo;summarize progress since Monday.&rdquo;</em></div>
+        <div class="bubble-user">What's the status of the Q3 migration?</div>
+        <div class="bubble-ai">Nothing is blocked right now. DB pooling review has sat in review for 3 days.</div>
+      </div>
+      <div class="ai-input-row">
+        <input class="input" placeholder="Ask a question about this board…" style="flex:1">
+        <button class="btn-primary" style="padding:10px 14px">➤</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  const THEMES = {
+    mist: { name:'Indigo Mist', font:"'Plus Jakarta Sans', system-ui, sans-serif", radius:'16px',
+      light:{canvas:'#F6F7FB',surface:'#FFFFFF',surfaceMuted:'#F1F3F9',line:'#E6E8F0',lineStrong:'#D5D9E5',ink:'#151827',inkMuted:'#565B73',inkSubtle:'#868BA3',accent:'#5B5BD6',accentFg:'#FFFFFF',accentSoft:'#EEEEFC',accentText:'#4845C4',success:'#12924A',successSoft:'#E6F5EC',warning:'#C26A05',warningSoft:'#FDF1E1',danger:'#D93D42',dangerSoft:'#FDECEC',plum:'#8446BD',plumSoft:'#F4ECFB',grid:'#EEF0F5',chart:['#5B5BD6','#12A150','#F59E0B','#A855F7','#A3A9BD'],shadow:'0 1px 2px rgba(21,24,39,0.04), 0 1px 1px rgba(21,24,39,0.02)'},
+      dark:{canvas:'#0B0D14',surface:'#12151F',surfaceMuted:'#1A1E2B',line:'#232838',lineStrong:'#343B52',ink:'#ECEEF6',inkMuted:'#A0A6BD',inkSubtle:'#6F7592',accent:'#6966F0',accentFg:'#FFFFFF',accentSoft:'#1E1F3D',accentText:'#A9AAFF',success:'#3DD68C',successSoft:'#13291F',warning:'#F5A524',warningSoft:'#2E2213',danger:'#FF6369',dangerSoft:'#33171A',plum:'#C084F5',plumSoft:'#2A1A38',grid:'#1B1F2C',chart:['#7C7CF0','#3DD68C','#F5A524','#C084F5','#4E5570'],shadow:'none'} },
+    graphite: { name:'Graphite', font:"'Inter', system-ui, sans-serif", radius:'10px',
+      light:{canvas:'#FAFAFA',surface:'#FFFFFF',surfaceMuted:'#F4F4F5',line:'#E4E4E7',lineStrong:'#D4D4D8',ink:'#09090B',inkMuted:'#52525B',inkSubtle:'#8A8A93',accent:'#18181B',accentFg:'#FFFFFF',accentSoft:'#F0F0F2',accentText:'#18181B',success:'#047857',successSoft:'#E8F6F0',warning:'#B45309',warningSoft:'#FDF3E3',danger:'#DC2626',dangerSoft:'#FDEDED',plum:'#2563EB',plumSoft:'#EAF1FE',grid:'#F0F0F2',chart:['#2563EB','#10B981','#F59E0B','#8B5CF6','#A1A1AA'],shadow:'none'},
+      dark:{canvas:'#09090B',surface:'#111113',surfaceMuted:'#18181B',line:'#232326',lineStrong:'#3F3F46',ink:'#FAFAFA',inkMuted:'#A1A1AA',inkSubtle:'#71717A',accent:'#FAFAFA',accentFg:'#09090B',accentSoft:'#1F1F23',accentText:'#FAFAFA',success:'#34D399',successSoft:'#0F2620',warning:'#FBBF24',warningSoft:'#2A2110',danger:'#F87171',dangerSoft:'#2C1414',plum:'#60A5FA',plumSoft:'#132036',grid:'#1C1C1F',chart:['#3B82F6','#34D399','#FBBF24','#A78BFA','#52525B'],shadow:'none'} },
+    sandstone: { name:'Sandstone', font:"'DM Sans', system-ui, sans-serif", radius:'18px',
+      light:{canvas:'#F7F4EF',surface:'#FFFDF9',surfaceMuted:'#F1ECE4',line:'#E8E1D6',lineStrong:'#D9CFC0',ink:'#211C17',inkMuted:'#665C52',inkSubtle:'#978B7F',accent:'#C2562B',accentFg:'#FFFFFF',accentSoft:'#F8E9E1',accentText:'#A3431D',success:'#377F50',successSoft:'#E6F1E8',warning:'#A8720F',warningSoft:'#F8EFD9',danger:'#C43D3D',dangerSoft:'#F7E3E1',plum:'#735699',plumSoft:'#EFE9F6',grid:'#EFE9E0',chart:['#C2562B','#3F8F5A','#D9A441','#7B5EA7','#BDB2A4'],shadow:'0 1px 2px rgba(60,40,20,0.05)'},
+      dark:{canvas:'#14110E',surface:'#1C1814',surfaceMuted:'#25201B',line:'#2F2922',lineStrong:'#453C32',ink:'#F3EDE4',inkMuted:'#B3A899',inkSubtle:'#857A6D',accent:'#E07A4B',accentFg:'#1A120C',accentSoft:'#3A2419',accentText:'#F29A6E',success:'#6CC08A',successSoft:'#1A2A1F',warning:'#E6B455',warningSoft:'#2E2615',danger:'#EF7B72',dangerSoft:'#331C1A',plum:'#B196DB',plumSoft:'#251F31',grid:'#262019',chart:['#E07A4B','#6CC08A','#E6B455','#A98BD6','#5E554A'],shadow:'none'} }
+  };
+
+  function hexToRgb(hex) {
+    const n = parseInt(hex.replace('#',''),16);
+    return `${(n>>16)&255} ${(n>>8)&255} ${n&255}`;
+  }
+
+  let variant = 'mist', mode = 'light';
+
+  function applyTheme() {
+    const def = THEMES[variant];
+    const t = def[mode];
+    const root = document.documentElement.style;
+    root.setProperty('--canvas', hexToRgb(t.canvas));
+    root.setProperty('--surface', hexToRgb(t.surface));
+    root.setProperty('--surface-muted', hexToRgb(t.surfaceMuted));
+    root.setProperty('--line', hexToRgb(t.line));
+    root.setProperty('--line-strong', hexToRgb(t.lineStrong));
+    root.setProperty('--ink', hexToRgb(t.ink));
+    root.setProperty('--ink-muted', hexToRgb(t.inkMuted));
+    root.setProperty('--ink-subtle', hexToRgb(t.inkSubtle));
+    root.setProperty('--accent', hexToRgb(t.accent));
+    root.setProperty('--accent-fg', hexToRgb(t.accentFg));
+    root.setProperty('--accent-soft', hexToRgb(t.accentSoft));
+    root.setProperty('--accent-text', hexToRgb(t.accentText));
+    root.setProperty('--success', hexToRgb(t.success));
+    root.setProperty('--success-soft', hexToRgb(t.successSoft));
+    root.setProperty('--warning', hexToRgb(t.warning));
+    root.setProperty('--warning-soft', hexToRgb(t.warningSoft));
+    root.setProperty('--danger', hexToRgb(t.danger));
+    root.setProperty('--danger-soft', hexToRgb(t.dangerSoft));
+    root.setProperty('--plum', hexToRgb(t.plum));
+    root.setProperty('--plum-soft', hexToRgb(t.plumSoft));
+    root.setProperty('--font', def.font);
+    root.setProperty('--radius', def.radius);
+    root.setProperty('--shadow', t.shadow);
+    t.chart.forEach((c,i) => root.setProperty(`--chart-${i+1}`, c));
+
+    // chart placeholder bars
+    document.querySelectorAll('.chart-placeholder').forEach((el, idx) => {
+      el.innerHTML = '';
+      const n = 7;
+      for (let i=0;i<n;i++){
+        const bar = document.createElement('div');
+        bar.className = 'bar';
+        const h = 30 + Math.round(Math.sin(i*1.3+idx)*20+40);
+        bar.style.height = h+'%';
+        bar.style.background = t.chart[idx===0?0:1];
+        el.appendChild(bar);
+      }
+    });
+  }
+
+  document.getElementById('variantSeg').addEventListener('click', (e) => {
+    const btn = e.target.closest('button'); if(!btn) return;
+    variant = btn.dataset.variant;
+    document.querySelectorAll('#variantSeg button').forEach(b=>b.classList.toggle('active', b===btn));
+    applyTheme();
+  });
+  document.getElementById('modeSeg').addEventListener('click', (e) => {
+    const btn = e.target.closest('button'); if(!btn) return;
+    mode = btn.dataset.mode;
+    document.querySelectorAll('#modeSeg button').forEach(b=>b.classList.toggle('active', b===btn));
+    applyTheme();
+  });
+  document.getElementById('screenTabs').addEventListener('click', (e) => {
+    const btn = e.target.closest('button'); if(!btn) return;
+    document.querySelectorAll('#screenTabs button').forEach(b=>b.classList.toggle('active', b===btn));
+    document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active', s.id === 'screen-'+btn.dataset.screen));
+  });
+
+  applyTheme();
+</script>
