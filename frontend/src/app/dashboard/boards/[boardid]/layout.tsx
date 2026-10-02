@@ -45,7 +45,7 @@ export default function DashboardLayout({
           {/* Mobile backdrop — shown when a sidebar is open on small screens */}
           {(!leftCollapsed || !rightCollapsed) && (
             <div
-              className="fixed inset-0 z-20 bg-black/40 lg:hidden"
+              className="fixed inset-0 z-[25] bg-black/40 lg:hidden"
               onClick={() => { setLeftCollapsed(true); setRightCollapsed(true); }}
             />
           )}
