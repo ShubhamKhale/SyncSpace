@@ -61,6 +61,10 @@ const fieldLabel = (icon: React.ReactNode, text: string) => (
   </label>
 );
 
+// The modal body scrolls with a hidden scrollbar, so a dropdown opened near its
+// bottom edge would render out of view with no visual hint — scroll it in on mount.
+const scrollIntoViewOnMount = (el: HTMLElement | null) => el?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+
 const inputCls = "w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2.5 text-sm text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#6366F1]/30 focus:border-[#6366F1] transition";
 
 const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, boardName, boardId }) => {
@@ -262,7 +266,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, boardName, board
                     <svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                   </button>
                   {showStatusDrop && (
-                    <ul className="absolute z-20 mt-1 w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl overflow-hidden">
+                    <ul ref={scrollIntoViewOnMount} className="absolute z-20 mt-1 w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl overflow-hidden">
                       {STATUS_OPTIONS.map(opt => (
                         <li key={opt.value}
                           className="flex items-center gap-2.5 px-3 py-2.5 text-sm cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 transition"
@@ -289,7 +293,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, boardName, board
                     <svg className="w-4 h-4 text-slate-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                   </button>
                   {showAssigneeDrop && (
-                    <ul className="absolute z-20 mt-1 w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl overflow-hidden max-h-48 overflow-y-auto">
+                    <ul ref={scrollIntoViewOnMount} className="absolute z-20 mt-1 w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl overflow-hidden max-h-48 overflow-y-auto">
                       {membersLoading ? (
                         <li className="px-3 py-3 text-xs text-slate-400 text-center">Loading members…</li>
                       ) : members.length === 0 ? (
@@ -361,7 +365,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, boardName, board
                     <svg className="w-4 h-4 text-slate-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                   </button>
                   {showTagDrop && (
-                    <ul className="absolute z-20 mt-1 w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl overflow-hidden max-h-44 overflow-y-auto">
+                    <ul ref={scrollIntoViewOnMount} className="absolute z-20 mt-1 w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl overflow-hidden max-h-44 overflow-y-auto">
                       {tagOptions.map(tag => (
                         <li key={tag}
                           className="flex items-center justify-between px-3 py-2.5 text-sm cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 transition text-slate-800 dark:text-slate-100"
