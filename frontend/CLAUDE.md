@@ -103,11 +103,11 @@ All stores live in `src/app/store/`:
 |---|---|
 | `useUserStore` | User session state (name/email/avatarUrl/role/orgId), `fetchUser`/`setUser`/`clearUser`, `getInitials()` |
 | `useBoardStore` | Board metadata (title, description, tags, status, coverColor), with per-field save states; `LocalBoardMeta` persisted to localStorage via `writeLocalMeta` |
-| `useBoardTaskStore` | Tasks array with optimistic updates per field (title, priority, dates, assignee, stage) |
+| `useBoardTaskStore` | Board tasks + board `members` (loaded together in `fetchTasks`). `updateTask(id, patch)` / `deleteTask(id)` are optimistic with rollback; the inline per-field editors route through `updateTask`. Converts to the backend's snake_case + RFC3339 in one place (`toPatchBody`). Dates are `YYYY-MM-DD` in the UI; `assigneeId` is stored, `assignee` is the resolved display name |
 | `useBoardFlowsStore` | Board-scoped flow CRUD: `fetchFlows`/`createFlow`/`deleteFlow`/`renameFlow`/`duplicateFlow`/`migrateFlow` (migrates a local-only flow to server-backed) |
 | `useLinkedResourcesStore` | Docs and external links for a board's right panel |
 | `useTaskStore` | General task store (separate from board tasks); `moveTask(activeId, overId, fromList, toList)` for cross-column dnd-kit drag-drop |
-| `globalTaskStore` | Drives the global slide-in `GlobalTaskDetail` drawer from anywhere in the app |
+| `globalTaskStore` | Legacy — only used by the unrendered `TaskListCard`. Task details open in `TaskModal` (pass `task` for edit mode) |
 | `flowStore` | ReactFlow nodes/edges for the diagram canvas |
 | `flow/store.ts` | Connection line path state for editable edges (local to flow components) |
 | `useTemplateStore` | Template modal state: open/close, selected category, search query, recent template IDs (persisted to `"syncspace-recent-templates"` in localStorage) |
@@ -123,7 +123,6 @@ Heavy components are lazy-loaded via `next/dynamic()` to keep route chunks small
 | `src/app/dashboard/page.tsx` | 4 Recharts chart components | Server Component — no `ssr: false` |
 | `src/app/flow/page.tsx` | `DiagramFrame` | `{ ssr: false }` — ReactFlow requires browser |
 | `src/app/dashboard/boards/[boardid]/page.tsx` | `BoardTaskFlow` | Covers dnd-kit + date-fns chunk |
-| `src/app/dashboard/boards/[boardid]/tasks/layout.tsx` | `GlobalTaskDetail` | `{ ssr: false }` |
 
 `next.config.ts` has `experimental.optimizePackageImports: ["lucide-react", "recharts", "@xyflow/react"]` — only imported symbols are bundled, not the whole barrel.
 

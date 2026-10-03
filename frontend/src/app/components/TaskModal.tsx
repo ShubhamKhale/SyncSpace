@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
   Clock,
@@ -23,19 +23,15 @@ import {
 import CustomDatePicker from "./CustomDatePicker";
 import { apiFetch } from "@/lib/api";
 import { useBoardTaskStore } from "@/app/store/useBoardTaskStore";
+import type { BoardMember, BoardTask, TaskPatch } from "@/app/store/useBoardTaskStore";
+import { useEditMode } from "@/app/hooks/useEditMode";
 
+/** Local checklist row. `key` is React-only; `id` is the server ID ("" until saved). */
 interface Subtask {
-  id: number;
+  key: string;
+  id: string;
   text: string;
   completed: boolean;
-}
-
-interface BoardMember {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  avatar_url?: string | null;
 }
 
 interface TaskModalProps {
@@ -43,7 +39,19 @@ interface TaskModalProps {
   onClose: () => void;
   boardName?: string;
   boardId?: string;
+  /** When set, the modal edits this task instead of creating a new one. */
+  task?: BoardTask | null;
 }
+
+const toLocalSubtasks = (task?: BoardTask | null): Subtask[] =>
+  (task?.subtasks ?? []).map((s) => ({ key: s.id, id: s.id, text: s.text, completed: s.completed }));
+
+const sameSubtasks = (a: Subtask[], b: Subtask[]) =>
+  a.length === b.length &&
+  a.every((s, i) => s.id === b[i].id && s.text === b[i].text && s.completed === b[i].completed);
+
+const sameTags = (a: string[], b: string[]) =>
+  a.length === b.length && a.every((t, i) => t === b[i]);
 
 const tagOptions = ["Frontend", "Backend", "Design", "Testing", "Bug", "Feature"];
 
@@ -67,13 +75,16 @@ const scrollIntoViewOnMount = (el: HTMLElement | null) => el?.scrollIntoView({ b
 
 const inputCls = "w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2.5 text-sm text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#6366F1]/30 focus:border-[#6366F1] transition";
 
-const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, boardName, boardId }) => {
+const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, boardName, boardId, task }) => {
+  const isEdit = !!task;
+  const { canEditTasks, canDeleteTasks } = useEditMode();
+  const readOnly = isEdit && !canEditTasks;
   const [title, setTitle]                           = useState("");
   const [description, setDescription]               = useState("");
   const [priority, setPriority]                     = useState<"low" | "medium" | "high">("medium");
   const [status, setStatus]                         = useState("Planning");
   const [showStatusDrop, setShowStatusDrop]         = useState(false);
-  const [assignee, setAssignee]                     = useState("");
+  const [assigneeId, setAssigneeId]                 = useState("");
   const [members, setMembers]                       = useState<BoardMember[]>([]);
   const [membersLoading, setMembersLoading]         = useState(false);
   const [showAssigneeDrop, setShowAssigneeDrop]     = useState(false);
@@ -84,69 +95,122 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, boardName, board
   const [showTagDrop, setShowTagDrop]               = useState(false);
   const [referenceLink, setReferenceLink]           = useState("");
   const [flowDiagramLink, setFlowDiagramLink]       = useState("");
-  const [attachedFiles, setAttachedFiles]           = useState<File[]>([]);
   const [subtasks, setSubtasks]                     = useState<Subtask[]>([]);
   const [newSubtaskText, setNewSubtaskText]         = useState("");
-  const [draggingOver, setDraggingOver]             = useState(false);
   const [submitting, setSubmitting]                 = useState(false);
   const [submitError, setSubmitError]               = useState("");
-  const fileInputRef                                = useRef<HTMLInputElement>(null);
-  const { createTask } = useBoardTaskStore();
+  const [confirmDelete, setConfirmDelete]           = useState(false);
+  const [deleting, setDeleting]                     = useState(false);
+  const { createTask, updateTask, deleteTask } = useBoardTaskStore();
+  const storeMembers = useBoardTaskStore((s) => s.members);
 
   useEffect(() => {
     if (isOpen) {
-      // Reset form on every open
-      setTitle("");
-      setDescription("");
-      setStatus("Planning");
-      setAssignee("");
-      setStartDate("");
-      setDueDate("");
-      setTimeEstimate("");
-      setSelectedTags([]);
-      setReferenceLink("");
-      setFlowDiagramLink("");
-      setAttachedFiles([]);
-      setSubtasks([]);
+      // Reset (create) or prefill (edit) on every open
+      setTitle(task?.title ?? "");
+      setDescription(task?.description ?? "");
+      setPriority(task?.priority ?? "medium");
+      setStatus(task?.stage ?? "Planning");
+      setAssigneeId(task?.assigneeId ?? "");
+      setStartDate(task?.startDate ?? "");
+      setDueDate(task?.endDate ?? "");
+      setTimeEstimate(task?.timeEstimate ?? "");
+      setSelectedTags(task?.tags ?? []);
+      setReferenceLink(task?.referenceLink ?? "");
+      setFlowDiagramLink(task?.flowDiagramLink ?? "");
+      setSubtasks(toLocalSubtasks(task));
       setNewSubtaskText("");
       setSubmitError("");
+      setConfirmDelete(false);
       setShowStatusDrop(false);
       setShowAssigneeDrop(false);
       setShowTagDrop(false);
     }
-  }, [isOpen]);
+    // Prefill only when the modal opens or switches task — not on every store
+    // update of the same task, which would wipe in-progress edits.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, task?.id]);
 
   useEffect(() => {
     if (!isOpen || !boardId) return;
+    // The board pages already load members into the store; only fetch if missing.
+    if (storeMembers.length > 0) { setMembers(storeMembers); return; }
     setMembersLoading(true);
     apiFetch<BoardMember[]>(`/api/boards/${boardId}/members`)
       .then(data => setMembers(Array.isArray(data) ? data : []))
       .catch(() => setMembers([]))
       .finally(() => setMembersLoading(false));
-  }, [isOpen, boardId]);
+  }, [isOpen, boardId, storeMembers]);
+
+  const assigneeName = members.find(m => m.id === assigneeId)?.name ?? "";
+  const subtasksPayload = subtasks.map(({ id, text, completed }) => ({ id, text, completed }));
+
+  /** Only the fields that differ from the task being edited. */
+  const buildPatch = (t: BoardTask): TaskPatch => {
+    const patch: TaskPatch = {};
+    if (title.trim() !== t.title) patch.title = title.trim();
+    if (description.trim() !== t.description) patch.description = description.trim();
+    if (priority !== t.priority) patch.priority = priority;
+    if (status !== t.stage) patch.stage = status;
+    if (assigneeId !== t.assigneeId) patch.assigneeId = assigneeId;
+    if (startDate !== t.startDate) patch.startDate = startDate;
+    if (dueDate !== t.endDate) patch.endDate = dueDate;
+    if (timeEstimate !== t.timeEstimate) patch.timeEstimate = timeEstimate;
+    if (!sameTags(selectedTags, t.tags)) patch.tags = selectedTags;
+    if (referenceLink.trim() !== t.referenceLink) patch.referenceLink = referenceLink.trim();
+    if (flowDiagramLink.trim() !== t.flowDiagramLink) patch.flowDiagramLink = flowDiagramLink.trim();
+    if (!sameSubtasks(subtasks, toLocalSubtasks(t))) patch.subtasks = subtasksPayload;
+    return patch;
+  };
 
   const handleSubmit = async () => {
+    if (readOnly) return;
     if (!title.trim()) { setSubmitError("Task title is required."); return; }
-    if (!boardId) { setSubmitError("Board ID missing."); return; }
+    if (startDate && dueDate && dueDate < startDate) { setSubmitError("Due date can't be before the start date."); return; }
+    if (!isEdit && !boardId) { setSubmitError("Board ID missing."); return; }
     setSubmitError("");
     setSubmitting(true);
     try {
-      await createTask(boardId, {
-        title: title.trim(),
-        stage: status,
-        priority,
-        description: description.trim() || undefined,
-        assignee: assignee || undefined,
-        startDate: startDate || undefined,
-        endDate: dueDate || undefined,
-        timeEstimate: timeEstimate ? Number(timeEstimate) : undefined,
-        tags: selectedTags.length ? selectedTags : undefined,
-      });
+      if (task) {
+        const patch = buildPatch(task);
+        if (Object.keys(patch).length > 0) await updateTask(task.id, patch);
+      } else {
+        await createTask(boardId!, {
+          title: title.trim(),
+          stage: status,
+          priority,
+          description: description.trim() || undefined,
+          assigneeId: assigneeId || undefined,
+          startDate: startDate || undefined,
+          endDate: dueDate || undefined,
+          timeEstimate: timeEstimate || undefined,
+          tags: selectedTags.length ? selectedTags : undefined,
+          referenceLink: referenceLink.trim() || undefined,
+          flowDiagramLink: flowDiagramLink.trim() || undefined,
+          subtasks: subtasksPayload.length ? subtasksPayload : undefined,
+        });
+      }
       onClose();
     } catch (err) {
-      setSubmitError((err as Error).message ?? "Failed to create task.");
+      setSubmitError((err as Error).message || (isEdit ? "Failed to save changes." : "Failed to create task."));
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!task) return;
+    if (!confirmDelete) { setConfirmDelete(true); return; }
+    setDeleting(true);
+    setSubmitError("");
+    try {
+      await deleteTask(task.id);
+      onClose();
+    } catch (err) {
+      setSubmitError((err as Error).message || "Failed to delete task.");
+      setConfirmDelete(false);
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -154,13 +218,9 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, boardName, board
 
   const statusColor = STATUS_OPTIONS.find(s => s.value === status)?.color ?? "#6366F1";
 
-  const handleFileUpload = (files: FileList | null) => {
-    if (files) setAttachedFiles(p => [...p, ...Array.from(files)]);
-  };
-
   const handleAddSubtask = () => {
     if (!newSubtaskText.trim()) return;
-    setSubtasks(p => [...p, { id: Date.now(), text: newSubtaskText.trim(), completed: false }]);
+    setSubtasks(p => [...p, { key: `new-${Date.now()}`, id: "", text: newSubtaskText.trim(), completed: false }]);
     setNewSubtaskText("");
   };
 
@@ -186,7 +246,14 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, boardName, board
             <div className="w-7 h-7 rounded-lg bg-[#EEF2FF] flex items-center justify-center">
               <ListChecks size={15} className="text-[#6366F1]" />
             </div>
-            <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">Create Task</h2>
+            <h2 className="text-base font-semibold text-slate-800 dark:text-slate-100">
+              {!isEdit ? "Create Task" : readOnly ? "Task Details" : "Edit Task"}
+            </h2>
+            {readOnly && (
+              <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400">
+                View only
+              </span>
+            )}
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-600 transition">
             <X size={18} />
@@ -195,6 +262,8 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, boardName, board
 
         {/* ── Body ── */}
         <div className="overflow-y-auto max-h-[78vh] scrollbar-hide">
+          {/* A disabled fieldset makes every input and button inside inert for viewers. */}
+          <fieldset disabled={readOnly} className="contents">
           <div className="grid grid-cols-1 lg:grid-cols-[3fr_2fr]">
 
             {/* LEFT */}
@@ -289,7 +358,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, boardName, board
                     onClick={e => { e.stopPropagation(); setShowAssigneeDrop(p => !p); }}
                     className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2.5 text-sm flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-[#6366F1]/30 transition"
                   >
-                    <span className={`flex-1 text-left ${assignee ? "text-slate-800 dark:text-slate-100" : "text-slate-400"}`}>{assignee || "Select Assignee"}</span>
+                    <span className={`flex-1 text-left truncate ${assigneeName ? "text-slate-800 dark:text-slate-100" : "text-slate-400"}`}>{assigneeName || "Select Assignee"}</span>
                     <svg className="w-4 h-4 text-slate-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                   </button>
                   {showAssigneeDrop && (
@@ -298,10 +367,18 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, boardName, board
                         <li className="px-3 py-3 text-xs text-slate-400 text-center">Loading members…</li>
                       ) : members.length === 0 ? (
                         <li className="px-3 py-3 text-xs text-slate-400 text-center">No members found</li>
-                      ) : members.map(m => (
+                      ) : [
+                        <li key="unassigned"
+                          className="flex items-center gap-2.5 px-3 py-2.5 text-sm cursor-pointer text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 transition"
+                          onClick={e => { e.stopPropagation(); setAssigneeId(""); setShowAssigneeDrop(false); }}
+                        >
+                          <span className="flex-1">Unassigned</span>
+                          {!assigneeId && <Check size={14} className="text-[#6366F1] flex-shrink-0" />}
+                        </li>,
+                        ...members.map(m => (
                         <li key={m.id}
                           className="flex items-center gap-2.5 px-3 py-2.5 text-sm cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 transition"
-                          onClick={e => { e.stopPropagation(); setAssignee(m.name); setShowAssigneeDrop(false); }}
+                          onClick={e => { e.stopPropagation(); setAssigneeId(m.id); setShowAssigneeDrop(false); }}
                         >
                           <div className="w-6 h-6 rounded-full bg-[#EEF2FF] flex items-center justify-center flex-shrink-0">
                             <span className="text-[10px] font-bold text-[#6366F1] uppercase">{m.name[0]}</span>
@@ -310,9 +387,9 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, boardName, board
                             <p className="text-slate-800 dark:text-slate-100 truncate">{m.name}</p>
                             <p className="text-xs text-slate-400 truncate">{m.email}</p>
                           </div>
-                          {assignee === m.name && <Check size={14} className="text-[#6366F1] flex-shrink-0" />}
+                          {assigneeId === m.id && <Check size={14} className="text-[#6366F1] flex-shrink-0" />}
                         </li>
-                      ))}
+                      ))]}
                     </ul>
                   )}
                 </div>
@@ -396,35 +473,15 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, boardName, board
 
               {/* Attach Files */}
               <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-100 dark:border-slate-700">
-                {fieldLabel(<Upload size={11} />, "Attach Files")}
-                <div
-                  onDragOver={e => { e.preventDefault(); setDraggingOver(true); }}
-                  onDragLeave={() => setDraggingOver(false)}
-                  onDrop={e => { e.preventDefault(); setDraggingOver(false); handleFileUpload(e.dataTransfer.files); }}
-                  onClick={() => fileInputRef.current?.click()}
-                  className={`rounded-xl border-2 border-dashed px-4 py-6 flex flex-col items-center justify-center gap-1.5 cursor-pointer transition ${
-                    draggingOver
-                      ? "border-[#6366F1] bg-[#EEF2FF]"
-                      : "border-[#6366F1]/30 hover:border-[#6366F1]/60 hover:bg-[#EEF2FF]/50"
-                  }`}
-                >
-                  <Upload size={20} className="text-[#6366F1]" />
-                  <p className="text-sm font-semibold text-[#6366F1]">Click to attach files</p>
-                  <p className="text-xs text-slate-400">or drag and drop here</p>
+                {fieldLabel(<Upload size={11} />, "Attachments")}
+                {/* File storage isn't wired up yet — say so rather than accepting files that would be dropped. */}
+                <div className="rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 px-4 py-5 flex flex-col items-center justify-center gap-1 text-center">
+                  <Upload size={18} className="text-slate-300 dark:text-slate-600" />
+                  <p className="text-sm font-medium text-slate-500 dark:text-slate-400">File uploads coming soon</p>
+                  {isEdit && (task?.attachments ?? 0) > 0 && (
+                    <p className="text-xs text-slate-400">{task!.attachments} existing attachment{task!.attachments !== 1 ? "s" : ""}</p>
+                  )}
                 </div>
-                <input ref={fileInputRef} type="file" multiple onChange={e => handleFileUpload(e.target.files)} className="hidden" />
-                {attachedFiles.length > 0 && (
-                  <ul className="mt-2 space-y-1.5">
-                    {attachedFiles.map((file, i) => (
-                      <li key={i} className="flex items-center justify-between rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 text-xs">
-                        <span className="truncate text-slate-700 dark:text-slate-200">{file.name}</span>
-                        <button onClick={() => setAttachedFiles(p => p.filter((_, idx) => idx !== i))} className="text-slate-400 hover:text-red-500 transition ml-2 shrink-0">
-                          <Trash2 size={13} />
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
               </div>
 
               {/* Flow Diagram Link */}
@@ -475,14 +532,14 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, boardName, board
                 ) : (
                   <ul className="space-y-2 max-h-48 overflow-y-auto scrollbar-hide">
                     {subtasks.map(st => (
-                      <li key={st.id} className="flex items-center gap-2">
-                        <button onClick={() => setSubtasks(p => p.map(s => s.id === st.id ? { ...s, completed: !s.completed } : s))} className="shrink-0">
+                      <li key={st.key} className="flex items-center gap-2">
+                        <button type="button" onClick={() => setSubtasks(p => p.map(s => s.key === st.key ? { ...s, completed: !s.completed } : s))} className="shrink-0">
                           {st.completed
                             ? <CheckSquare size={16} className="text-[#6366F1]" />
                             : <Square size={16} className="text-slate-300" />}
                         </button>
                         <span className={`text-sm flex-1 ${st.completed ? "line-through text-slate-400" : "text-slate-700 dark:text-slate-200"}`}>{st.text}</span>
-                        <button onClick={() => setSubtasks(p => p.filter(s => s.id !== st.id))} className="text-slate-300 hover:text-red-500 transition shrink-0">
+                        <button type="button" onClick={() => setSubtasks(p => p.filter(s => s.key !== st.key))} className="text-slate-300 hover:text-red-500 transition shrink-0">
                           <Trash2 size={12} />
                         </button>
                       </li>
@@ -492,29 +549,50 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, boardName, board
               </div>
             </div>
           </div>
+          </fieldset>
         </div>
 
         {/* ── Footer ── */}
         <div className="px-6 py-4 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex items-center justify-between gap-3">
-          {submitError ? (
-            <p className="text-xs text-red-500 font-medium">{submitError}</p>
-          ) : <span />}
+          <div className="flex items-center gap-3 min-w-0">
+            {isEdit && !readOnly && canDeleteTasks && (
+              <button
+                type="button"
+                onClick={handleDelete}
+                onBlur={() => setConfirmDelete(false)}
+                disabled={deleting || submitting}
+                className={`px-4 py-2.5 text-sm font-semibold rounded-xl flex items-center gap-2 transition disabled:opacity-50 ${
+                  confirmDelete
+                    ? "bg-red-600 hover:bg-red-700 text-white"
+                    : "text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+                }`}
+              >
+                <Trash2 size={15} />
+                {deleting ? "Deleting…" : confirmDelete ? "Click again to delete" : "Delete"}
+              </button>
+            )}
+            {submitError && <p className="text-xs text-red-500 font-medium truncate">{submitError}</p>}
+          </div>
           <div className="flex items-center gap-3">
             <button
+              type="button"
               onClick={onClose}
-              disabled={submitting}
+              disabled={submitting || deleting}
               className="px-5 py-2.5 text-sm font-semibold rounded-xl border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 transition"
             >
-              Cancel
+              {readOnly ? "Close" : "Cancel"}
             </button>
-            <button
-              onClick={handleSubmit}
-              disabled={submitting}
-              className="px-5 py-2.5 text-sm font-semibold rounded-xl bg-[#6366F1] hover:bg-[#4F46E5] text-white flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed transition"
-            >
-              {submitting ? "Creating…" : "Create Task"}
-              {!submitting && <Send size={15} />}
-            </button>
+            {!readOnly && (
+              <button
+                type="button"
+                onClick={handleSubmit}
+                disabled={submitting || deleting}
+                className="px-5 py-2.5 text-sm font-semibold rounded-xl bg-[#6366F1] hover:bg-[#4F46E5] text-white flex items-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed transition"
+              >
+                {submitting ? (isEdit ? "Saving…" : "Creating…") : (isEdit ? "Save changes" : "Create Task")}
+                {!submitting && (isEdit ? <Check size={15} /> : <Send size={15} />)}
+              </button>
+            )}
           </div>
         </div>
       </motion.div>

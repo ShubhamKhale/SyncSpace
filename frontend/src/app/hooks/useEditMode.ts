@@ -16,7 +16,8 @@ export const useEditMode = (roleOverride?: UserRole | null): EditPermissions => 
   return {
     canEditBoardMetadata: role === "owner" || role === "admin",
     canEditTasks: role === "owner" || role === "admin" || role === "member",
-    canDeleteTasks: role === "owner",
+    // Mirrors the backend's taskWriteRoles (owner/admin/member may delete).
+    canDeleteTasks: role === "owner" || role === "admin" || role === "member",
     canReorderTasks: role === "owner" || role === "admin" || role === "member",
   };
 };

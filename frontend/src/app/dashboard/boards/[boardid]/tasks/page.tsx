@@ -5,7 +5,9 @@ import { useParams, useRouter } from "next/navigation";
 import { DndContext, DragEndEvent, closestCenter, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { ArrowLeft, Plus } from "lucide-react";
 import { useBoardTaskStore } from "@/app/store/useBoardTaskStore";
+import type { BoardTask } from "@/app/store/useBoardTaskStore";
 import { useBoardStore } from "@/app/store/useBoardStore";
+import { useEditMode } from "@/app/hooks/useEditMode";
 import TaskModal from "@/app/components/TaskModal";
 
 const STAGES = ["Planning", "Design", "Development", "QA", "Deployment"];
@@ -32,6 +34,9 @@ export default function TasksPage() {
   const { tasks, loading, fetchTasks, updateTaskStage } = useBoardTaskStore();
   const { board, fetchBoard } = useBoardStore();
   const [taskModalOpen, setTaskModalOpen] = useState(false);
+  // Snapshot so the modal keeps its task while an optimistic delete removes it from the store.
+  const [openTask, setOpenTask] = useState<BoardTask | null>(null);
+  const { canEditTasks } = useEditMode();
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
@@ -69,16 +74,19 @@ export default function TasksPage() {
             {board?.title ?? "Board Tasks"}
           </h1>
         </div>
-        <button
-          onClick={() => setTaskModalOpen(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition"
-        >
-          <Plus size={16} />
-          New Task
-        </button>
+        {canEditTasks && (
+          <button
+            onClick={() => setTaskModalOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition"
+          >
+            <Plus size={16} />
+            New Task
+          </button>
+        )}
       </div>
 
       <TaskModal isOpen={taskModalOpen} onClose={() => setTaskModalOpen(false)} boardName={board?.title} boardId={boardId} />
+      <TaskModal isOpen={!!openTask} onClose={() => setOpenTask(null)} boardName={board?.title} boardId={boardId} task={openTask} />
 
       {/* Kanban board */}
       {loading ? (
@@ -110,9 +118,11 @@ export default function TasksPage() {
                   {/* Task list */}
                   <div className="flex flex-col gap-2 p-3 flex-1">
                     {stageTasks.map((task) => (
-                      <div
+                      <button
+                        type="button"
                         key={task.id}
-                        className="bg-slate-50 dark:bg-slate-700 rounded-lg p-3 border border-slate-100 dark:border-slate-600 hover:shadow-md hover:border-slate-300 dark:hover:border-slate-500 transition cursor-pointer group"
+                        onClick={() => setOpenTask(task)}
+                        className="w-full text-left bg-slate-50 dark:bg-slate-700 rounded-lg p-3 border border-slate-100 dark:border-slate-600 hover:shadow-md hover:border-slate-300 dark:hover:border-slate-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 transition cursor-pointer group"
                       >
                         <p className="text-sm font-medium text-slate-800 dark:text-slate-100 leading-snug mb-2.5">
                           {task.title}
@@ -137,7 +147,7 @@ export default function TasksPage() {
                             <p className="text-xs text-slate-400 dark:text-slate-500 truncate">{task.assignee}</p>
                           </div>
                         )}
-                      </div>
+                      </button>
                     ))}
 
                     {/* Empty state */}

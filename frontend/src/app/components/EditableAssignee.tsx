@@ -1,21 +1,31 @@
 import React, { useState, useRef, useEffect } from "react";
 import { ChevronDown, Loader2, User } from "lucide-react";
 
+export interface AssigneeOption {
+  id: string;
+  name: string;
+}
+
 interface EditableAssigneeProps {
+  /** Selected assignee's user ID ("" = unassigned). */
   value: string;
   onSave: (value: string) => Promise<void>;
-  options?: string[];
+  options: AssigneeOption[];
   saveState?: "idle" | "loading" | "success" | "error";
   disabled?: boolean;
 }
 
+const UNASSIGNED: AssigneeOption = { id: "", name: "Unassigned" };
+
 export const EditableAssignee: React.FC<EditableAssigneeProps> = ({
   value,
   onSave,
-  options = ["Alex Kim", "John Doe", "Jane Smith", "Bob Johnson", "Alice Lee"],
+  options,
   saveState = "idle",
   disabled = false,
 }) => {
+  const allOptions = [UNASSIGNED, ...options];
+  const label = options.find((o) => o.id === value)?.name ?? UNASSIGNED.name;
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -57,7 +67,7 @@ export const EditableAssignee: React.FC<EditableAssigneeProps> = ({
         } bg-gray-100 dark:bg-slate-600 text-gray-700 dark:text-slate-200`}
       >
         <User size={14} />
-        <span className="text-sm font-medium truncate max-w-[100px]">{value}</span>
+        <span className="text-sm font-medium truncate max-w-[100px]">{label}</span>
         {saveState === "loading" ? (
           <Loader2 size={16} className="animate-spin" />
         ) : (
@@ -67,16 +77,16 @@ export const EditableAssignee: React.FC<EditableAssigneeProps> = ({
 
       {isOpen && (
         <div className="absolute top-full left-0 mt-2 bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-md shadow-lg z-10 w-max">
-          {options.map((assignee) => (
+          {allOptions.map((opt) => (
             <button
-              key={assignee}
-              onClick={() => handleSelect(assignee)}
+              key={opt.id || "unassigned"}
+              onClick={() => handleSelect(opt.id)}
               disabled={saveState === "loading"}
               className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-slate-600 dark:text-slate-200 disabled:opacity-50 ${
-                assignee === value ? "bg-blue-50 dark:bg-blue-900/30" : ""
+                opt.id === value ? "bg-blue-50 dark:bg-blue-900/30" : ""
               }`}
             >
-              {assignee}
+              {opt.name}
             </button>
           ))}
         </div>

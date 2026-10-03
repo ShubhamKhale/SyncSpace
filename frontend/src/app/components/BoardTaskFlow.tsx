@@ -35,7 +35,9 @@ import TimelineShortTaskCard from "./TimeLineShortTaskCard";
 import { format, addDays, differenceInCalendarDays, isSameDay } from "date-fns";
 import PriorityPhaseMatrix from "./PriorityPhaseMatrix";
 import { useBoardTaskStore } from "@/app/store/useBoardTaskStore";
+import type { BoardTask } from "@/app/store/useBoardTaskStore";
 import { useBoardStore } from "@/app/store/useBoardStore";
+import TaskModal from "./TaskModal";
 import { useEditMode } from "@/app/hooks/useEditMode";
 import SelectPopover from "./SelectPopover";
 import { SortablePipelineStage } from "./kanban/SortablePipelineStage";
@@ -106,6 +108,8 @@ const BoardTaskFlow: React.FC<{ boardId?: string }> = ({ boardId }) => {
   ]);
   const [activeStageName, setActiveStageName] = useState<string | null>(null);
   const [activeTaskId,    setActiveTaskId]    = useState<string | null>(null);
+  // Snapshot (not an ID) so the modal keeps its task while an optimistic delete removes it from the store.
+  const [openTask,        setOpenTask]        = useState<BoardTask | null>(null);
 
   const contributors = Array.from(new Set(tasks.map((t) => t.assignee).filter(Boolean)));
 
@@ -420,6 +424,7 @@ const BoardTaskFlow: React.FC<{ boardId?: string }> = ({ boardId }) => {
                             updateTaskPriority={updateTaskPriority}
                             updateTaskDates={updateTaskDates}
                             updateTaskAssignee={updateTaskAssignee}
+                            onOpen={setOpenTask}
                           />
                         ))}
                       </DroppableColumn>
@@ -470,6 +475,7 @@ const BoardTaskFlow: React.FC<{ boardId?: string }> = ({ boardId }) => {
                             updateTaskPriority={updateTaskPriority}
                             updateTaskDates={updateTaskDates}
                             updateTaskAssignee={updateTaskAssignee}
+                            onOpen={setOpenTask}
                           />
                         ))
                       ) : (
@@ -634,6 +640,14 @@ const BoardTaskFlow: React.FC<{ boardId?: string }> = ({ boardId }) => {
         {/* matrix */}
         {activeView === "matrix" && <PriorityPhaseMatrix />}
       </div>
+
+      <TaskModal
+        isOpen={!!openTask}
+        onClose={() => setOpenTask(null)}
+        boardName={board?.title}
+        boardId={boardId}
+        task={openTask}
+      />
     </div>
   );
 };
