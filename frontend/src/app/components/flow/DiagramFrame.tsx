@@ -243,7 +243,7 @@ const Flow = ({ flowId, boardId }: FlowProps) => {
       )
         .then((data) => {
           if (data.nodes || data.edges) {
-            diagram.uploadJson(JSON.stringify(data));
+            diagram.uploadJson(JSON.stringify(data), { fitView: true });
           }
         })
         .catch(() => {
@@ -438,7 +438,10 @@ const Flow = ({ flowId, boardId }: FlowProps) => {
                 defaultEdges={initialDiagram.edges}
                 defaultEdgeOptions={defaultEdgeOptions}
                 connectionLineType={ConnectionLineType.SmoothStep}
-                fitView
+                // Fit once on load only if there's something to frame. A bare
+                // `fitView` stays queued on an empty canvas and fires when the
+                // first node is dropped, zooming the camera onto that one node.
+                fitView={initialDiagram.nodes.length > 0}
                 connectionMode={ConnectionMode.Loose}
                 panOnDrag={!isPresentMode && !isViewingPresentation && cursorMode === "pan"}
                 selectionOnDrag={false}

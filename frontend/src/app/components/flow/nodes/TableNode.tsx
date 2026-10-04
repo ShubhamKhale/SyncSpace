@@ -1,4 +1,5 @@
 import { isTypingTarget } from "./isTypingTarget";
+import { caretToEnd } from "./caretToEnd";
 import {
   Handle,
   Position,
@@ -339,6 +340,7 @@ export default function TableNode({ data }: any) {
                 {isEditing ? (
                   <input
                     autoFocus
+                    onFocus={caretToEnd}
                     className="table-cell-input"
                     defaultValue={cellValue}
                     style={{

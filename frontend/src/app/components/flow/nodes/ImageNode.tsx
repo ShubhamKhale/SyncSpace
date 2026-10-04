@@ -1,4 +1,5 @@
 import { isTypingTarget } from "./isTypingTarget";
+import { caretToEnd } from "./caretToEnd";
 import {
   Handle,
   Position,
@@ -194,6 +195,7 @@ export default function ImageNode({ data }: any) {
       {isEditingCaption && !locked ? (
         <input
           autoFocus
+          onFocus={caretToEnd}
           value={localCaption}
           onChange={(e) => setLocalCaption(e.target.value)}
           onBlur={saveCaption}

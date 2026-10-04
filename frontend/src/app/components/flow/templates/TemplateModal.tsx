@@ -68,7 +68,7 @@ export function TemplateModal({ diagram }: TemplateModalProps) {
   const handleApply = useCallback(
     (template: Template) => {
       diagram.takeSnapshot(); // undo point before replacing canvas
-      diagram.uploadJson(JSON.stringify(template.data)); // setNodes + setEdges
+      diagram.uploadJson(JSON.stringify(template.data), { fitView: true }); // setNodes + setEdges
       try {
         localStorage.setItem(SAVE_KEY, JSON.stringify(template.data));
       } catch {}

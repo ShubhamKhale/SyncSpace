@@ -36,7 +36,7 @@ export const Menu = (props: MenuProps) => {
       const reader = new FileReader();
       reader.onload = (e) => {
         const json = e.target?.result as string;
-        props.diagram.uploadJson(json);
+        props.diagram.uploadJson(json, { fitView: true });
       };
       reader.readAsText(file);
     }

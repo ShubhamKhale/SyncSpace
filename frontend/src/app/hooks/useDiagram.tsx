@@ -392,13 +392,23 @@ export const useDiagram = (opts?: { saveKey?: string; boardId?: string; flowId?:
     };
   }, []);
 
-  const uploadJson = (jsonString: string) => {
+  /**
+   * Replaces the whole diagram. Pass `{ fitView: true }` when the user loads a
+   * new diagram (server load, template, AI, file import) so it's framed on
+   * screen; leave it off for live collaborator updates, which must not move
+   * the viewer's camera.
+   */
+  const uploadJson = (jsonString: string, opts?: { fitView?: boolean }) => {
     try {
       const diagramData = JSON.parse(jsonString);
       if (diagramData && Array.isArray(diagramData.nodes) && Array.isArray(diagramData.edges)) {
         setNodes(diagramData.nodes);
         setEdges(diagramData.edges);
         if (diagramData.title) setDiagramTitle(diagramData.title);
+        // React Flow defers this until the new nodes are measured.
+        if (opts?.fitView && diagramData.nodes.length > 0) {
+          fitView({ padding: 0.2, duration: 300 });
+        }
       } else {
         console.error('Invalid diagram JSON: expected { nodes: [], edges: [] }');
       }

@@ -184,6 +184,7 @@
 // }
 
 import { isTypingTarget } from "./isTypingTarget";
+import { caretToEnd } from "./caretToEnd";
 import {
   Handle,
   Position,
@@ -378,6 +379,7 @@ export default function ShapeNode({ data }: any) {
       {isEditing && !locked ? (
         <textarea
           autoFocus
+          onFocus={caretToEnd}
           value={localText}
           onChange={(e) => setLocalText(e.target.value)}
           onBlur={saveText}

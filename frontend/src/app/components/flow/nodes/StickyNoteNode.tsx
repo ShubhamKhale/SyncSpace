@@ -1,6 +1,7 @@
 "use client";
 
 import { isTypingTarget } from "./isTypingTarget";
+import { caretToEnd } from "./caretToEnd";
 import { NodeResizer, useNodeId, useReactFlow } from "@xyflow/react";
 import { useState, useEffect } from "react";
 import { Lock, Unlock, MessageSquare } from "lucide-react";
@@ -218,6 +219,7 @@ export default function StickyNoteNode({ data }: any) {
       {isEditing && !locked ? (
         <textarea
           autoFocus
+          onFocus={caretToEnd}
           value={localText}
           onChange={(e) => setLocalText(e.target.value)}
           onBlur={saveText}

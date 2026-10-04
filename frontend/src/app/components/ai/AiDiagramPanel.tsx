@@ -16,7 +16,7 @@ interface AiDiagramPanelProps {
   onClose: () => void;
   diagram: {
     takeSnapshot: () => void;
-    uploadJson: (json: string) => void;
+    uploadJson: (json: string, opts?: { fitView?: boolean }) => void;
   };
 }
 
@@ -65,7 +65,7 @@ export default function AiDiagramPanel({ isOpen, onClose, diagram }: AiDiagramPa
       const reactFlowData = convertToReactFlow(positioned);
 
       diagram.takeSnapshot();
-      diagram.uploadJson(JSON.stringify(reactFlowData));
+      diagram.uploadJson(JSON.stringify(reactFlowData), { fitView: true });
       onClose();
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : "Generation failed. Try again.");
