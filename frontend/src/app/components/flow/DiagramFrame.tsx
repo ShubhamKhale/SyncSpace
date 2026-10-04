@@ -445,6 +445,8 @@ const Flow = ({ flowId, boardId }: FlowProps) => {
                 panOnScroll={!isPresentMode && !isViewingPresentation && cursorMode === "pan"}
                 zoomOnScroll={!isViewingPresentation}
                 selectionKeyCode={null}
+                // React Flow defaults to Backspace, which deletes nodes mid-edit; Delete key only.
+                deleteKeyCode="Delete"
                 onDrop={isViewingPresentation ? undefined : diagram.onDrop}
                 snapToGrid={false}
                 snapGrid={[10, 10]}

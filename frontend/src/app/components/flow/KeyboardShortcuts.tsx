@@ -9,7 +9,7 @@ const shortcuts = [
   { keys: ["Ctrl", "Z"], action: "Undo" },
   { keys: ["Ctrl", "Shift", "Z"], action: "Redo" },
   { keys: ["Ctrl", "A"], action: "Select all" },
-  { keys: ["Delete", "/", "Backspace"], action: "Delete selected" },
+  { keys: ["Delete"], action: "Delete selected" },
   { keys: ["Shift", "F"], action: "Zoom to fit selection" },
   { keys: ["G"], action: "Group selected nodes (2+)" },
   { keys: ["Space", "+ drag"], action: "Free-draw connection line" },

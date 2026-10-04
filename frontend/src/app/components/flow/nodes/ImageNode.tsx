@@ -1,3 +1,4 @@
+import { isTypingTarget } from "./isTypingTarget";
 import {
   Handle,
   Position,
@@ -71,11 +72,11 @@ export default function ImageNode({ data }: any) {
     );
   };
 
-  // Delete on Delete/Backspace key
+  // Delete on Delete key (not Backspace — it's for editing text)
   useEffect(() => {
     const handleDelete = (e: KeyboardEvent) => {
-      if (!isSelected || isEditingCaption) return;
-      if (e.key === "Delete" || e.key === "Backspace") {
+      if (!isSelected || isEditingCaption || isTypingTarget(e.target)) return;
+      if (e.key === "Delete") {
         setNodes((nodes) => nodes.filter((n) => n.id !== nodeId));
       }
     };

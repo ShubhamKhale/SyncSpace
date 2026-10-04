@@ -183,6 +183,7 @@
 //   );
 // }
 
+import { isTypingTarget } from "./isTypingTarget";
 import {
   Handle,
   Position,
@@ -283,9 +284,9 @@ export default function ShapeNode({ data }: any) {
 
   useEffect(() => {
     const handleDelete = (e: KeyboardEvent) => {
-      if (!isSelected) return;
-  
-      if (e.key === "Delete" || e.key === "Backspace") {
+      if (!isSelected || isTypingTarget(e.target)) return;
+
+      if (e.key === "Delete") {
         setNodes((nodes) => nodes.filter((n) => n.id !== nodeId));
       }
     };

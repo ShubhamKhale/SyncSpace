@@ -1,3 +1,4 @@
+import { isTypingTarget } from "./isTypingTarget";
 import {
   Handle,
   Position,
@@ -169,8 +170,8 @@ export default function TableNode({ data }: any) {
   // Delete key — only when no cell is active
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (!isSelected || editingCell !== null) return;
-      if (e.key === "Delete" || e.key === "Backspace") deleteNode();
+      if (!isSelected || editingCell !== null || isTypingTarget(e.target)) return;
+      if (e.key === "Delete") deleteNode();
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);

@@ -1,5 +1,6 @@
 "use client";
 
+import { isTypingTarget } from "./isTypingTarget";
 import { NodeResizer, useNodeId, useReactFlow } from "@xyflow/react";
 import { useState, useEffect } from "react";
 import { Lock, Unlock, MessageSquare } from "lucide-react";
@@ -81,8 +82,8 @@ export default function GroupNode({ data, style }: any) {
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (!isSelected || editingLabel) return;
-      if (e.key === "Delete" || e.key === "Backspace") deleteNode();
+      if (!isSelected || editingLabel || isTypingTarget(e.target)) return;
+      if (e.key === "Delete") deleteNode();
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
