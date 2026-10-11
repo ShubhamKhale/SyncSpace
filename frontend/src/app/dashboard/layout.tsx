@@ -35,10 +35,11 @@ export default function DashboardLayout({
     fetchUser();
   }, []);
 
-  // Check if the current path is a board-scoped full-screen view (overview, tasks kanban, or flow editor)
+  // Check if the current path is a board-scoped full-screen view (overview, tasks kanban, flows list, or flow editor)
   const isBoardPage =
     /^\/dashboard\/boards\/[^/]+$/.test(pathname ?? "") ||
     /^\/dashboard\/boards\/[^/]+\/tasks$/.test(pathname ?? "") ||
+    /^\/dashboard\/boards\/[^/]+\/flows$/.test(pathname ?? "") ||
     /^\/dashboard\/boards\/[^/]+\/flows\/[^/]+$/.test(pathname ?? "");
 
   const navGroups = [

@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useBoardFlowsStore, type BoardFlow } from "@/app/store/useBoardFlowsStore";
-import { GitBranch, Plus, Copy, Trash2, Pencil } from "lucide-react";
+import { ArrowLeft, GitBranch, Plus, Copy, Trash2, Pencil } from "lucide-react";
 
 function fmtDate(iso: string) {
   const d = new Date(iso);
@@ -206,14 +206,25 @@ export default function FlowsGalleryPage() {
     <div className="p-6 min-h-full bg-[#F8F9FC] dark:bg-slate-900">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-            <GitBranch size={20} className="text-indigo-500" />
-            Flow Diagrams
-          </h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-            Visual flow diagrams for this board
-          </p>
+        <div className="flex items-start gap-3">
+          {/* Explicit route (not router.back) so it works after a refresh or direct link */}
+          <button
+            onClick={() => router.push(`/dashboard/boards/${boardId}`)}
+            title="Back to board"
+            aria-label="Back to board"
+            className="mt-0.5 p-1.5 rounded-md text-slate-500 hover:text-slate-800 dark:hover:text-slate-100 hover:bg-white dark:hover:bg-slate-700 transition"
+          >
+            <ArrowLeft size={18} />
+          </button>
+          <div>
+            <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+              <GitBranch size={20} className="text-indigo-500" />
+              Flow Diagrams
+            </h1>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+              Visual flow diagrams for this board
+            </p>
+          </div>
         </div>
         <button
           onClick={handleNew}
