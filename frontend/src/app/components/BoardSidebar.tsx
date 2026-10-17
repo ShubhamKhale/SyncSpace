@@ -6,33 +6,14 @@ import { useRouter } from "next/navigation";
 import BoardActivityIcon from "../icons/BoardActivity";
 import { EditableText } from "./EditableText";
 import { useBoardStore } from "@/app/store/useBoardStore";
+import type { BoardActivityItem, BoardHealth } from "@/app/store/useBoardStore";
 import { useEditMode } from "@/app/hooks/useEditMode";
 import { useTheme } from "@/app/hooks/useTheme";
 import { useUserStore, getInitials } from "@/app/store/useUserStore";
-import { apiFetch } from "@/lib/api";
 import { BoardSidebarSkeleton } from "./Skeleton";
 import EditBoardModal from "./EditBoardModal";
 
-interface BoardActivityItem {
-  id?: string;
-  actor?: string;
-  user?: string;
-  action: string;
-  target?: string;
-  item?: string;
-  createdAt?: string;
-  created_at?: string;
-  time?: string;
-}
-
-interface BoardHealth {
-  status?: "healthy" | "warning" | "critical";
-  overdueTasks?: number;
-  bottlenecks?: number;
-  atRisk?: number;
-  overdue_tasks?: number;
-  at_risk?: number;
-}
+const NO_ACTIVITY: BoardActivityItem[] = [];
 
 function formatDate(iso: string): string {
   if (!iso) return "";
@@ -65,32 +46,29 @@ const BoardSidebar: React.FC<{ boardId?: string }> = ({ boardId }) => {
   const { user, fetchUser } = useUserStore();
   const router = useRouter();
   const [showEditModal, setShowEditModal] = useState(false);
-  const [activity, setActivity] = useState<BoardActivityItem[]>([]);
-  const [health, setHealth] = useState<BoardHealth | null>(null);
+  const fetchBoardInsights = useBoardStore((s) => s.fetchBoardInsights);
+  const insights = useBoardStore((s) => (boardId ? s.insights[boardId] : undefined));
+  const activity = insights?.activity ?? NO_ACTIVITY;
+  const health: BoardHealth | null = insights?.health ?? null;
   const isSaving = saveStates["details"] === "loading";
 
+  // The store shows a skeleton only on a board's first load; revisits render
+  // the cached board/insights immediately and refresh in the background.
   useEffect(() => {
     if (boardId) {
-      useBoardStore.setState({ board: null, loading: false, error: null });
       fetchBoard(boardId);
+      fetchBoardInsights(boardId);
     }
-  }, [boardId, fetchBoard]);
+  }, [boardId, fetchBoard, fetchBoardInsights]);
 
   useEffect(() => {
     if (!user) fetchUser();
   }, [user, fetchUser]);
 
-  useEffect(() => {
-    if (!boardId) return;
-    apiFetch<BoardActivityItem[]>(`/api/boards/${boardId}/activity`)
-      .then((d) => setActivity(Array.isArray(d) ? d : []))
-      .catch(() => setActivity([]));
-    apiFetch<BoardHealth>(`/api/boards/${boardId}/health`)
-      .then(setHealth)
-      .catch(() => setHealth(null));
-  }, [boardId]);
-
-  if (loading) return <BoardSidebarSkeleton />;
+  // Also covers the frame before the first fetch starts and a switch to a
+  // different board, so the previous board or "not found" never flashes.
+  const storeError = useBoardStore.getState().error;
+  if (loading || (!storeError && board?.id !== boardId)) return <BoardSidebarSkeleton />;
   if (!board) return (
     <div className="flex flex-col items-center justify-center h-full p-6 text-sm text-slate-500 dark:text-slate-400 space-y-2">
       <p className="font-semibold">Board not found</p>

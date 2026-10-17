@@ -73,13 +73,53 @@ function mapBoard(raw: Record<string, unknown>): Board {
   };
 }
 
+export interface BoardActivityItem {
+  id?: string;
+  actor?: string;
+  user?: string;
+  action: string;
+  target?: string;
+  item?: string;
+  createdAt?: string;
+  created_at?: string;
+  time?: string;
+}
+
+export interface BoardHealth {
+  status?: "healthy" | "warning" | "critical";
+  overdueTasks?: number;
+  bottlenecks?: number;
+  atRisk?: number;
+  overdue_tasks?: number;
+  at_risk?: number;
+}
+
+/** Sidebar extras cached per board so revisits render instantly. */
+interface BoardInsights {
+  health: BoardHealth | null;
+  activity: BoardActivityItem[];
+}
+
+// In-flight requests keyed by board ID — the sidebar, kanban and tasks page
+// all request the same board on mount; they share one request.
+const boardInflight = new Map<string, Promise<void>>();
+const insightsInflight = new Map<string, Promise<void>>();
+
 interface BoardState {
   board: Board | null;
   loading: boolean;
   error: string | null;
   saveStates: Record<string, "idle" | "loading" | "success" | "error">;
+  insights: Record<string, BoardInsights>;
 
+  /**
+   * Stale-while-revalidate: shows the skeleton (`loading`) only when this
+   * board isn't already loaded; otherwise refreshes silently in the
+   * background and keeps the cached board on failure.
+   */
   fetchBoard: (boardId: string) => Promise<void>;
+  /** Same caching rules for the sidebar's health + recent activity. */
+  fetchBoardInsights: (boardId: string) => Promise<void>;
   setBoard: (board: Board) => void;
   updateBoardTitle: (title: string) => Promise<void>;
   updateBoardDescription: (description: string) => Promise<void>;
@@ -110,20 +150,57 @@ export const useBoardStore = create<BoardState>()(
     loading: false,
     error: null,
     saveStates: {},
+    insights: {},
 
-    fetchBoard: async (boardId: string) => {
-      set({ loading: true, error: null });
-      try {
-        const list = await encryptedFetch<unknown>("/api/boards", "GET");
-        const arr = Array.isArray(list) ? list : [];
-        const raw = arr.find(
-          (b: unknown) => (b as Record<string, unknown>).id === boardId
-        ) as Record<string, unknown> | undefined;
-        if (!raw) throw new Error("Board not found");
-        set({ board: mapBoard(raw), loading: false });
-      } catch (err) {
-        set({ error: (err as Error).message, loading: false });
-      }
+    fetchBoard: (boardId: string) => {
+      const pending = boardInflight.get(boardId);
+      if (pending) return pending;
+
+      const cached = get().board?.id === boardId;
+      // First load of this board: clear any other board's data and show the
+      // skeleton. Revisit: keep showing the cached board while refreshing.
+      if (!cached) set({ board: null, loading: true, error: null });
+
+      const request = (async () => {
+        try {
+          const list = await encryptedFetch<unknown>("/api/boards", "GET");
+          const arr = Array.isArray(list) ? list : [];
+          const raw = arr.find(
+            (b: unknown) => (b as Record<string, unknown>).id === boardId
+          ) as Record<string, unknown> | undefined;
+          if (!raw) throw new Error("Board not found");
+          set({ board: mapBoard(raw), loading: false, error: null });
+        } catch (err) {
+          // A failed background refresh keeps the cached board on screen.
+          if (get().board?.id === boardId) set({ loading: false });
+          else set({ error: (err as Error).message, loading: false });
+        } finally {
+          boardInflight.delete(boardId);
+        }
+      })();
+      boardInflight.set(boardId, request);
+      return request;
+    },
+
+    fetchBoardInsights: (boardId: string) => {
+      const pending = insightsInflight.get(boardId);
+      if (pending) return pending;
+
+      const request = (async () => {
+        const prev = get().insights[boardId];
+        // Each half falls back to its cached value (or empty) independently.
+        const [activity, health] = await Promise.all([
+          apiFetch<BoardActivityItem[]>(`/api/boards/${boardId}/activity`)
+            .then((d) => (Array.isArray(d) ? d : []))
+            .catch(() => prev?.activity ?? []),
+          apiFetch<BoardHealth>(`/api/boards/${boardId}/health`)
+            .catch(() => prev?.health ?? null),
+        ]);
+        set((s) => ({ insights: { ...s.insights, [boardId]: { activity, health } } }));
+        insightsInflight.delete(boardId);
+      })();
+      insightsInflight.set(boardId, request);
+      return request;
     },
 
     setBoard: (board) => set({ board }),

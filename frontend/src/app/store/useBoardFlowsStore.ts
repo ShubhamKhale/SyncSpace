@@ -14,6 +14,8 @@ export interface BoardFlow {
 interface State {
   flows: BoardFlow[];
   loading: boolean;
+  /** Board whose flows are currently loaded — revisits skip the skeleton. */
+  boardId: string | null;
   fetchFlows: (boardId: string) => Promise<void>;
   createFlow: (boardId: string, name?: string) => Promise<BoardFlow>;
   deleteFlow: (boardId: string, flowId: string) => Promise<void>;
@@ -59,9 +61,13 @@ function uid() {
 export const useBoardFlowsStore = create<State>((set, get) => ({
   flows: [],
   loading: false,
+  boardId: null,
 
+  // Stale-while-revalidate: skeleton (and an empty list) only on a board's
+  // first load; revisits keep the cached flows while refreshing.
   fetchFlows: async (boardId) => {
-    set({ loading: true });
+    const cached = get().boardId === boardId;
+    if (!cached) set({ flows: [], loading: true, boardId });
     try {
       const raw = await apiFetch<BoardFlow[]>(`/api/boards/${boardId}/flows`);
       // Prefer the title stored in the local diagram cache — it reflects the latest
@@ -106,13 +112,14 @@ export const useBoardFlowsStore = create<State>((set, get) => ({
 
       const allFlows = [...(serverFlows ?? []), ...migrated];
       saveMeta(boardId, allFlows);
-      set({ flows: allFlows });
+      // The user may have switched boards while this was in flight.
+      if (get().boardId === boardId) set({ flows: allFlows });
     } catch {
       // Backend not ready — use localStorage
       const raw = loadMeta(boardId).map((f) => ({ ...f, ...readNodeEdgeCount(f.id) }));
-      set({ flows: raw });
+      if (get().boardId === boardId) set({ flows: raw });
     } finally {
-      set({ loading: false });
+      if (get().boardId === boardId) set({ loading: false });
     }
   },
 

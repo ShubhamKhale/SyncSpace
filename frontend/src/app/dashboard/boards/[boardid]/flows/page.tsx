@@ -184,7 +184,9 @@ export default function FlowsGalleryPage() {
   const params = useParams<{ boardid: string }>();
   const boardId = params?.boardid;
   const router = useRouter();
-  const { flows, loading, fetchFlows, createFlow, deleteFlow, renameFlow, duplicateFlow } = useBoardFlowsStore();
+  const { flows, loading: storeLoading, boardId: loadedBoardId, fetchFlows, createFlow, deleteFlow, renameFlow, duplicateFlow } = useBoardFlowsStore();
+  // Skeleton only until this board's flows are first loaded; revisits render the cache.
+  const loading = storeLoading || loadedBoardId !== boardId;
   const [creating, setCreating] = useState(false);
 
   useEffect(() => {

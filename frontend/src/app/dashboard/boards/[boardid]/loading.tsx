@@ -1,26 +1,8 @@
-import {
-  BoardSidebarSkeleton,
-  BoardTaskFlowSkeleton,
-  LinkedResourcesSkeleton,
-} from "@/app/components/Skeleton";
+import { BoardTaskFlowSkeleton } from "@/app/components/Skeleton";
 
+// Rendered inside [boardid]/layout.tsx, which already draws the real board
+// sidebar and linked-resources panels — so this covers only the center pane.
+// (A full 3-pane skeleton here would nest fake side panels inside the center.)
 export default function BoardLoading() {
-  return (
-    <div className="bg-slate-100 dark:bg-slate-900 h-screen flex overflow-hidden rounded-2xl shadow-lg">
-      {/* Left Sidebar Skeleton */}
-      <div className="w-64 flex-shrink-0">
-        <BoardSidebarSkeleton />
-      </div>
-
-      {/* Main Content Skeleton */}
-      <div className="flex flex-col flex-1 bg-slate-50 dark:bg-slate-800 overflow-hidden">
-        <BoardTaskFlowSkeleton />
-      </div>
-
-      {/* Right Sidebar Skeleton */}
-      <div className="w-72 flex-shrink-0">
-        <LinkedResourcesSkeleton />
-      </div>
-    </div>
-  );
+  return <BoardTaskFlowSkeleton />;
 }

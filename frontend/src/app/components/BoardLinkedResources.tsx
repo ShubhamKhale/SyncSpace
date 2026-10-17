@@ -9,7 +9,7 @@ import EditLinkedResourcesModal from "./EditLinkedResourcesModal";
 import SummarizeModal from "./SummarizeModal";
 
 const BoardLinkedResources: React.FC<{ boardId?: string }> = ({ boardId }) => {
-  const { loading, documentationLinks, links, fetchResources, saveLinkedResources } =
+  const { loading, loadedBoardId, error, documentationLinks, links, fetchResources, saveLinkedResources } =
     useLinkedResourcesStore();
 
   const [showModal, setShowModal]         = useState(false);
@@ -20,7 +20,9 @@ const BoardLinkedResources: React.FC<{ boardId?: string }> = ({ boardId }) => {
     if (boardId) fetchResources(boardId);
   }, [boardId, fetchResources]);
 
-  if (loading) return <LinkedResourcesSkeleton />;
+  // Skeleton only until this board's resources are first loaded — revisits
+  // render the cache while the store refreshes in the background.
+  if (loading || (!error && loadedBoardId !== boardId)) return <LinkedResourcesSkeleton />;
 
   return (
     <div className="w-full h-full flex flex-col border-l border-slate-300 dark:border-slate-700 bg-[#F8FAFC] dark:bg-slate-800 overflow-y-auto scrollbar-hide">

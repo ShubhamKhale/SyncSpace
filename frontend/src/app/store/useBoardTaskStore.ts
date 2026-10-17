@@ -124,6 +124,9 @@ function toPatchBody(p: TaskPatch): Record<string, unknown> {
 
 type SaveState = "idle" | "loading" | "success" | "error";
 
+// In-flight task loads keyed by board ID — the kanban and tasks page share one request.
+const tasksInflight = new Map<string, Promise<void>>();
+
 interface BoardTaskState {
   tasks: BoardTask[];
   members: BoardMember[];
@@ -131,6 +134,8 @@ interface BoardTaskState {
   error: string | null;
   saveStates: Record<string, SaveState>;
   currentBoardId: string | null;
+  /** Board whose tasks are currently loaded — revisits skip the loading state. */
+  loadedBoardId: string | null;
 
   fetchTasks: (boardId: string) => Promise<void>;
   createTask: (boardId: string, payload: CreateTaskPayload) => Promise<void>;
@@ -190,21 +195,50 @@ export const useBoardTaskStore = create<BoardTaskState>()(
       saveStates: {},
       currentBoardId: null,
 
-      fetchTasks: async (boardId: string) => {
-        set({ loading: true, error: null, currentBoardId: boardId });
-        try {
-          // Members are needed to resolve assignee IDs to names. A members
-          // failure shouldn't hide the tasks, so it falls back to [].
-          const [raw, members] = await Promise.all([
-            apiFetch<Record<string, unknown>[]>(`/api/boards/${boardId}/tasks`),
-            apiFetch<BoardMember[]>(`/api/boards/${boardId}/members`).catch(() => [] as BoardMember[]),
-          ]);
-          const memberList = Array.isArray(members) ? members : [];
-          const arr = Array.isArray(raw) ? raw : [];
-          set({ members: memberList, tasks: arr.map((t) => mapTask(t, memberList)), loading: false });
-        } catch (err) {
-          set({ error: (err as Error).message, loading: false });
-        }
+      loadedBoardId: null,
+
+      // Stale-while-revalidate: `loading` (and an empty list) only on a
+      // board's first load; revisits keep the cached tasks while refreshing.
+      fetchTasks: (boardId: string) => {
+        const pending = tasksInflight.get(boardId);
+        if (pending) return pending;
+
+        const cached = get().loadedBoardId === boardId;
+        if (cached) set({ currentBoardId: boardId });
+        else set({ tasks: [], members: [], loadedBoardId: null, loading: true, error: null, currentBoardId: boardId });
+
+        const request = (async () => {
+          try {
+            // Members are needed to resolve assignee IDs to names. A members
+            // failure shouldn't hide the tasks, so it falls back to the cache.
+            const [raw, members] = await Promise.all([
+              apiFetch<Record<string, unknown>[]>(`/api/boards/${boardId}/tasks`),
+              apiFetch<BoardMember[]>(`/api/boards/${boardId}/members`).catch(() =>
+                cached ? get().members : ([] as BoardMember[])
+              ),
+            ]);
+            // The user may have switched boards while this was in flight.
+            if (get().currentBoardId !== boardId) return;
+            const memberList = Array.isArray(members) ? members : [];
+            const arr = Array.isArray(raw) ? raw : [];
+            set({
+              members: memberList,
+              tasks: arr.map((t) => mapTask(t, memberList)),
+              loadedBoardId: boardId,
+              loading: false,
+              error: null,
+            });
+          } catch (err) {
+            if (get().currentBoardId !== boardId) return;
+            // A failed background refresh keeps the cached tasks on screen.
+            if (get().loadedBoardId === boardId) set({ loading: false });
+            else set({ error: (err as Error).message, loading: false });
+          } finally {
+            tasksInflight.delete(boardId);
+          }
+        })();
+        tasksInflight.set(boardId, request);
+        return request;
       },
 
       createTask: async (boardId: string, payload: CreateTaskPayload) => {

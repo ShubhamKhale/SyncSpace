@@ -10,8 +10,13 @@ export interface LinkedResource {
   color?: string;
 }
 
+// In-flight requests keyed by board ID (one shared request per board).
+const inflight = new Map<string, Promise<void>>();
+
 interface LinkedResourcesState {
   boardId: string | null;
+  /** Board whose resources are currently loaded — revisits skip the skeleton. */
+  loadedBoardId: string | null;
   loading: boolean;
   error: string | null;
   description: string;
@@ -45,32 +50,53 @@ interface LinkedResourcesState {
 export const useLinkedResourcesStore = create<LinkedResourcesState>()(
   devtools((set, get) => ({
     boardId: null,
+    loadedBoardId: null,
     loading: true,
     error: null,
     description: "",
     documentationLinks: [],
     links: [],
 
-    fetchResources: async (boardId: string) => {
-      set({ boardId, loading: true, error: null });
-      try {
-        const data = await apiFetch<{ id?: string; label?: string; url?: string; title?: string }[]>(
-          `/api/boards/${boardId}/linked-resources`
-        );
-        const arr = Array.isArray(data) ? data : [];
-        const mapped: LinkedResource[] = arr.map((r) => ({
-          title: r.label ?? r.title ?? "",
-          url: r.url ?? "",
-        }));
-        set({
-          description: "",
-          documentationLinks: [],
-          links: mapped,
-          loading: false,
-        });
-      } catch (err) {
-        set({ error: (err as Error).message, loading: false });
-      }
+    // Stale-while-revalidate: skeleton only on a board's first load.
+    fetchResources: (boardId: string) => {
+      const pending = inflight.get(boardId);
+      if (pending) return pending;
+
+      const cached = get().loadedBoardId === boardId;
+      if (cached) set({ boardId });
+      else set({ boardId, loadedBoardId: null, loading: true, error: null, description: "", documentationLinks: [], links: [] });
+
+      const request = (async () => {
+        try {
+          const data = await apiFetch<{ id?: string; label?: string; url?: string; title?: string }[]>(
+            `/api/boards/${boardId}/linked-resources`
+          );
+          // The user may have switched boards while this was in flight.
+          if (get().boardId !== boardId) return;
+          const arr = Array.isArray(data) ? data : [];
+          const mapped: LinkedResource[] = arr.map((r) => ({
+            title: r.label ?? r.title ?? "",
+            url: r.url ?? "",
+          }));
+          set({
+            description: "",
+            documentationLinks: [],
+            links: mapped,
+            loadedBoardId: boardId,
+            loading: false,
+            error: null,
+          });
+        } catch (err) {
+          if (get().boardId !== boardId) return;
+          // A failed background refresh keeps the cached resources on screen.
+          if (get().loadedBoardId === boardId) set({ loading: false });
+          else set({ error: (err as Error).message, loading: false });
+        } finally {
+          inflight.delete(boardId);
+        }
+      })();
+      inflight.set(boardId, request);
+      return request;
     },
 
     setLoading: (loading) => set({ loading }),
