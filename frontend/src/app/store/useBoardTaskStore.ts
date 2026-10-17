@@ -71,11 +71,11 @@ function toDay(raw: unknown): string {
 }
 
 /** YYYY-MM-DD → RFC3339 at UTC midnight, as the backend requires. */
-function toRfc3339(day: string): string {
+export function toRfc3339(day: string): string {
   return `${day}T00:00:00Z`;
 }
 
-function mapTask(raw: Record<string, unknown>, members: BoardMember[]): BoardTask {
+export function mapTask(raw: Record<string, unknown>, members: BoardMember[]): BoardTask {
   const assigneeId = (raw.assignee_id ?? "") as string;
   return {
     id: raw.id as string,
@@ -99,7 +99,25 @@ function mapTask(raw: Record<string, unknown>, members: BoardMember[]): BoardTas
 }
 
 /** Converts a frontend patch into the backend's snake_case PATCH body. */
-function toPatchBody(p: TaskPatch): Record<string, unknown> {
+/** Converts a create payload into the backend's snake_case POST body. */
+export function toCreateBody(payload: CreateTaskPayload): Record<string, unknown> {
+  return {
+    title: payload.title,
+    stage: payload.stage,
+    priority: payload.priority,
+    description: payload.description,
+    assignee_id: payload.assigneeId,
+    start_date: payload.startDate ? toRfc3339(payload.startDate) : undefined,
+    due_date: payload.endDate ? toRfc3339(payload.endDate) : undefined,
+    time_estimate: payload.timeEstimate,
+    tags: payload.tags,
+    reference_link: payload.referenceLink,
+    flow_diagram_link: payload.flowDiagramLink,
+    subtasks: payload.subtasks,
+  };
+}
+
+export function toPatchBody(p: TaskPatch): Record<string, unknown> {
   const body: Record<string, unknown> = {};
   if (p.title !== undefined) body.title = p.title;
   if (p.description !== undefined) body.description = p.description;
@@ -242,20 +260,7 @@ export const useBoardTaskStore = create<BoardTaskState>()(
       },
 
       createTask: async (boardId: string, payload: CreateTaskPayload) => {
-        const body: Record<string, unknown> = {
-          title: payload.title,
-          stage: payload.stage,
-          priority: payload.priority,
-          description: payload.description,
-          assignee_id: payload.assigneeId,
-          start_date: payload.startDate ? toRfc3339(payload.startDate) : undefined,
-          due_date: payload.endDate ? toRfc3339(payload.endDate) : undefined,
-          time_estimate: payload.timeEstimate,
-          tags: payload.tags,
-          reference_link: payload.referenceLink,
-          flow_diagram_link: payload.flowDiagramLink,
-          subtasks: payload.subtasks,
-        };
+        const body = toCreateBody(payload);
         try {
           const raw = await apiFetch<Record<string, unknown>>(
             `/api/boards/${boardId}/tasks`,

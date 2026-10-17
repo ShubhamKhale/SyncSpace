@@ -23,7 +23,7 @@ import {
 import CustomDatePicker from "./CustomDatePicker";
 import { apiFetch } from "@/lib/api";
 import { useBoardTaskStore } from "@/app/store/useBoardTaskStore";
-import type { BoardMember, BoardTask, TaskPatch } from "@/app/store/useBoardTaskStore";
+import type { BoardMember, BoardTask, CreateTaskPayload, TaskPatch } from "@/app/store/useBoardTaskStore";
 import { useEditMode } from "@/app/hooks/useEditMode";
 
 /** Local checklist row. `key` is React-only; `id` is the server ID ("" until saved). */
@@ -41,6 +41,22 @@ interface TaskModalProps {
   boardId?: string;
   /** When set, the modal edits this task instead of creating a new one. */
   task?: BoardTask | null;
+  /**
+   * Where create/update/delete go. Defaults to the board task store; pages
+   * outside a board (e.g. the org-wide Tasks page) pass their own store's
+   * actions so the edited task is the one they display.
+   */
+  actions?: TaskActions;
+  /** Assignee options; defaults to the board's members. */
+  members?: BoardMember[];
+  /** When set (and creating), shows a board picker instead of a fixed board. */
+  boardOptions?: { id: string; title: string }[];
+}
+
+export interface TaskActions {
+  createTask: (boardId: string, payload: CreateTaskPayload) => Promise<void>;
+  updateTask: (taskId: string, patch: TaskPatch) => Promise<void>;
+  deleteTask: (taskId: string) => Promise<void>;
 }
 
 const toLocalSubtasks = (task?: BoardTask | null): Subtask[] =>
@@ -75,7 +91,7 @@ const scrollIntoViewOnMount = (el: HTMLElement | null) => el?.scrollIntoView({ b
 
 const inputCls = "w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-3 py-2.5 text-sm text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#6366F1]/30 focus:border-[#6366F1] transition";
 
-const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, boardName, boardId, task }) => {
+const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, boardName, boardId, task, actions, members: membersProp, boardOptions }) => {
   const isEdit = !!task;
   const { canEditTasks, canDeleteTasks } = useEditMode();
   const readOnly = isEdit && !canEditTasks;
@@ -101,8 +117,11 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, boardName, board
   const [submitError, setSubmitError]               = useState("");
   const [confirmDelete, setConfirmDelete]           = useState(false);
   const [deleting, setDeleting]                     = useState(false);
-  const { createTask, updateTask, deleteTask } = useBoardTaskStore();
+  const boardTaskStore = useBoardTaskStore();
+  const { createTask, updateTask, deleteTask } = actions ?? boardTaskStore;
   const storeMembers = useBoardTaskStore((s) => s.members);
+  const pickBoard = !!boardOptions && !task;
+  const [targetBoardId, setTargetBoardId]           = useState(boardId ?? "");
 
   useEffect(() => {
     if (isOpen) {
@@ -119,6 +138,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, boardName, board
       setReferenceLink(task?.referenceLink ?? "");
       setFlowDiagramLink(task?.flowDiagramLink ?? "");
       setSubtasks(toLocalSubtasks(task));
+      setTargetBoardId(boardId ?? "");
       setNewSubtaskText("");
       setSubmitError("");
       setConfirmDelete(false);
@@ -132,7 +152,9 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, boardName, board
   }, [isOpen, task?.id]);
 
   useEffect(() => {
-    if (!isOpen || !boardId) return;
+    if (!isOpen) return;
+    if (membersProp) { setMembers(membersProp); return; }
+    if (!boardId) return;
     // The board pages already load members into the store; only fetch if missing.
     if (storeMembers.length > 0) { setMembers(storeMembers); return; }
     setMembersLoading(true);
@@ -140,7 +162,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, boardName, board
       .then(data => setMembers(Array.isArray(data) ? data : []))
       .catch(() => setMembers([]))
       .finally(() => setMembersLoading(false));
-  }, [isOpen, boardId, storeMembers]);
+  }, [isOpen, boardId, storeMembers, membersProp]);
 
   const assigneeName = members.find(m => m.id === assigneeId)?.name ?? "";
   const subtasksPayload = subtasks.map(({ id, text, completed }) => ({ id, text, completed }));
@@ -167,7 +189,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, boardName, board
     if (readOnly) return;
     if (!title.trim()) { setSubmitError("Task title is required."); return; }
     if (startDate && dueDate && dueDate < startDate) { setSubmitError("Due date can't be before the start date."); return; }
-    if (!isEdit && !boardId) { setSubmitError("Board ID missing."); return; }
+    if (!isEdit && !targetBoardId) { setSubmitError(pickBoard ? "Choose a board for this task." : "Board ID missing."); return; }
     setSubmitError("");
     setSubmitting(true);
     try {
@@ -175,7 +197,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, boardName, board
         const patch = buildPatch(task);
         if (Object.keys(patch).length > 0) await updateTask(task.id, patch);
       } else {
-        await createTask(boardId!, {
+        await createTask(targetBoardId, {
           title: title.trim(),
           stage: status,
           priority,
@@ -456,13 +478,26 @@ const TaskModal: React.FC<TaskModalProps> = ({ isOpen, onClose, boardName, board
                   )}
                 </div>
 
-                {/* Board Name — fixed, read-only */}
+                {/* Board — a picker when creating outside a board, otherwise fixed */}
                 <div>
-                  {fieldLabel(<LayoutGrid size={11} />, "Board Name")}
-                  <div className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-100 dark:bg-slate-700/50 px-3 py-2.5 text-sm text-slate-500 dark:text-slate-400 select-none cursor-default flex items-center gap-2">
-                    <LayoutGrid size={13} className="text-[#6366F1] flex-shrink-0" />
-                    <span className="truncate">{boardName || "—"}</span>
-                  </div>
+                  {fieldLabel(<LayoutGrid size={11} />, pickBoard ? "Board" : "Board Name")}
+                  {pickBoard ? (
+                    <select
+                      value={targetBoardId}
+                      onChange={e => setTargetBoardId(e.target.value)}
+                      className={`${inputCls} ${targetBoardId ? "" : "text-slate-400"}`}
+                    >
+                      <option value="">Choose a board…</option>
+                      {boardOptions!.map(b => (
+                        <option key={b.id} value={b.id}>{b.title}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <div className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-100 dark:bg-slate-700/50 px-3 py-2.5 text-sm text-slate-500 dark:text-slate-400 select-none cursor-default flex items-center gap-2">
+                      <LayoutGrid size={13} className="text-[#6366F1] flex-shrink-0" />
+                      <span className="truncate">{boardName || "—"}</span>
+                    </div>
+                  )}
                 </div>
               </div>
               </div>{/* end meta fields card */}
