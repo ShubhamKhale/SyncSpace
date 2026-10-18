@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
-import { ListChecks, Menu, Moon, Sun, X } from "lucide-react";
+import { GitBranch, ListChecks, Menu, Moon, Sun, X } from "lucide-react";
 import { useTheme } from "@/app/hooks/useTheme";
 import { useUserStore, getInitials } from "@/app/store/useUserStore";
 import { isAuthenticated } from "@/lib/api";
@@ -19,6 +19,7 @@ import OrganizationIcon from "../icons/OrganizationIcon";
 // Nav icons receive a `fill` colour; lucide icons are stroked, so map it to `color`.
 type NavIconProps = { width?: number; height?: number; fill?: string };
 const TasksIcon = ({ width, fill }: NavIconProps) => <ListChecks size={width} color={fill} strokeWidth={2} />;
+const FlowsIcon = ({ width, fill }: NavIconProps) => <GitBranch size={width} color={fill} strokeWidth={2} />;
 
 export default function DashboardLayout({
   children,
@@ -51,6 +52,7 @@ export default function DashboardLayout({
       { href: "/dashboard",              label: "Dashboard",    Icon: DashboardIcon    },
       { href: "/dashboard/boards",       label: "Boards",       Icon: BoardIcon        },
       { href: "/dashboard/tasks",        label: "Tasks",        Icon: TasksIcon        },
+      { href: "/dashboard/flows",        label: "Flows",        Icon: FlowsIcon        },
     ],
     [
       { href: "/dashboard/history",      label: "History",      Icon: HistoryIcon      },
