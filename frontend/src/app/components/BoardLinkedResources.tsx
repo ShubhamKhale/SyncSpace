@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { FileText, Pencil, Wand2 } from "lucide-react";
 import ExternalLinkIcon from "../icons/ExternalLinkIcon";
+import LinkIcon from "./LinkIcon";
 import { useLinkedResourcesStore } from "@/app/store/useLinkedResourcesStore";
 import { LinkedResourcesSkeleton } from "./Skeleton";
 import EditLinkedResourcesModal from "./EditLinkedResourcesModal";
@@ -96,9 +97,8 @@ const BoardLinkedResources: React.FC<{ boardId?: string }> = ({ boardId }) => {
             {links.map((link, idx) => (
               <li key={idx} className="flex items-center justify-between rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 px-2 py-2 transition">
                 <div className="flex items-center space-x-3 min-w-0">
-                  <div className={`flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-md text-white text-xs font-bold ${link.color}`}>
-                    {link.icon}
-                  </div>
+                  {/* icon/color aren't persisted by the API, so derive the icon from the URL */}
+                  <LinkIcon url={link.url} />
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">{link.title}</p>
                     <a
