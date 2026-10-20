@@ -7,7 +7,7 @@ if (process.env.NODE_ENV === "production" && !process.env.NEXT_PUBLIC_API_BASE) 
   );
 }
 
-export const API = process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:8068";
+export const API = process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:8080";
 
 function getHeaders(
   extra: Record<string, string> = {}

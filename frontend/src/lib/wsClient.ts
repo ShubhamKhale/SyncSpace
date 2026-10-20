@@ -5,7 +5,7 @@ if (process.env.NODE_ENV === "production" && !process.env.NEXT_PUBLIC_WS_BASE) {
   );
 }
 
-const WS_BASE = process.env.NEXT_PUBLIC_WS_BASE ?? "ws://localhost:8068";
+const WS_BASE = process.env.NEXT_PUBLIC_WS_BASE ?? "ws://localhost:8080";
 
 export interface WSMessage {
   type: string;
