@@ -39,3 +39,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Local tooling & working notes (kept on disk, not shipped)
+CLAUDE.md
+SYNCSPACE_SUMMARY.md
+folder_structure.txt
+api-test.mjs
+design-mockups/
