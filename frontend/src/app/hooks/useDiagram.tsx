@@ -554,6 +554,14 @@ export const useDiagram = (opts?: { saveKey?: string; boardId?: string; flowId?:
         });
         const updated = applyNodeChanges(safeChanges, currentNodes);
         return updated.map((node) => {
+          // Mirror an explicit size (set by NodeResizer or `style`) into data for
+          // the shape renderer. React Flow leaves node.width undefined for nodes
+          // without one (e.g. AI-generated nodes) — keep data's size then, or the
+          // shape collapses to its 80px fallback and labels break mid-word.
+          const size = {
+            width: node.width ?? (node.data?.width as number | undefined),
+            height: node.height ?? (node.data?.height as number | undefined),
+          };
           // Force locked nodes back to their saved position on every change cycle.
           // ReactFlow (uncontrolled mode) may have moved them internally before
           // onNodesChange fires — this overrides that.
@@ -561,12 +569,12 @@ export const useDiagram = (opts?: { saveKey?: string; boardId?: string; flowId?:
             return {
               ...node,
               position: node.data.lockedPosition as { x: number; y: number },
-              data: { ...node.data, width: node.width, height: node.height },
+              data: { ...node.data, ...size },
             };
           }
           return {
             ...node,
-            data: { ...node.data, width: node.width, height: node.height },
+            data: { ...node.data, ...size },
           };
         });
       });

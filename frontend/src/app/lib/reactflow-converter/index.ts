@@ -24,24 +24,44 @@ const SHAPE_COLORS: Record<string, string> = {
   star: "#713f12",
 };
 
+/**
+ * Width that fits the label's longest word on one line and the whole label in
+ * about two lines at 14px Inter (~8px per character), within sane bounds.
+ */
+function nodeWidthFor(label: string): number {
+  const longestWord = Math.max(0, ...label.split(/\s+/).map((w) => w.length));
+  const byWord = longestWord * 9 + 32;
+  const byTwoLines = (label.length / 2) * 8 + 32;
+  return Math.round(Math.min(260, Math.max(140, byWord, byTwoLines)));
+}
+
 export function convertToReactFlow(graph: LogicalGraph) {
-  const nodes = graph.nodes.map((n) => ({
+  const nodes = graph.nodes.map((n) => {
+    const width = nodeWidthFor(n.label);
+    const height = 64;
+    return {
     id: n.id,
     type: "shape" as const,
     position: { x: n.x ?? 0, y: n.y ?? 0 },
+    // Explicit size so React Flow (and resize/save) keeps it — without it the
+    // node's width is undefined and the shape falls back to 80px.
+    width,
+    height,
+    style: { width, height },
     data: {
       type: n.shape,
       text: n.label,
       fill: SHAPE_FILLS[n.shape] ?? "#EFF6FF",
       color: SHAPE_COLORS[n.shape] ?? "#1e3a5f",
-      width: 160,
-      height: 60,
+      width,
+      height,
       fontSize: "14px",
       fontFamily: "Inter",
       locked: false,
       comments: [],
     },
-  }));
+    };
+  });
 
   const edges = graph.edges.map((e, i) => ({
     id: `ai-e${i}-${e.source}-${e.target}`,

@@ -1,6 +1,6 @@
 import type { LogicalGraph, LogicalNode } from "../diagram-validator";
 
-const COL_WIDTH = 260;   // horizontal gap between layers
+const COL_WIDTH = 330;   // horizontal step between layers (nodes are up to 260px wide)
 const ROW_HEIGHT = 140;  // vertical gap between nodes in same layer
 const START_X = 80;
 const START_Y = 80;
