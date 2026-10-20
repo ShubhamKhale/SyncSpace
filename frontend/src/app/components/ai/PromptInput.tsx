@@ -5,6 +5,8 @@ interface PromptInputProps {
   onChange: (v: string) => void;
   onSubmit: () => void;
   disabled: boolean;
+  webSearch: boolean;
+  onWebSearchChange: (v: boolean) => void;
 }
 
 const EXAMPLES = [
@@ -14,7 +16,7 @@ const EXAMPLES = [
   "OAuth2 authorization code flow",
 ];
 
-export default function PromptInput({ value, onChange, onSubmit, disabled }: PromptInputProps) {
+export default function PromptInput({ value, onChange, onSubmit, disabled, webSearch, onWebSearchChange }: PromptInputProps) {
   return (
     <div className="flex flex-col gap-3">
       <textarea
@@ -42,6 +44,27 @@ export default function PromptInput({ value, onChange, onSubmit, disabled }: Pro
             </button>
           ))}
         </div>
+      </div>
+
+      {/* Web search costs ~3x the AI tokens (and rate-limit budget), so it's opt-in. */}
+      <div className={`flex items-start gap-3 rounded-xl border border-slate-700 px-3 py-2.5 cursor-pointer select-none ${disabled ? "opacity-50 cursor-not-allowed" : "hover:border-slate-600"}`}>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={webSearch}
+          aria-label="Search the web"
+          disabled={disabled}
+          onClick={() => onWebSearchChange(!webSearch)}
+          className={`mt-0.5 relative inline-flex h-5 w-9 flex-shrink-0 rounded-full transition ${webSearch ? "bg-indigo-500" : "bg-slate-600"}`}
+        >
+          <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all ${webSearch ? "left-[18px]" : "left-0.5"}`} />
+        </button>
+        <span className="flex flex-col" onClick={() => !disabled && onWebSearchChange(!webSearch)}>
+          <span className="text-xs font-medium text-slate-200">Search the web</span>
+          <span className="text-[11px] text-slate-500 leading-snug">
+            Uses real, current service names. Slower, and the AI gets busy sooner.
+          </span>
+        </span>
       </div>
 
       <button

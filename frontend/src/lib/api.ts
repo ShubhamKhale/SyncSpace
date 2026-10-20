@@ -22,6 +22,22 @@ function getHeaders(
   return headers;
 }
 
+/**
+ * Error thrown for `{ success: false }` API responses. Still an Error (so
+ * existing `err.message` handling works), plus the HTTP status and, for 429s,
+ * the server's suggested wait in seconds.
+ */
+export class ApiError extends Error {
+  status: number;
+  retryAfter?: number;
+  constructor(message: string, status: number, retryAfter?: number) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    this.retryAfter = retryAfter;
+  }
+}
+
 export async function apiFetch<T>(
   path: string,
   options: RequestInit = {}
@@ -53,7 +69,10 @@ export async function apiFetch<T>(
 
   if (json !== null && typeof json === "object") {
     const envelope = json as Record<string, unknown>;
-    if (envelope.success === false) throw new Error((envelope.error as string) ?? "Unknown error");
+    if (envelope.success === false) {
+      const retryAfter = typeof envelope.retry_after === "number" ? envelope.retry_after : undefined;
+      throw new ApiError((envelope.error as string) ?? "Unknown error", res.status, retryAfter);
+    }
     if (envelope.data !== undefined) return envelope.data as T;
   }
 
