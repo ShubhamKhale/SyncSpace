@@ -7,6 +7,8 @@ interface PromptInputProps {
   disabled: boolean;
   webSearch: boolean;
   onWebSearchChange: (v: boolean) => void;
+  /** When true, UI is in mid-conversation mode: simpler placeholder, "Send" button, no example chips. */
+  isConversation?: boolean;
 }
 
 const EXAMPLES = [
@@ -16,7 +18,7 @@ const EXAMPLES = [
   "OAuth2 authorization code flow",
 ];
 
-export default function PromptInput({ value, onChange, onSubmit, disabled, webSearch, onWebSearchChange }: PromptInputProps) {
+export default function PromptInput({ value, onChange, onSubmit, disabled, webSearch, onWebSearchChange, isConversation = false }: PromptInputProps) {
   return (
     <div className="flex flex-col gap-3">
       <textarea
@@ -26,25 +28,31 @@ export default function PromptInput({ value, onChange, onSubmit, disabled, webSe
           if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) onSubmit();
         }}
         disabled={disabled}
-        placeholder="Describe your diagram…&#10;e.g. Redis pub/sub with publisher and two subscribers"
-        className="w-full h-28 bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-500 resize-none outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30 transition disabled:opacity-50"
+        placeholder={
+          isConversation
+            ? "Reply to continue…"
+            : "Describe your diagram…\ne.g. Redis pub/sub with publisher and two subscribers"
+        }
+        className="w-full h-24 bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-500 resize-none outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30 transition disabled:opacity-50"
       />
 
-      <div className="flex flex-col gap-1.5">
-        <p className="text-[10px] text-slate-500 uppercase tracking-wider">Examples</p>
-        <div className="flex flex-col gap-1">
-          {EXAMPLES.map((ex) => (
-            <button
-              key={ex}
-              onClick={() => onChange(ex)}
-              disabled={disabled}
-              className="text-left text-xs text-slate-400 hover:text-indigo-400 transition truncate disabled:opacity-40"
-            >
-              · {ex}
-            </button>
-          ))}
+      {!isConversation && (
+        <div className="flex flex-col gap-1.5">
+          <p className="text-[10px] text-slate-500 uppercase tracking-wider">Examples</p>
+          <div className="flex flex-col gap-1">
+            {EXAMPLES.map((ex) => (
+              <button
+                key={ex}
+                onClick={() => onChange(ex)}
+                disabled={disabled}
+                className="text-left text-xs text-slate-400 hover:text-indigo-400 transition truncate disabled:opacity-40"
+              >
+                · {ex}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Web search costs ~3x the AI tokens (and rate-limit budget), so it's opt-in. */}
       <div className={`flex items-start gap-3 rounded-xl border border-slate-700 px-3 py-2.5 cursor-pointer select-none ${disabled ? "opacity-50 cursor-not-allowed" : "hover:border-slate-600"}`}>
@@ -72,9 +80,9 @@ export default function PromptInput({ value, onChange, onSubmit, disabled, webSe
         disabled={disabled || !value.trim()}
         className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-xl transition"
       >
-        Generate Diagram
+        {isConversation ? "Send" : "Generate Diagram"}
       </button>
-      <p className="text-[10px] text-slate-600 text-center">Ctrl+Enter to generate</p>
+      <p className="text-[10px] text-slate-600 text-center">Ctrl+Enter to {isConversation ? "send" : "generate"}</p>
     </div>
   );
 }

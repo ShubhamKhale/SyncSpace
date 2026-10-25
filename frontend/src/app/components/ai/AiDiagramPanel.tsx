@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { X, Sparkles, AlertTriangle, Clock, RotateCcw } from "lucide-react";
+import { X, Sparkles, AlertTriangle, Clock, RotateCcw, Zap, RefreshCw } from "lucide-react";
 import PromptInput from "./PromptInput";
 import GenerationProgress from "./GenerationProgress";
 import { validate, LogicalGraph } from "@/app/lib/diagram-validator";
@@ -11,7 +11,6 @@ import { apiFetch, ApiError } from "@/lib/api";
 
 type Status = "idle" | "generating" | "waiting" | "error";
 
-/** Automatic retries after "AI is busy" (429) before showing an error. */
 const MAX_AUTO_RETRIES = 2;
 const WEB_SEARCH_KEY = "ss_ai_web_search";
 
@@ -24,6 +23,23 @@ interface AiDiagramPanelProps {
   };
 }
 
+// One turn in the conversation history sent to the backend.
+type ConversationTurn = { role: "user" | "assistant"; content: string };
+
+// What is rendered in the chat thread.
+type ChatMessage = {
+  role: "user" | "ai";
+  type: "text" | "diagram-success" | "error";
+  text: string;
+};
+
+// Shape of the /api/ai/generate-diagram/chat response.
+type ConversationResponse = {
+  action: "ask" | "diagram";
+  question?: string;
+  graph?: LogicalGraph;
+};
+
 function readWebSearchPref(): boolean {
   try {
     return localStorage.getItem(WEB_SEARCH_KEY) === "1";
@@ -33,13 +49,19 @@ function readWebSearchPref(): boolean {
 }
 
 export default function AiDiagramPanel({ isOpen, onClose, diagram }: AiDiagramPanelProps) {
-  const [prompt, setPrompt] = useState("");
   const [webSearch, setWebSearch] = useState(readWebSearchPref);
+  const [input, setInput] = useState("");
   const [status, setStatus] = useState<Status>("idle");
   const [errorMsg, setErrorMsg] = useState("");
   const [countdown, setCountdown] = useState(0);
+
+  // Conversation state
+  const [history, setHistory] = useState<ConversationTurn[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+
   const panelRef = useRef<HTMLDivElement>(null);
-  const runId = useRef(0); // bumped to cancel a pending auto-retry
+  const listRef = useRef<HTMLDivElement>(null);
+  const runId = useRef(0);
   const autoRetries = useRef(0);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -52,6 +74,13 @@ export default function AiDiagramPanel({ isOpen, onClose, diagram }: AiDiagramPa
     setWebSearch(v);
     try { localStorage.setItem(WEB_SEARCH_KEY, v ? "1" : "0"); } catch {}
   };
+
+  // Auto-scroll chat to bottom whenever messages change.
+  useEffect(() => {
+    if (listRef.current) {
+      listRef.current.scrollTop = listRef.current.scrollHeight;
+    }
+  }, [messages, status]);
 
   // Close on Escape
   useEffect(() => {
@@ -69,8 +98,7 @@ export default function AiDiagramPanel({ isOpen, onClose, diagram }: AiDiagramPa
     return () => document.removeEventListener("mousedown", handler, true);
   }, [isOpen, onClose]);
 
-  // Closing the panel cancels a pending auto-retry (an in-flight request still
-  // completes and applies, as before, so an accidental close loses nothing).
+  // Cancel pending auto-retry when panel closes mid-wait.
   useEffect(() => {
     if (!isOpen && status === "waiting") {
       runId.current++;
@@ -81,8 +109,7 @@ export default function AiDiagramPanel({ isOpen, onClose, diagram }: AiDiagramPa
 
   useEffect(() => clearTimer, []);
 
-  const generate = useCallback(async (isAutoRetry = false) => {
-    if (!prompt.trim()) return;
+  const sendTurn = useCallback(async (nextHistory: ConversationTurn[], isAutoRetry = false) => {
     if (!isAutoRetry) autoRetries.current = 0;
     const id = ++runId.current;
     clearTimer();
@@ -90,33 +117,54 @@ export default function AiDiagramPanel({ isOpen, onClose, diagram }: AiDiagramPa
     setErrorMsg("");
 
     try {
-      const rawGraph = await apiFetch<LogicalGraph>("/api/ai/generate-diagram", {
+      const resp = await apiFetch<ConversationResponse>("/api/ai/generate-diagram/chat", {
         method: "POST",
-        body: JSON.stringify({ prompt, web_search: webSearch }),
+        body: JSON.stringify({ history: nextHistory, web_search: webSearch }),
       });
       if (id !== runId.current) return;
 
-      // Repairs (dropped dangling edges, renamed duplicate ids, …) rather
-      // than rejecting the whole diagram over one model slip.
-      const result = validate(rawGraph);
-      if (!result.valid || !result.graph) {
-        setErrorMsg(result.errors[0] ?? "The AI returned an unusable diagram.");
-        setStatus("error");
-        return;
+      if (resp.action === "ask") {
+        const question = resp.question ?? "Could you give me more detail?";
+        setMessages(prev => [...prev, { role: "ai", type: "text", text: question }]);
+        setHistory(nextHistory.concat({
+          role: "assistant",
+          content: JSON.stringify({ action: "ask", question }),
+        }));
+        setStatus("idle");
+
+      } else if (resp.action === "diagram" && resp.graph) {
+        const result = validate(resp.graph);
+        if (!result.valid || !result.graph) {
+          setMessages(prev => [...prev, {
+            role: "ai",
+            type: "error",
+            text: result.errors[0] ?? "The AI returned an unusable diagram.",
+          }]);
+          setStatus("error");
+          return;
+        }
+        if (result.repairs.length) console.info("[AI diagram] repaired:", result.repairs);
+
+        const positioned = assignPositions(result.graph);
+        const rfData = convertToReactFlow(positioned);
+        diagram.takeSnapshot();
+        diagram.uploadJson(JSON.stringify(rfData), { fitView: true });
+
+        const nodeCount = result.graph.nodes.length;
+        setMessages(prev => [...prev, {
+          role: "ai",
+          type: "diagram-success",
+          text: `Diagram "${result.graph!.title}" generated — ${nodeCount} node${nodeCount !== 1 ? "s" : ""}. You can keep refining below, or close the panel.`,
+        }]);
+        setHistory(nextHistory.concat({
+          role: "assistant",
+          content: JSON.stringify({ action: "diagram", ...resp.graph }),
+        }));
+        setStatus("idle");
       }
-      if (result.repairs.length) console.info("[AI diagram] repaired output:", result.repairs);
-
-      const positioned = assignPositions(result.graph);
-      const reactFlowData = convertToReactFlow(positioned);
-
-      diagram.takeSnapshot();
-      diagram.uploadJson(JSON.stringify(reactFlowData), { fitView: true });
-      setStatus("idle");
-      onClose();
     } catch (err) {
       if (id !== runId.current) return;
 
-      // "AI is busy" — wait the server's suggested time and retry automatically.
       if (err instanceof ApiError && err.status === 429 && autoRetries.current < MAX_AUTO_RETRIES) {
         autoRetries.current++;
         let remaining = Math.max(1, Math.ceil(err.retryAfter ?? 5));
@@ -127,16 +175,48 @@ export default function AiDiagramPanel({ isOpen, onClose, diagram }: AiDiagramPa
           setCountdown(remaining);
           if (remaining <= 0) {
             clearTimer();
-            if (id === runId.current) generate(true);
+            if (id === runId.current) sendTurn(nextHistory, true);
           }
         }, 1000);
         return;
       }
 
-      setErrorMsg(err instanceof Error ? err.message : "Generation failed. Try again.");
+      const msg = err instanceof Error ? err.message : "Generation failed. Try again.";
+      setErrorMsg(msg);
+      setMessages(prev => [...prev, { role: "ai", type: "error", text: msg }]);
       setStatus("error");
     }
-  }, [prompt, webSearch, diagram, onClose]);
+  }, [webSearch, diagram]);
+
+  const handleSend = useCallback(() => {
+    const text = input.trim();
+    if (!text) return;
+    const userTurn: ConversationTurn = { role: "user", content: text };
+    const nextHistory = [...history, userTurn];
+    setMessages(prev => [...prev, { role: "user", type: "text", text }]);
+    setInput("");
+    setHistory(nextHistory);
+    sendTurn(nextHistory);
+  }, [input, history, sendTurn]);
+
+  const handleForceGenerate = useCallback(() => {
+    const forceText = "Stop asking questions. Generate the best diagram you can with the information so far.";
+    const userTurn: ConversationTurn = { role: "user", content: forceText };
+    const nextHistory = [...history, userTurn];
+    setMessages(prev => [...prev, { role: "user", type: "text", text: "Generate now." }]);
+    setHistory(nextHistory);
+    sendTurn(nextHistory);
+  }, [history, sendTurn]);
+
+  const handleNewDiagram = () => {
+    runId.current++;
+    clearTimer();
+    setHistory([]);
+    setMessages([]);
+    setInput("");
+    setStatus("idle");
+    setErrorMsg("");
+  };
 
   const cancelWait = () => {
     runId.current++;
@@ -145,6 +225,9 @@ export default function AiDiagramPanel({ isOpen, onClose, diagram }: AiDiagramPa
   };
 
   const busy = status === "generating" || status === "waiting";
+  const hasConversation = messages.length > 0;
+  // Show "Generate Now" button after at least one AI question has been asked.
+  const showForceGenerate = !busy && history.some(t => t.role === "assistant");
 
   if (!isOpen) return null;
 
@@ -156,40 +239,75 @@ export default function AiDiagramPanel({ isOpen, onClose, diagram }: AiDiagramPa
       {/* Panel */}
       <div
         ref={panelRef}
-        className="absolute right-0 top-0 h-full w-[360px] max-w-full bg-gray-900 border-l border-gray-700 shadow-2xl flex flex-col pointer-events-auto"
+        className="absolute right-0 top-0 h-full w-[400px] max-w-full bg-gray-900 border-l border-gray-700 shadow-2xl flex flex-col pointer-events-auto"
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-800">
           <div className="flex items-center gap-2">
             <Sparkles size={16} className="text-indigo-400" />
-            <span className="text-sm font-semibold text-gray-100">Generate with AI</span>
+            <span className="text-sm font-semibold text-gray-100">AI Diagram Assistant</span>
           </div>
-          <button
-            onClick={onClose}
-            aria-label="Close"
-            className="p-1.5 text-gray-400 hover:text-gray-100 hover:bg-gray-800 rounded-lg transition"
-          >
-            <X size={16} />
-          </button>
+          <div className="flex items-center gap-1">
+            {hasConversation && (
+              <button
+                onClick={handleNewDiagram}
+                aria-label="New diagram"
+                title="Start over"
+                className="p-1.5 text-gray-400 hover:text-gray-100 hover:bg-gray-800 rounded-lg transition"
+              >
+                <RefreshCw size={14} />
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              aria-label="Close"
+              className="p-1.5 text-gray-400 hover:text-gray-100 hover:bg-gray-800 rounded-lg transition"
+            >
+              <X size={16} />
+            </button>
+          </div>
         </div>
 
-        {/* Body */}
-        <div className="flex-1 overflow-y-auto px-5 py-5 flex flex-col gap-5">
-          <p className="text-xs text-gray-400 leading-relaxed">
-            Describe any architecture, process, or system in plain English and the AI will draw it.
-            Turn on web search to ground it in real, current service names.
-          </p>
+        {/* Chat thread */}
+        <div ref={listRef} className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3">
+          {!hasConversation && (
+            <p className="text-xs text-gray-400 leading-relaxed">
+              Describe any architecture, process, or system. The AI will ask a few questions
+              if needed, then draw it. Turn on web search for real, current service names.
+            </p>
+          )}
 
-          <PromptInput
-            value={prompt}
-            onChange={setPrompt}
-            onSubmit={() => generate()}
-            disabled={busy}
-            webSearch={webSearch}
-            onWebSearchChange={changeWebSearch}
-          />
+          {messages.map((msg, i) => (
+            <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+              {msg.type === "diagram-success" ? (
+                <div className="flex items-start gap-2 bg-emerald-900/20 border border-emerald-800/40 rounded-xl px-3 py-2.5 max-w-[85%]">
+                  <Sparkles size={13} className="text-emerald-400 flex-shrink-0 mt-0.5" />
+                  <p className="text-xs text-emerald-300 leading-relaxed">{msg.text}</p>
+                </div>
+              ) : msg.type === "error" ? (
+                <div className="flex items-start gap-2 bg-red-900/20 border border-red-800/40 rounded-xl px-3 py-2.5 max-w-[85%]">
+                  <AlertTriangle size={13} className="text-red-400 flex-shrink-0 mt-0.5" />
+                  <p className="text-xs text-red-400 leading-relaxed">{msg.text}</p>
+                </div>
+              ) : msg.role === "user" ? (
+                <div className="bg-indigo-600 rounded-2xl rounded-tr-sm px-3 py-2 max-w-[85%]">
+                  <p className="text-xs text-white leading-relaxed whitespace-pre-wrap">{msg.text}</p>
+                </div>
+              ) : (
+                <div className="bg-gray-800 rounded-2xl rounded-tl-sm px-3 py-2 max-w-[85%]">
+                  <p className="text-xs text-gray-100 leading-relaxed whitespace-pre-wrap">{msg.text}</p>
+                </div>
+              )}
+            </div>
+          ))}
 
-          {status === "generating" && <GenerationProgress webSearch={webSearch} />}
+          {status === "generating" && (
+            <div className="flex justify-start">
+              <div className="bg-gray-800 rounded-2xl rounded-tl-sm px-3 py-2">
+                <GenerationProgress webSearch={webSearch} />
+              </div>
+            </div>
+          )}
 
           {status === "waiting" && (
             <div className="flex items-start gap-3 bg-amber-900/20 border border-amber-800/40 rounded-xl px-4 py-3" role="status" aria-live="polite">
@@ -197,7 +315,7 @@ export default function AiDiagramPanel({ isOpen, onClose, diagram }: AiDiagramPa
               <div className="flex flex-col gap-1 flex-1">
                 <p className="text-xs font-semibold text-amber-300">The AI is busy</p>
                 <p className="text-xs text-amber-200/80 leading-relaxed">
-                  Retrying automatically in <span className="tabular-nums font-semibold">{countdown}s</span>…
+                  Retrying in <span className="tabular-nums font-semibold">{countdown}s</span>…
                 </p>
                 <button onClick={cancelWait} className="text-xs text-gray-400 hover:text-gray-200 mt-1 text-left">
                   Cancel
@@ -205,31 +323,43 @@ export default function AiDiagramPanel({ isOpen, onClose, diagram }: AiDiagramPa
               </div>
             </div>
           )}
+        </div>
 
-          {status === "error" && (
-            <div className="flex items-start gap-3 bg-red-900/20 border border-red-800/40 rounded-xl px-4 py-3" role="alert">
-              <AlertTriangle size={16} className="text-red-400 flex-shrink-0 mt-0.5" />
-              <div className="flex flex-col gap-1">
-                <p className="text-xs font-semibold text-red-300">Generation failed</p>
-                <p className="text-xs text-red-400 leading-relaxed">{errorMsg}</p>
-                <div className="flex items-center gap-4 mt-1.5">
-                  <button
-                    onClick={() => generate()}
-                    className="flex items-center gap-1 text-xs font-semibold text-indigo-400 hover:text-indigo-300"
-                  >
-                    <RotateCcw size={12} /> Retry
-                  </button>
-                  <button onClick={() => setStatus("idle")} className="text-xs text-gray-400 hover:text-gray-200">
-                    Edit prompt
-                  </button>
-                </div>
-              </div>
+        {/* Input area */}
+        <div className="border-t border-gray-800 px-4 py-3 flex flex-col gap-2">
+          {showForceGenerate && (
+            <button
+              onClick={handleForceGenerate}
+              className="flex items-center gap-1.5 text-xs text-amber-400 hover:text-amber-300 transition self-start"
+            >
+              <Zap size={12} /> Skip questions, generate now
+            </button>
+          )}
+
+          <PromptInput
+            value={input}
+            onChange={setInput}
+            onSubmit={handleSend}
+            disabled={busy}
+            webSearch={webSearch}
+            onWebSearchChange={changeWebSearch}
+            isConversation={hasConversation}
+          />
+
+          {status === "error" && !hasConversation && (
+            <div className="flex items-center gap-3 mt-1">
+              <button
+                onClick={() => { setStatus("idle"); setErrorMsg(""); }}
+                className="flex items-center gap-1 text-xs font-semibold text-indigo-400 hover:text-indigo-300"
+              >
+                <RotateCcw size={12} /> Edit prompt
+              </button>
             </div>
           )}
         </div>
 
         {/* Footer */}
-        <div className="px-5 py-3 border-t border-gray-800">
+        <div className="px-5 py-2 border-t border-gray-800">
           <p className="text-[10px] text-gray-600 text-center">
             Powered by Groq{webSearch ? " · Web search on" : ""}
           </p>
