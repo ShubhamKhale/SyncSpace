@@ -137,13 +137,17 @@ export default function AiDiagramPanel({ isOpen, onClose, flowId, diagram }: AiD
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, flowId]);
 
-  const persistConversation = useCallback((h: ConversationTurn[], m: ChatMessage[]) => {
-    if (!flowId) return;
+  // Persist conversation whenever history changes (best-effort, fire-and-forget).
+  const messagesRef = useRef<ChatMessage[]>(messages);
+  useEffect(() => { messagesRef.current = messages; }, [messages]);
+  useEffect(() => {
+    if (!flowId || history.length === 0) return;
     apiFetch(`/api/flows/${flowId}/ai-conversation`, {
       method: "PUT",
-      body: JSON.stringify({ history: h, messages: m }),
-    }).catch(() => {/* best-effort */});
-  }, [flowId]);
+      body: JSON.stringify({ history, messages: messagesRef.current }),
+    }).catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [history, flowId]);
 
   const sendTurn = useCallback(async (nextHistory: ConversationTurn[], isAutoRetry = false) => {
     if (!isAutoRetry) autoRetries.current = 0;
@@ -163,11 +167,7 @@ export default function AiDiagramPanel({ isOpen, onClose, flowId, diagram }: AiD
         const question = resp.question ?? "Could you give me more detail?";
         const newMsg: ChatMessage = { role: "ai", type: "text", text: question };
         const newHistory = nextHistory.concat({ role: "assistant", content: JSON.stringify({ action: "ask", question }) });
-        setMessages(prev => {
-          const updated = [...prev, newMsg];
-          persistConversation(newHistory, updated);
-          return updated;
-        });
+        setMessages(prev => [...prev, newMsg]);
         setHistory(newHistory);
         setStatus("idle");
 
@@ -197,11 +197,7 @@ export default function AiDiagramPanel({ isOpen, onClose, flowId, diagram }: AiD
           assumptions: resp.assumptions ?? [],
         };
         const newHistory = nextHistory.concat({ role: "assistant", content: JSON.stringify({ action: "diagram", ...resp.graph }) });
-        setMessages(prev => {
-          const updated = [...prev, successMsg];
-          persistConversation(newHistory, updated);
-          return updated;
-        });
+        setMessages(prev => [...prev, successMsg]);
         setHistory(newHistory);
         setStatus("idle");
       }
@@ -229,18 +225,22 @@ export default function AiDiagramPanel({ isOpen, onClose, flowId, diagram }: AiD
       setMessages(prev => [...prev, { role: "ai", type: "error", text: msg }]);
       setStatus("error");
     }
-  }, [webSearch, diagram, persistConversation]);
+  }, [webSearch, diagram]);
 
-  const handleSend = useCallback(() => {
-    const text = input.trim();
-    if (!text) return;
-    const userTurn: ConversationTurn = { role: "user", content: text };
+  const sendText = useCallback((text: string) => {
+    const trimmed = text.trim();
+    if (!trimmed) return;
+    const userTurn: ConversationTurn = { role: "user", content: trimmed };
     const nextHistory = [...history, userTurn];
-    setMessages(prev => [...prev, { role: "user", type: "text", text }]);
+    setMessages(prev => [...prev, { role: "user", type: "text", text: trimmed }]);
     setInput("");
     setHistory(nextHistory);
     sendTurn(nextHistory);
-  }, [input, history, sendTurn]);
+  }, [history, sendTurn]);
+
+  const handleSend = useCallback(() => {
+    sendText(input);
+  }, [input, sendText]);
 
   const handleForceGenerate = useCallback(() => {
     const forceText = "Stop asking questions. Generate the best diagram you can with the information so far.";
@@ -364,8 +364,9 @@ export default function AiDiagramPanel({ isOpen, onClose, flowId, diagram }: AiD
                           {parsed.options.map((opt, oi) => (
                             <button
                               key={oi}
-                              onClick={() => setInput(opt)}
-                              className="text-left text-xs bg-gray-700 hover:bg-indigo-700/60 text-gray-200 hover:text-white rounded-lg px-3 py-1.5 transition border border-gray-600 hover:border-indigo-500"
+                              disabled={busy}
+                              onClick={() => sendText(opt)}
+                              className="text-left text-xs bg-gray-700 hover:bg-indigo-700/60 text-gray-200 hover:text-white rounded-lg px-3 py-1.5 transition border border-gray-600 hover:border-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed"
                             >
                               {opt}
                             </button>
