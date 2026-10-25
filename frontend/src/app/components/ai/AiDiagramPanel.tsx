@@ -126,7 +126,7 @@ export default function AiDiagramPanel({ isOpen, onClose, flowId, diagram }: AiD
   // Fetch persisted conversation when panel opens (if flowId is set and no local state yet).
   useEffect(() => {
     if (!isOpen || !flowId || messages.length > 0) return;
-    apiFetch<{ history: ConversationTurn[]; messages: ChatMessage[] }>(`/api/flows/${flowId}/ai-conversation`)
+    apiFetch<{ history: ConversationTurn[]; messages: ChatMessage[] }>(`/api/flows/${flowId}/ai-conversation`, { method: "GET" })
       .then(conv => {
         if (conv.history.length > 0 || conv.messages.length > 0) {
           setHistory(conv.history);
