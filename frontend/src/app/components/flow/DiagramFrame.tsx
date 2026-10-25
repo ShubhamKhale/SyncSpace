@@ -597,6 +597,7 @@ const Flow = ({ flowId, boardId }: FlowProps) => {
         <AiDiagramPanel
           isOpen={isAIOpen}
           onClose={() => setIsAIOpen(false)}
+          flowId={flowId}
           diagram={diagram}
         />
       )}

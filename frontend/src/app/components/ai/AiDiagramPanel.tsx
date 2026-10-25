@@ -17,6 +17,7 @@ const WEB_SEARCH_KEY = "ss_ai_web_search";
 interface AiDiagramPanelProps {
   isOpen: boolean;
   onClose: () => void;
+  flowId?: string;
   diagram: {
     takeSnapshot: () => void;
     uploadJson: (json: string, opts?: { fitView?: boolean }) => void;
@@ -61,7 +62,7 @@ function readWebSearchPref(): boolean {
   }
 }
 
-export default function AiDiagramPanel({ isOpen, onClose, diagram }: AiDiagramPanelProps) {
+export default function AiDiagramPanel({ isOpen, onClose, flowId, diagram }: AiDiagramPanelProps) {
   const [webSearch, setWebSearch] = useState(readWebSearchPref);
   const [input, setInput] = useState("");
   const [status, setStatus] = useState<Status>("idle");
@@ -122,6 +123,28 @@ export default function AiDiagramPanel({ isOpen, onClose, diagram }: AiDiagramPa
 
   useEffect(() => clearTimer, []);
 
+  // Fetch persisted conversation when panel opens (if flowId is set and no local state yet).
+  useEffect(() => {
+    if (!isOpen || !flowId || messages.length > 0) return;
+    apiFetch<{ history: ConversationTurn[]; messages: ChatMessage[] }>(`/api/flows/${flowId}/ai-conversation`)
+      .then(conv => {
+        if (conv.history.length > 0 || conv.messages.length > 0) {
+          setHistory(conv.history);
+          setMessages(conv.messages);
+        }
+      })
+      .catch(() => {/* ignore — treat as no prior conversation */});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, flowId]);
+
+  const persistConversation = useCallback((h: ConversationTurn[], m: ChatMessage[]) => {
+    if (!flowId) return;
+    apiFetch(`/api/flows/${flowId}/ai-conversation`, {
+      method: "PUT",
+      body: JSON.stringify({ history: h, messages: m }),
+    }).catch(() => {/* best-effort */});
+  }, [flowId]);
+
   const sendTurn = useCallback(async (nextHistory: ConversationTurn[], isAutoRetry = false) => {
     if (!isAutoRetry) autoRetries.current = 0;
     const id = ++runId.current;
@@ -138,11 +161,14 @@ export default function AiDiagramPanel({ isOpen, onClose, diagram }: AiDiagramPa
 
       if (resp.action === "ask") {
         const question = resp.question ?? "Could you give me more detail?";
-        setMessages(prev => [...prev, { role: "ai", type: "text", text: question }]);
-        setHistory(nextHistory.concat({
-          role: "assistant",
-          content: JSON.stringify({ action: "ask", question }),
-        }));
+        const newMsg: ChatMessage = { role: "ai", type: "text", text: question };
+        const newHistory = nextHistory.concat({ role: "assistant", content: JSON.stringify({ action: "ask", question }) });
+        setMessages(prev => {
+          const updated = [...prev, newMsg];
+          persistConversation(newHistory, updated);
+          return updated;
+        });
+        setHistory(newHistory);
         setStatus("idle");
 
       } else if (resp.action === "diagram" && resp.graph) {
@@ -164,16 +190,19 @@ export default function AiDiagramPanel({ isOpen, onClose, diagram }: AiDiagramPa
         diagram.uploadJson(JSON.stringify(rfData), { fitView: true });
 
         const nodeCount = result.graph.nodes.length;
-        setMessages(prev => [...prev, {
+        const successMsg: ChatMessage = {
           role: "ai",
           type: "diagram-success",
           text: `Diagram "${result.graph!.title}" generated — ${nodeCount} node${nodeCount !== 1 ? "s" : ""}. You can keep refining below, or close the panel.`,
           assumptions: resp.assumptions ?? [],
-        }]);
-        setHistory(nextHistory.concat({
-          role: "assistant",
-          content: JSON.stringify({ action: "diagram", ...resp.graph }),
-        }));
+        };
+        const newHistory = nextHistory.concat({ role: "assistant", content: JSON.stringify({ action: "diagram", ...resp.graph }) });
+        setMessages(prev => {
+          const updated = [...prev, successMsg];
+          persistConversation(newHistory, updated);
+          return updated;
+        });
+        setHistory(newHistory);
         setStatus("idle");
       }
     } catch (err) {
@@ -200,7 +229,7 @@ export default function AiDiagramPanel({ isOpen, onClose, diagram }: AiDiagramPa
       setMessages(prev => [...prev, { role: "ai", type: "error", text: msg }]);
       setStatus("error");
     }
-  }, [webSearch, diagram]);
+  }, [webSearch, diagram, persistConversation]);
 
   const handleSend = useCallback(() => {
     const text = input.trim();
