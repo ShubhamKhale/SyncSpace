@@ -31,6 +31,7 @@ type ChatMessage = {
   role: "user" | "ai";
   type: "text" | "diagram-success" | "error";
   text: string;
+  assumptions?: string[]; // shown as chips under diagram-success messages
 };
 
 // Shape of the /api/ai/generate-diagram/chat response.
@@ -38,7 +39,19 @@ type ConversationResponse = {
   action: "ask" | "diagram";
   question?: string;
   graph?: LogicalGraph;
+  assumptions?: string[]; // model-stated assumptions when action=="diagram"
 };
+
+// Parse lettered options (A. ... B. ...) out of an AI question string.
+function parseOptions(text: string): { preamble: string; options: string[] } | null {
+  const lines = text.split("\n");
+  const firstOptIdx = lines.findIndex(l => /^[A-D]\.\s/.test(l.trim()));
+  if (firstOptIdx === -1) return null;
+  const optionLines = lines.slice(firstOptIdx).filter(l => /^[A-D]\.\s/.test(l.trim()));
+  if (optionLines.length < 2) return null;
+  const preamble = lines.slice(0, firstOptIdx).join("\n").trim();
+  return { preamble, options: optionLines.map(l => l.trim()) };
+}
 
 function readWebSearchPref(): boolean {
   try {
@@ -155,6 +168,7 @@ export default function AiDiagramPanel({ isOpen, onClose, diagram }: AiDiagramPa
           role: "ai",
           type: "diagram-success",
           text: `Diagram "${result.graph!.title}" generated — ${nodeCount} node${nodeCount !== 1 ? "s" : ""}. You can keep refining below, or close the panel.`,
+          assumptions: resp.assumptions ?? [],
         }]);
         setHistory(nextHistory.concat({
           role: "assistant",
@@ -280,9 +294,20 @@ export default function AiDiagramPanel({ isOpen, onClose, diagram }: AiDiagramPa
           {messages.map((msg, i) => (
             <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
               {msg.type === "diagram-success" ? (
-                <div className="flex items-start gap-2 bg-emerald-900/20 border border-emerald-800/40 rounded-xl px-3 py-2.5 max-w-[85%]">
+                <div className="flex items-start gap-2 bg-emerald-900/20 border border-emerald-800/40 rounded-xl px-3 py-2.5 max-w-[90%]">
                   <Sparkles size={13} className="text-emerald-400 flex-shrink-0 mt-0.5" />
-                  <p className="text-xs text-emerald-300 leading-relaxed">{msg.text}</p>
+                  <div className="flex flex-col gap-1.5">
+                    <p className="text-xs text-emerald-300 leading-relaxed">{msg.text}</p>
+                    {msg.assumptions && msg.assumptions.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {msg.assumptions.map((a, ai) => (
+                          <span key={ai} className="text-[10px] bg-gray-700/60 text-gray-400 rounded-full px-2 py-0.5">
+                            Assumed: {a}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               ) : msg.type === "error" ? (
                 <div className="flex items-start gap-2 bg-red-900/20 border border-red-800/40 rounded-xl px-3 py-2.5 max-w-[85%]">
@@ -294,8 +319,32 @@ export default function AiDiagramPanel({ isOpen, onClose, diagram }: AiDiagramPa
                   <p className="text-xs text-white leading-relaxed whitespace-pre-wrap">{msg.text}</p>
                 </div>
               ) : (
-                <div className="bg-gray-800 rounded-2xl rounded-tl-sm px-3 py-2 max-w-[85%]">
-                  <p className="text-xs text-gray-100 leading-relaxed whitespace-pre-wrap">{msg.text}</p>
+                /* AI text message — parse lettered options into clickable buttons */
+                <div className="bg-gray-800 rounded-2xl rounded-tl-sm px-3 py-2.5 max-w-[90%]">
+                  {(() => {
+                    const parsed = parseOptions(msg.text);
+                    if (!parsed) {
+                      return <p className="text-xs text-gray-100 leading-relaxed whitespace-pre-wrap">{msg.text}</p>;
+                    }
+                    return (
+                      <div className="flex flex-col gap-2">
+                        {parsed.preamble && (
+                          <p className="text-xs text-gray-100 leading-relaxed">{parsed.preamble}</p>
+                        )}
+                        <div className="flex flex-col gap-1">
+                          {parsed.options.map((opt, oi) => (
+                            <button
+                              key={oi}
+                              onClick={() => setInput(opt)}
+                              className="text-left text-xs bg-gray-700 hover:bg-indigo-700/60 text-gray-200 hover:text-white rounded-lg px-3 py-1.5 transition border border-gray-600 hover:border-indigo-500"
+                            >
+                              {opt}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
             </div>
