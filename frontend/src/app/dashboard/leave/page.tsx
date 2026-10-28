@@ -283,7 +283,7 @@ export default function LeavePage() {
   const pendingCount = teamRequests.filter((r) => r.status === "pending").length;
 
   return (
-    <div className="px-4 md:px-8 lg:px-10 pt-6 pb-10 bg-[#F8F9FC] dark:bg-slate-900 min-h-screen">
+    <div className="px-4 md:px-8 lg:px-10 pt-6 pb-10 bg-[#F8F9FC] dark:bg-slate-900">
       {/* Header */}
       <div className="flex items-start justify-between flex-wrap gap-3 mb-7">
         <div>

@@ -71,19 +71,19 @@ export default function DashboardLayout({
 
   const NavContent = () => (
     <>
-      <div>
-        <div className="flex px-5 py-4 items-center space-x-3 border-b border-[var(--sidebar-border-color)]">
+      <div className="flex flex-col min-h-0 overflow-y-auto scrollbar-hide">
+        <div className="flex-shrink-0 flex px-5 py-3 items-center space-x-3 border-b border-[var(--sidebar-border-color)]">
           <AppLogo width={32} height={32} />
           <p className="text-lg font-bold text-[var(--primary-button-background-color)]">
             SyncSpace
           </p>
         </div>
 
-        <div className="mt-5 px-3 space-y-1">
+        <div className="mt-2 px-3 space-y-0.5 pb-2">
           {navGroups.map((group, gi) => (
             <div key={gi}>
               {gi > 0 && (
-                <p className="mt-4 mb-1.5 px-3 text-[10px] font-semibold tracking-wider text-slate-400 dark:text-slate-500 uppercase">
+                <p className="mt-3 mb-1 px-3 text-[10px] font-semibold tracking-wider text-slate-400 dark:text-slate-500 uppercase">
                   {gi === 1 ? "Workspace" : "Account"}
                 </p>
               )}
@@ -95,7 +95,7 @@ export default function DashboardLayout({
                   return (
                     <Link key={href} href={href} onClick={() => setMobileNavOpen(false)}>
                       <div
-                        className={`py-2.5 px-3 cursor-pointer flex items-center space-x-3 rounded-lg transition-all ${
+                        className={`py-2 px-3 cursor-pointer flex items-center space-x-3 rounded-lg transition-all ${
                           isActive
                             ? "bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border-l-[3px] border-indigo-500"
                             : "text-[#6B7280] dark:text-[#6B7194] hover:bg-slate-50 dark:hover:bg-[#181C30] hover:text-slate-800 dark:hover:text-[#C8CDE7] border-l-[3px] border-transparent"
@@ -144,7 +144,7 @@ export default function DashboardLayout({
     <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] h-screen bg-[#F8F9FC] dark:bg-slate-900">
       {/* Desktop sidebar */}
       {!isBoardPage && (
-        <aside className="hidden lg:flex flex-col justify-between bg-white dark:bg-slate-800 border-r border-[var(--sidebar-border-color)] dark:border-slate-700">
+        <aside className="hidden lg:flex flex-col justify-between bg-white dark:bg-slate-800 border-r border-[var(--sidebar-border-color)] dark:border-slate-700 min-h-0 overflow-hidden">
           <NavContent />
         </aside>
       )}
@@ -173,8 +173,8 @@ export default function DashboardLayout({
       <main
         className={
           isBoardPage
-            ? "col-span-full overflow-y-auto scrollbar-hide"
-            : "overflow-y-auto scrollbar-hide"
+            ? "col-span-full overflow-y-auto scrollbar-hide min-h-0"
+            : "overflow-y-auto scrollbar-hide min-h-0"
         }
       >
         {/* Mobile hamburger bar */}

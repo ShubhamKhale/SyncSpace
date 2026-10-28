@@ -49,17 +49,14 @@ const STATUS_LABEL: Record<AttendanceStatus, string> = {
   absent:      "Absent",
 };
 
-const LEAVE_DOT = "bg-amber-500";
-const LEAVE_BG  = "bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400";
-
 // ── sub-components ────────────────────────────────────────────────────────────
 
-function StatusDot({ status, isLeave = false }: { status: AttendanceStatus; isLeave?: boolean }) {
-  const cls = isLeave ? LEAVE_DOT : STATUS_COLOR[status];
+function StatusDot({ status }: { status: AttendanceStatus }) {
+  const cls = STATUS_COLOR[status];
   return (
     <span className="relative inline-flex items-center justify-center w-3 h-3 flex-shrink-0">
       <span className={`w-2.5 h-2.5 rounded-full ${cls} block`} />
-      {(status === "checked_in" || isLeave) && (
+      {(status === "checked_in" || status === "on_leave") && (
         <span className={`absolute inline-flex h-full w-full rounded-full ${cls} opacity-40 animate-ping`} />
       )}
     </span>
@@ -147,7 +144,7 @@ export default function AttendancePage() {
   void tick; // suppress lint — used to re-render timer
 
   return (
-    <div className="px-4 md:px-8 lg:px-10 pt-6 pb-10 bg-[#F8F9FC] dark:bg-slate-900 min-h-screen">
+    <div className="px-4 md:px-8 lg:px-10 pt-6 pb-10 bg-[#F8F9FC] dark:bg-slate-900">
       {/* Header */}
       <div className="mb-7">
         <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Attendance</h1>
@@ -352,7 +349,7 @@ export default function AttendancePage() {
                           </td>
                           <td className="px-4 py-3">
                             <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full ${STATUS_BG[m.status]}`}>
-                              <StatusDot status={m.status} isLeave={false} />
+                              <StatusDot status={m.status} />
                               {STATUS_LABEL[m.status]}
                             </span>
                           </td>
