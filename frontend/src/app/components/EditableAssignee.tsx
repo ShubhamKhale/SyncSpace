@@ -1,9 +1,11 @@
 import React, { useState, useRef, useEffect } from "react";
 import { ChevronDown, Loader2, User } from "lucide-react";
+import type { AttendanceStatus } from "@/app/store/useAttendanceStore";
 
 export interface AssigneeOption {
   id: string;
   name: string;
+  availability?: AttendanceStatus | null;
 }
 
 interface EditableAssigneeProps {
@@ -13,6 +15,21 @@ interface EditableAssigneeProps {
   options: AssigneeOption[];
   saveState?: "idle" | "loading" | "success" | "error";
   disabled?: boolean;
+}
+
+const STATUS_DOT: Record<AttendanceStatus, string> = {
+  checked_in:  "bg-emerald-500",
+  checked_out: "bg-slate-400",
+  absent:      "bg-slate-400",
+};
+
+function AvailabilityDot({ status }: { status: AttendanceStatus }) {
+  return (
+    <span
+      title={status === "checked_in" ? "Checked in" : status === "absent" ? "Not in yet" : "Checked out"}
+      className={`inline-block w-2 h-2 rounded-full flex-shrink-0 ${STATUS_DOT[status]}`}
+    />
+  );
 }
 
 const UNASSIGNED: AssigneeOption = { id: "", name: "Unassigned" };
@@ -82,11 +99,16 @@ export const EditableAssignee: React.FC<EditableAssigneeProps> = ({
               key={opt.id || "unassigned"}
               onClick={() => handleSelect(opt.id)}
               disabled={saveState === "loading"}
-              className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-slate-600 dark:text-slate-200 disabled:opacity-50 ${
+              className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-slate-600 dark:text-slate-200 disabled:opacity-50 flex items-center gap-2 ${
                 opt.id === value ? "bg-blue-50 dark:bg-blue-900/30" : ""
               }`}
             >
-              {opt.name}
+              {opt.availability ? (
+                <AvailabilityDot status={opt.availability} />
+              ) : (
+                opt.id !== "" && <span className="inline-block w-2 h-2 rounded-full bg-slate-200 dark:bg-slate-600 flex-shrink-0" />
+              )}
+              <span className="flex-1">{opt.name}</span>
             </button>
           ))}
         </div>

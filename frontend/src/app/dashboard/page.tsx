@@ -53,6 +53,13 @@ interface Stats {
   member_count?: number;
 }
 
+interface TeamPresence {
+  checked_in: number;
+  on_leave: number;
+  absent: number;
+  total: number;
+}
+
 interface RecentBoard {
   id: string;
   title: string;
@@ -153,6 +160,8 @@ export default function DashboardHome() {
   const [upcomingTasks, setUpcomingTasks] = useState<UpcomingTask[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [statsLoading, setStatsLoading] = useState(true);
+  const [presence, setPresence] = useState<TeamPresence | null>(null);
+
   const [analytics, setAnalytics] = useState<AnalyticsData>({
     taskCompletionTrend: [],
     taskDistribution: [],
@@ -161,8 +170,10 @@ export default function DashboardHome() {
   });
 
   useEffect(() => {
+    const isAdmin = user?.role === "owner" || user?.role === "admin";
     Promise.allSettled([
       apiFetch<Stats>("/api/dashboard/stats").then(setStats),
+      ...(isAdmin ? [apiFetch<TeamPresence>("/api/attendance/team").then(setPresence).catch(() => {})] : []),
       apiFetch<RecentBoard[]>("/api/boards/recent").then((d) => setRecentBoards(Array.isArray(d) ? d : [])),
       apiFetch<{ logs: ActivityItem[]; total: number } | ActivityItem[]>("/api/activity-logs").then((d) => {
         if (Array.isArray(d)) setActivities(d);
@@ -184,6 +195,7 @@ export default function DashboardHome() {
   const tasksDueSoon    = stats?.task_due_soon    ?? 0;
   const memberCount     = stats?.member_count     ?? 0;
   const firstName       = user?.name?.split(" ")[0] ?? "there";
+  const isAdmin         = user?.role === "owner" || user?.role === "admin";
 
   return (
     <div className="px-4 md:px-8 lg:px-10 pt-6 pb-10 bg-[#F8F9FC] dark:bg-slate-900 min-h-screen">
@@ -233,8 +245,8 @@ export default function DashboardHome() {
         </div>
       </div>
 
-      {/* ── 5 Stat Cards ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+      {/* ── Stat Cards ── */}
+      <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 ${isAdmin ? "xl:grid-cols-6" : "xl:grid-cols-5"} gap-4`}>
         {statsLoading ? (
           Array.from({ length: 5 }).map((_, i) => (
             <div key={i} className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 px-5 py-4 flex items-center justify-between gap-4 animate-pulse">
@@ -289,6 +301,29 @@ export default function DashboardHome() {
               trend={memberCount > 0 ? memberCount : 0}
               trendSuffix="new this month"
             />
+            {isAdmin && (
+              <Link href="/dashboard/attendance" className="block">
+                <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-100 dark:border-slate-700 px-5 py-4 flex items-center justify-between gap-4 hover:border-indigo-200 dark:hover:border-indigo-700 transition cursor-pointer">
+                  <div>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">Present Today</p>
+                    <p className="text-2xl font-bold text-emerald-500 mt-1 tabular-nums">
+                      {presence?.checked_in ?? "—"}
+                      <span className="text-base font-medium text-slate-400 dark:text-slate-500">/{presence?.total ?? "—"}</span>
+                    </p>
+                    {presence && (
+                      <p className="text-xs mt-1.5 text-slate-400 dark:text-slate-500">
+                        <span className="text-amber-500">{presence.on_leave} on leave</span>
+                        {" · "}
+                        <span>{presence.absent} absent</span>
+                      </p>
+                    )}
+                  </div>
+                  <div className="w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0 bg-emerald-50 dark:bg-emerald-900/20">
+                    <svg className="w-7 h-7 text-emerald-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  </div>
+                </div>
+              </Link>
+            )}
           </>
         )}
       </div>

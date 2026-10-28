@@ -8,6 +8,7 @@ import { EditablePriority } from "@/app/components/EditablePriority";
 import { EditableAssignee } from "@/app/components/EditableAssignee";
 import { useBoardTaskStore } from "@/app/store/useBoardTaskStore";
 import type { BoardTask, Priority } from "@/app/store/useBoardTaskStore";
+import { useAvailabilityStore } from "@/app/store/useAvailabilityStore";
 import type { EditPermissions } from "@/app/hooks/useEditMode";
 
 interface Props {
@@ -39,7 +40,10 @@ export function DraggableTaskCard({
   onOpen,
   isDraggingOverlay = false,
 }: Props) {
-  const members = useBoardTaskStore((s) => s.members);
+  const rawMembers = useBoardTaskStore((s) => s.members);
+  const { getStatus, fetch: fetchAvailability } = useAvailabilityStore();
+  React.useEffect(() => { fetchAvailability(); }, []); // eslint-disable-line
+  const members = rawMembers.map((m) => ({ ...m, availability: getStatus(m.id) }));
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: task.id,
     disabled: isDraggingOverlay || !permissions.canReorderTasks,
