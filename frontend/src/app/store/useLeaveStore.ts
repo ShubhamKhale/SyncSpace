@@ -4,17 +4,21 @@ import { apiFetch } from "@/lib/api";
 
 export interface LeaveType {
   id: string;
+  org_id: string;
   name: string;
   default_days: number;
+  is_active: boolean;
+  created_at: string;
 }
 
 export interface LeaveBalance {
-  id: string;
   user_id: string;
   leave_type_id: string;
-  leave_type_name: string;
+  type_name: string;
+  year: number;
   allocated: number;
   used: number;
+  remaining: number;
 }
 
 export type LeaveStatus = "pending" | "approved" | "denied";
@@ -22,16 +26,19 @@ export type LeaveStatus = "pending" | "approved" | "denied";
 export interface LeaveRequest {
   id: string;
   user_id: string;
-  user_name: string;
-  user_email: string;
-  avatar_url: string | null;
+  user_name?: string;
+  user_email?: string;
+  avatar_url?: string | null;
+  org_id: string;
   leave_type_id: string;
-  leave_type_name: string;
+  type_name?: string;
   start_date: string;
   end_date: string;
   days: number;
   reason: string;
   status: LeaveStatus;
+  reviewed_by?: string;
+  reviewed_at?: string;
   created_at: string;
 }
 

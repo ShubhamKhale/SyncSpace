@@ -79,7 +79,7 @@ function RequestLeaveModal({ onClose }: ModalProps) {
   const [formError, setFormError] = useState("");
 
   const balance = balances.find((b) => b.leave_type_id === typeId);
-  const remaining = balance ? balance.allocated - balance.used : null;
+  const remaining = balance ? balance.remaining : null;
   const days = workingDaysBetween(startDate, endDate);
   const overBalance = remaining !== null && days > remaining;
 
@@ -139,7 +139,7 @@ function RequestLeaveModal({ onClose }: ModalProps) {
               >
                 {types.map((t) => {
                   const bal = balances.find((b) => b.leave_type_id === t.id);
-                  const rem = bal ? bal.allocated - bal.used : null;
+                  const rem = bal ? bal.remaining : null;
                   return (
                     <option key={t.id} value={t.id}>
                       {t.name}{rem !== null ? ` — ${rem} day${rem !== 1 ? "s" : ""} remaining` : ""}
@@ -350,12 +350,12 @@ export default function LeavePage() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
               {balances.map((b) => {
-                const remaining = b.allocated - b.used;
+                const remaining = b.remaining;
                 const pct = b.allocated > 0 ? (b.used / b.allocated) * 100 : 0;
                 const barColor = pct > 80 ? "bg-rose-500" : pct > 50 ? "bg-amber-500" : "bg-indigo-500";
                 return (
-                  <div key={b.id} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm p-4 flex flex-col gap-3">
-                    <p className="font-semibold text-sm text-slate-800 dark:text-slate-100">{b.leave_type_name}</p>
+                  <div key={b.leave_type_id} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 shadow-sm p-4 flex flex-col gap-3">
+                    <p className="font-semibold text-sm text-slate-800 dark:text-slate-100">{b.type_name}</p>
                     <div className="flex gap-4">
                       {[
                         { label: "Allocated", value: b.allocated, color: "text-slate-700 dark:text-slate-200" },
@@ -409,7 +409,7 @@ export default function LeavePage() {
                   ) : (
                     myRequests.map((r) => (
                       <tr key={r.id} className="border-b border-slate-50 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition">
-                        <td className="px-4 py-3 font-medium text-slate-800 dark:text-slate-100">{r.leave_type_name}</td>
+                        <td className="px-4 py-3 font-medium text-slate-800 dark:text-slate-100">{r.type_name ?? "—"}</td>
                         <td className="px-4 py-3 text-slate-600 dark:text-slate-300">{fmtDate(r.start_date)}</td>
                         <td className="px-4 py-3 text-slate-600 dark:text-slate-300">{fmtDate(r.end_date)}</td>
                         <td className="px-4 py-3 tabular-nums text-slate-600 dark:text-slate-300">{r.days}</td>
@@ -450,11 +450,11 @@ export default function LeavePage() {
                         <tr key={r.id} className="border-b border-slate-50 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition">
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-2">
-                              <Avatar name={r.user_name} id={r.user_id} />
-                              <span className="font-medium text-slate-800 dark:text-slate-100">{r.user_name}</span>
+                              <Avatar name={r.user_name ?? r.user_id} id={r.user_id} />
+                              <span className="font-medium text-slate-800 dark:text-slate-100">{r.user_name ?? r.user_id}</span>
                             </div>
                           </td>
-                          <td className="px-4 py-3 text-slate-600 dark:text-slate-300">{r.leave_type_name}</td>
+                          <td className="px-4 py-3 text-slate-600 dark:text-slate-300">{r.type_name ?? "—"}</td>
                           <td className="px-4 py-3 text-slate-600 dark:text-slate-300 whitespace-nowrap">{fmtDate(r.start_date)} – {fmtDate(r.end_date)}</td>
                           <td className="px-4 py-3 tabular-nums text-slate-600 dark:text-slate-300">{r.days}</td>
                           <td className="px-4 py-3 text-slate-500 dark:text-slate-400 max-w-[140px] truncate">{r.reason || "—"}</td>
@@ -526,11 +526,11 @@ export default function LeavePage() {
                         <tr key={r.id} className="border-b border-slate-50 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition">
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-2">
-                              <Avatar name={r.user_name} id={r.user_id} />
-                              <span className="font-medium text-slate-800 dark:text-slate-100">{r.user_name}</span>
+                              <Avatar name={r.user_name ?? r.user_id} id={r.user_id} />
+                              <span className="font-medium text-slate-800 dark:text-slate-100">{r.user_name ?? r.user_id}</span>
                             </div>
                           </td>
-                          <td className="px-4 py-3 text-slate-600 dark:text-slate-300">{r.leave_type_name}</td>
+                          <td className="px-4 py-3 text-slate-600 dark:text-slate-300">{r.type_name ?? "—"}</td>
                           <td className="px-4 py-3 text-slate-600 dark:text-slate-300 whitespace-nowrap">{fmtDate(r.start_date)} – {fmtDate(r.end_date)}</td>
                           <td className="px-4 py-3 tabular-nums text-slate-600 dark:text-slate-300">{r.days}</td>
                           <td className="px-4 py-3"><StatusBadge status={r.status} /></td>

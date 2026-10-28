@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
-import { GitBranch, ListChecks, Menu, Moon, Sun, X, Clock, Calendar } from "lucide-react";
+import { GitBranch, ListChecks, Menu, Moon, Sun, X, Clock, CalendarOff } from "lucide-react";
 import { useTheme } from "@/app/hooks/useTheme";
 import { useUserStore, getInitials } from "@/app/store/useUserStore";
 import { isAuthenticated } from "@/lib/api";
@@ -21,7 +21,7 @@ type NavIconProps = { width?: number; height?: number; fill?: string };
 const TasksIcon       = ({ width, fill }: NavIconProps) => <ListChecks size={width} color={fill} strokeWidth={2} />;
 const FlowsIcon       = ({ width, fill }: NavIconProps) => <GitBranch  size={width} color={fill} strokeWidth={2} />;
 const AttendanceIcon  = ({ width, fill }: NavIconProps) => <Clock      size={width} color={fill} strokeWidth={2} />;
-const LeaveIcon       = ({ width, fill }: NavIconProps) => <Calendar   size={width} color={fill} strokeWidth={2} />;
+const LeaveIcon       = ({ width, fill }: NavIconProps) => <CalendarOff size={width} color={fill} strokeWidth={2} />;
 
 export default function DashboardLayout({
   children,

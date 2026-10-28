@@ -19,6 +19,7 @@ interface EditableAssigneeProps {
 
 const STATUS_DOT: Record<AttendanceStatus, string> = {
   checked_in:  "bg-emerald-500",
+  on_leave:    "bg-orange-500",
   checked_out: "bg-slate-400",
   absent:      "bg-slate-400",
 };

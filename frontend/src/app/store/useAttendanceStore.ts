@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 import { apiFetch } from "@/lib/api";
 
-export type AttendanceStatus = "checked_in" | "checked_out" | "absent";
+export type AttendanceStatus = "checked_in" | "checked_out" | "on_leave" | "absent";
 
 export interface AttendanceLog {
   id: string;

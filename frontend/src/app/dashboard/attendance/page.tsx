@@ -30,18 +30,21 @@ function elapsedSince(iso: string | null | undefined): string {
 
 const STATUS_COLOR: Record<AttendanceStatus, string> = {
   checked_in:  "bg-emerald-500",
+  on_leave:    "bg-orange-500",
   checked_out: "bg-slate-400",
   absent:      "bg-slate-400",
 };
 
 const STATUS_BG: Record<AttendanceStatus, string> = {
   checked_in:  "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400",
+  on_leave:    "bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400",
   checked_out: "bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400",
   absent:      "bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400",
 };
 
 const STATUS_LABEL: Record<AttendanceStatus, string> = {
   checked_in:  "Checked In",
+  on_leave:    "On Leave",
   checked_out: "Checked Out",
   absent:      "Absent",
 };
@@ -336,7 +339,6 @@ export default function AttendancePage() {
                     ))
                   ) : team?.members?.length ? (
                     team.members.map((m) => {
-                      const isLeave = m.status === "absent" && false; // server sets on_leave via status field if needed
                       return (
                         <tr key={m.user_id} className="border-b border-slate-50 dark:border-slate-700/50 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition">
                           <td className="px-4 py-3">
@@ -349,9 +351,9 @@ export default function AttendancePage() {
                             </div>
                           </td>
                           <td className="px-4 py-3">
-                            <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full ${isLeave ? LEAVE_BG : STATUS_BG[m.status]}`}>
-                              <StatusDot status={m.status} isLeave={isLeave} />
-                              {isLeave ? "On Leave" : STATUS_LABEL[m.status]}
+                            <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full ${STATUS_BG[m.status]}`}>
+                              <StatusDot status={m.status} isLeave={false} />
+                              {STATUS_LABEL[m.status]}
                             </span>
                           </td>
                           <td className="px-4 py-3 tabular-nums text-slate-600 dark:text-slate-300">{formatTime(m.check_in_at)}</td>
